@@ -1,10 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <queries><intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent><package android:name="com.android.settings"/>
-        <package android:name="com.xiaomi.market"/><package android:name="com.miui.securitycenter"/><package android:name="com.android.browser"/><package android:name="com.android.providers.downloads.ui"/><package android:name="com.android.quicksearchbox"/><package android:name="com.android.thememanager"/>
-        <package android:name="com.heytap.market"/><package android:name="com.heytap.browser"/><package android:name="com.heytap.themestore"/><package android:name="com.heytap.yoli"/>
-        <package android:name="com.bbk.appstore"/><package android:name="com.iqoo.secure"/><package android:name="com.hihonor.appmarket"/><package android:name="com.hihonor.baidu.browser"/>
-<package android:name="com.flyme.secureservice"/><package android:name="com.meizu.customizecenter"/><package android:name="com.meizu.flyme.weather"/><package android:name="com.meizu.mstore"/><package android:name="com.meizu.net.nativelockscreen"/><package android:name="com.meizu.net.search"/><package android:name="com.meizu.safe"/><package android:name="com.miui.personalassistant"/><package android:name="com.nearme.gamecenter"/><package android:name="com.vivo.browser"/><package android:name="com.vivo.globalsearch"/><package android:name="com.vivo.hiboard"/>
+    <queries>
+        <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
+        <package android:name="com.android.browser"/>
+        <package android:name="com.android.calendar"/>
+        <package android:name="com.android.providers.downloads.ui"/>
+        <package android:name="com.android.quicksearchbox"/>
+        <package android:name="com.android.settings"/>
+        <package android:name="com.android.thememanager"/>
+        <package android:name="com.bbk.appstore"/>
+        <package android:name="com.flyme.secureservice"/>
+        <package android:name="com.heytap.browser"/>
+        <package android:name="com.heytap.market"/>
+        <package android:name="com.heytap.quicksearchbox"/>
+        <package android:name="com.heytap.themestore"/>
+        <package android:name="com.heytap.yoli"/>
+        <package android:name="com.hihonor.android.thememanager"/>
+        <package android:name="com.hihonor.appmarket"/>
+        <package android:name="com.hihonor.baidu.browser"/>
+        <package android:name="com.hihonor.cloudmusic"/>
+        <package android:name="com.hihonor.dz.reader"/>
+        <package android:name="com.hihonor.hiboard"/>
+        <package android:name="com.hihonor.id"/>
+        <package android:name="com.hihonor.search"/>
+        <package android:name="com.hihonor.systemmanager"/>
+        <package android:name="com.hihonor.youku.video"/>
+        <package android:name="com.honor.browser"/>
+        <package android:name="com.iqoo.secure"/>
+        <package android:name="com.meizu.customizecenter"/>
+        <package android:name="com.meizu.flyme.weather"/>
+        <package android:name="com.meizu.mstore"/>
+        <package android:name="com.meizu.net.nativelockscreen"/>
+        <package android:name="com.meizu.net.search"/>
+        <package android:name="com.meizu.safe"/>
+        <package android:name="com.miui.personalassistant"/>
+        <package android:name="com.miui.securitycenter"/>
+        <package android:name="com.miui.themestore"/>
+        <package android:name="com.miui.weather2"/>
+        <package android:name="com.nearme.gamecenter"/>
+        <package android:name="com.oplus.pantanal.ums"/>
+        <package android:name="com.vivo.browser"/>
+        <package android:name="com.vivo.globalsearch"/>
+        <package android:name="com.vivo.hiboard"/>
+        <package android:name="com.xiaomi.market"/>
     </queries>
     <application android:theme="@style/AppTheme" android:label="净屏" android:icon="@drawable/ic_app" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>

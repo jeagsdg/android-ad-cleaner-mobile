@@ -1,0 +1,7 @@
+[
+  {"name":"OPPO Find X8 Pro","brands":["oppo"],"models":["PKC110","PKC130"],"source":"https://bdev.oppo.com/open/resource/index/document/detail?id=100","verified":false},
+  {"name":"荣耀 Magic8","brands":["honor"],"models":["BKQ-AN00","BKQ-AN80"],"source":"https://www.honor.com/cn/support/products/mobile-phones/honor-magic8/","verified":false},
+  {"name":"荣耀 GT Pro","brands":["honor"],"models":["PPG-AN00"],"source":"https://developer.honor.com/cn/docs/game_center/guides/jieruzhinan/jixing","verified":false},
+  {"name":"小米 10 至尊纪念版","brands":["xiaomi"],"models":["M2007J1SC","cas","Mi 10 Ultra"],"source":"https://lineageos.github.io/lineage_wiki/devices/cas/","verified":false},
+  {"name":"iQOO Neo9","brands":["vivo","iqoo"],"models":["V2338A","iQOO Neo9"],"source":"https://www.vivo.com.cn/vivo/param/iqooneo9","verified":false}
+]

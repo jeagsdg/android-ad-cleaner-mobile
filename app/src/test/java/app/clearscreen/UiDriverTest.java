@@ -15,7 +15,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class) @Config(sdk=28)
 public class UiDriverTest {
-    public static class TestService extends AccessibilityService {AccessibilityNodeInfo root;public AccessibilityNodeInfo getRootInActiveWindow(){return root;}public void onAccessibilityEvent(AccessibilityEvent e){}public void onInterrupt(){} }
+    public static class TestService extends AccessibilityService {AccessibilityNodeInfo root;java.util.function.Consumer<android.content.Intent> launch;public AccessibilityNodeInfo getRootInActiveWindow(){return root;}public void onAccessibilityEvent(AccessibilityEvent e){}public void onInterrupt(){}@Override public void startActivity(android.content.Intent intent){if(launch!=null)launch.accept(intent);else super.startActivity(intent);} }
     TestService service;Rule rule;UiDriver driver;
     @Before public void setup()throws Exception{service=Robolectric.buildService(TestService.class).create().get();rule=new Rule(new JSONObject("{\"id\":\"fixture\",\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"]}"));service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));driver=new UiDriver(service,()->false);driver.current(rule);}
     AccessibilityNodeInfo node(String label,String cls,Rect b){AccessibilityNodeInfo n=AccessibilityNodeInfo.obtain();n.setPackageName("com.android.settings");n.setText(label);n.setClassName(cls);n.setVisibleToUser(true);n.setEnabled(true);n.setBoundsInScreen(b);return n;}
@@ -44,5 +44,40 @@ public class UiDriverTest {
         shadowOf(header).addChild(title);shadowOf(header).addChild(app);shadowOf(service.root).addChild(header);row("Show notifications",800,true);
         driver.current(rule);assertNotNull(driver.find("允许通知"));
         app.setText("其他应用");try{driver.current(rule);fail();}catch(UiDriver.Halt expected){assertTrue(expected.getMessage().contains("渠道名"));}
+    }
+    @Test public void failedDirectEntryFallsBackWithoutTouchingAnyToggle()throws Exception{
+        row("个性化推荐",100,true);java.util.concurrent.atomic.AtomicInteger launches=new java.util.concurrent.atomic.AtomicInteger();
+        service.launch=intent->{if(launches.incrementAndGet()==1)throw new SecurityException("not exported");};
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"routes\":[{\"activity\":\".Private\"},{\"activity\":\".Public\"}]}"));
+        driver.open(r);assertEquals(2,launches.get());assertEquals(2,driver.attempts().length());assertEquals(".Public",driver.pinnedRule().routes.get(0).activity);assertTrue(driver.find("个性化推荐").checked);
+    }
+    @Test public void wrongPageMarkerUsesNextRouteBeforeAnyWrite()throws Exception{
+        AccessibilityNodeInfo target=row("个性化推荐",100,true);service.launch=intent->{};
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"routes\":[{\"activity\":\".First\",\"anchors\":[\"实际不存在的标题\"]},{\"activity\":\".Second\"}]}"));
+        driver.open(r);assertEquals(".Second",driver.pinnedRule().routes.get(0).activity);assertTrue(shadowOf(target).getPerformedActions().isEmpty());
+    }
+    @Test public void foregroundChangeStopsAllFallbacks()throws Exception{
+        java.util.concurrent.atomic.AtomicInteger launches=new java.util.concurrent.atomic.AtomicInteger();service.launch=intent->{launches.incrementAndGet();service.root.setPackageName("com.example.chat");};
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"routes\":[{\"activity\":\".First\"},{\"activity\":\".Second\"}]}"));
+        try{driver.open(r);fail();}catch(UiDriver.Halt e){assertTrue(e.terminal);}assertEquals(1,launches.get());
+    }
+    @Test public void aliasReturnsActualLabelAndAmbiguousAliasesStop()throws Exception{
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"aliases\":{\"个性化推荐\":[\"关闭个性化推荐\"]}}"));
+        driver.current(r);row("关闭个性化推荐",100,false);UiDriver.Found found=driver.find("个性化推荐");assertEquals("关闭个性化推荐",found.label);assertTrue(new Store(service).policy().desired(found.label));
+        row("个性化推荐",220,true);try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt expected){assertTrue(expected.getMessage().contains("不唯一"));}
+    }
+    @Test public void packageTransitionIsScopedToItsStep()throws Exception{
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"path\":[{\"labels\":[\"广告设置\"],\"package\":\"com.example.id\"}]}"));
+        AccessibilityNodeInfo entry=node("广告设置","android.widget.Button",new Rect(0,100,700,200));entry.setClickable(true);shadowOf(service.root).addChild(entry);
+        shadowOf(entry).setOnPerformActionListener((a,b)->{service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));service.root.setPackageName("com.example.id");row("个性化推荐",200,true);return true;});service.launch=intent->{};
+        driver.open(r);assertEquals("com.example.id",driver.pinnedRule().pkg);assertTrue(driver.allowed("com.example.id"));assertFalse(driver.allowed("com.android.settings"));
+    }
+    @Test public void manualRuleNeverLaunchesOrClicks()throws Exception{
+        service.launch=intent->{throw new AssertionError("manual rule launched");};Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"manual\":true}"));
+        try{driver.open(r);fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("手动"));}
+    }
+    @Test public void disabledChildDoesNotHideOtherValidTargetsOnPage()throws Exception{
+        row("摇一摇广告",100,true).setEnabled(false);row("开屏广告",220,true);service.launch=intent->{};
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"activity\":\".Settings\",\"targets\":[\"摇一摇广告\",\"开屏广告\"]}"));driver.open(r);assertNotNull(driver.find("开屏广告"));
     }
 }

@@ -28,7 +28,7 @@ try {
     & .\gradlew.bat @buildArgs
     if ($LASTEXITCODE) { throw '构建或检查失败；未更新交付 APK。' }
     New-Item -ItemType Directory -Path (Join-Path $projectRoot 'dist') -Force | Out-Null
-    $name = if ($Release) { 'ClearScreen-0.1.0-preview.apk' } else { 'ClearScreen-0.1.0-debug.apk' }
+    $name = if ($Release) { 'ClearScreen-0.2.0-preview.apk' } else { 'ClearScreen-0.2.0-debug.apk' }
     $apk = Join-Path $projectRoot ('dist/' + $name)
     Copy-Item -LiteralPath ('app/build/outputs/apk/'+$variant+'/app-'+$variant+'.apk') -Destination $apk -Force
     Get-FileHash -LiteralPath $apk -Algorithm SHA256

@@ -27,7 +27,93 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.settings",
+        "path": [],
+        "activity": ".ad.AdServiceSettings",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "密码与安全"
+          ],
+          [
+            "系统安全",
+            "隐私"
+          ],
+          [
+            "广告服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口",
+        "reference": "https://terms.miui.com/doc/privacy/cn.html"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "安全"
+          ],
+          [
+            "更多设置",
+            "更多安全设置"
+          ],
+          [
+            "广告服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口",
+        "reference": "https://privacy.mi.com/support/faq?locale=zh-cn"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "隐私与安全"
+          ],
+          [
+            "更多安全设置",
+            "更多设置"
+          ],
+          [
+            "广告服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "隐私与安全"
+          ],
+          [
+            "安全"
+          ],
+          [
+            "更多安全设置",
+            "更多设置"
+          ],
+          [
+            "广告服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-store",
@@ -58,7 +144,48 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.xiaomi.market",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私设置",
+            "隐私"
+          ],
+          [
+            "个性化服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.xiaomi.market",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私设置",
+            "隐私"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/redmi-23113RKC6C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-cleaner",
@@ -79,7 +206,34 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": "com.miui.securityscan.ui.settings.SettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.miui.securitycenter",
+        "path": [
+          [
+            "垃圾清理"
+          ]
+        ],
+        "activity": "com.miui.securityscan.ui.settings.SettingsActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.miui.securitycenter",
+        "path": [
+          [
+            "设置"
+          ],
+          [
+            "垃圾清理"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-browser",
@@ -97,7 +251,34 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": ".preferences.activity.CustomizationPreferenceActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.browser",
+        "path": [],
+        "activity": ".preferences.activity.CustomizationPreferenceActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.browser",
+        "path": [
+          [
+            "菜单",
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私和安全"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-download",
@@ -122,7 +303,40 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.providers.downloads.ui",
+        "path": [
+          [
+            "更多"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "信息流设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.android.providers.downloads.ui",
+        "path": [
+          [
+            "设置"
+          ],
+          [
+            "信息流设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-search",
@@ -143,7 +357,38 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": ".preferences.SearchSettingsPreferenceActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.quicksearchbox",
+        "path": [
+          [
+            "首页展示模块"
+          ]
+        ],
+        "activity": ".preferences.SearchSettingsPreferenceActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.quicksearchbox",
+        "path": [
+          [
+            "更多",
+            "菜单"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "首页展示模块"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-theme",
@@ -170,7 +415,44 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.thememanager",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.miui.themestore",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/redmi-23113RKC6C/recipe.py",
+        "name": "应用菜单入口",
+        "foreground": "com.android.thememanager"
+      }
+    ]
   },
   {
     "id": "op-store-privacy",
@@ -197,7 +479,66 @@
     ],
     "source": "recipes/oppo-PLP120/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.heytap.market",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/oppo-PLP120/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.heytap.market",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私授权管理"
+          ],
+          [
+            "个性化推荐"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/oppo-PLG110/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.heytap.market",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私"
+          ],
+          [
+            "个性化推荐"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/oppo-PLP120/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "op-store-promo",
@@ -225,9 +566,22 @@
       "首页：顶部轮播卡片",
       "底部活动专区",
       "游戏详情页：游戏活动卡片",
-      "软件专区：福利"
+      "游戏详情页：游戏礼包",
+      "软件专区：福利",
+      "我的专区：签到按钮",
+      "我的专区：积分商城",
+      "我的专区：安装有礼",
+      "我的专区：福利中心",
+      "我的专区：金豆乐园",
+      "更新&下载专区：底部弹窗推荐",
+      "活动式详情页",
+      "详情页：活动",
+      "详情页：限时活动",
+      "手机管家：应用推荐",
+      "文件管理：应用推荐",
+      "福利专区"
     ],
-    "source": "recipes/oneplus-PJA110/recipe.py",
+    "source": "recipes/oppo-PLG110/recipe.py",
     "activity": "",
     "group": "系统推荐"
   },
@@ -257,13 +611,51 @@
       ]
     ],
     "targets": [
+      "摇一摇广告",
       "开屏广告",
-      "资讯列表广告",
-      "摇一摇广告"
+      "资讯列表广告"
     ],
     "source": "recipes/realme-RMX3700/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.heytap.browser",
+        "path": [
+          [
+            "隐私"
+          ],
+          [
+            "广告管理"
+          ]
+        ],
+        "activity": ".settings.component.BrowserPreferencesPage",
+        "source": "recipes/oppo-PKT110/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.heytap.browser",
+        "path": [
+          [
+            "我的",
+            "菜单",
+            "更多"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私"
+          ],
+          [
+            "广告管理"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/realme-RMX3700/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "op-theme",
@@ -370,7 +762,40 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": ".view.SearchSettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.vivo.globalsearch",
+        "path": [
+          [
+            "首页展示内容"
+          ]
+        ],
+        "activity": ".view.SearchSettingsActivity",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "系统管理与升级"
+          ],
+          {
+            "labels": [
+              "全局搜索"
+            ],
+            "package": "com.vivo.globalsearch"
+          },
+          [
+            "首页展示内容"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2324HA/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-hot",
@@ -390,7 +815,54 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": ".view.SearchSettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.vivo.globalsearch",
+        "path": [
+          [
+            "推荐热搜榜单"
+          ]
+        ],
+        "activity": ".view.SearchSettingsActivity",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.vivo.globalsearch",
+        "path": [
+          [
+            "首页展示内容"
+          ],
+          [
+            "推荐热搜榜单"
+          ]
+        ],
+        "activity": ".view.SearchSettingsActivity",
+        "source": "recipes/vivo-V2547A/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "系统管理与升级"
+          ],
+          {
+            "labels": [
+              "全局搜索"
+            ],
+            "package": "com.vivo.globalsearch"
+          },
+          [
+            "推荐热搜榜单"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2324HA/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-store",
@@ -543,7 +1015,34 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": "com.miui.securityscan.ui.settings.SettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.miui.securitycenter",
+        "path": [
+          [
+            "隐私设置"
+          ]
+        ],
+        "activity": "com.miui.securityscan.ui.settings.SettingsActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.miui.securitycenter",
+        "path": [
+          [
+            "设置"
+          ],
+          [
+            "隐私设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-browser-grid",
@@ -564,7 +1063,38 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": ".BrowserSettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.browser",
+        "path": [
+          [
+            "主页设置"
+          ]
+        ],
+        "activity": ".BrowserSettingsActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.browser",
+        "path": [
+          [
+            "菜单",
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "主页设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-browser-search",
@@ -585,7 +1115,43 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": ".BrowserSettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.browser",
+        "path": [
+          [
+            "搜索设置"
+          ]
+        ],
+        "activity": ".BrowserSettingsActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.browser",
+        "path": [
+          [
+            "菜单",
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "搜索设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ],
+    "aliases": {
+      "猜你想搜": [
+        "显示猜你想搜模块"
+      ]
+    }
   },
   {
     "id": "mi-search-apps",
@@ -609,7 +1175,44 @@
     ],
     "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
     "activity": ".preferences.SearchSettingsPreferenceActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.quicksearchbox",
+        "path": [
+          [
+            "首页展示模块"
+          ],
+          [
+            "应用推荐"
+          ]
+        ],
+        "activity": ".preferences.SearchSettingsPreferenceActivity",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.quicksearchbox",
+        "path": [
+          [
+            "更多",
+            "菜单"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "首页展示模块"
+          ],
+          [
+            "应用推荐"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "mi-assistant",
@@ -688,11 +1291,14 @@
       [
         "OPPO AI"
       ],
+      {
+        "labels": [
+          "小布建议"
+        ],
+        "package": "com.oplus.pantanal.ums"
+      },
       [
-        "小布建议"
-      ],
-      [
-        "内容资讯"
+        "资讯服务"
       ]
     ],
     "targets": [
@@ -703,9 +1309,42 @@
       "oneplus",
       "realme"
     ],
-    "source": "recipes/oppo-PLP120/recipe.py",
+    "source": "recipes/oppo-PLG110/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "OPPO AI"
+          ],
+          {
+            "labels": [
+              "小布建议"
+            ],
+            "package": "com.oplus.pantanal.ums"
+          },
+          [
+            "资讯服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/oppo-PLG110/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.oplus.pantanal.ums",
+        "path": [
+          [
+            "资讯服务"
+          ]
+        ],
+        "activity": "com.oplus.advice.settings.ui.AdviceSettingActivity",
+        "source": "recipes/oppo-PLG110/recipe.py",
+        "name": "设置直达入口"
+      }
+    ]
   },
   {
     "id": "op-theme-splash",
@@ -755,30 +1394,40 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": ".view.SearchSettingsActivity",
-    "group": "系统推荐"
-  },
-  {
-    "id": "v-hot-nested",
-    "title": "搜索热榜（另一入口）",
-    "package": "com.vivo.globalsearch",
-    "path": [
-      [
-        "首页展示内容"
-      ],
-      [
-        "推荐热搜榜单"
-      ]
-    ],
-    "targets": [
-      "热门搜索"
-    ],
-    "brands": [
-      "vivo",
-      "iqoo"
-    ],
-    "source": "recipes/vivo-V2547A/recipe.py",
-    "activity": ".view.SearchSettingsActivity",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.vivo.globalsearch",
+        "path": [
+          [
+            "个性化内容"
+          ]
+        ],
+        "activity": ".view.SearchSettingsActivity",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "系统管理与升级"
+          ],
+          {
+            "labels": [
+              "全局搜索"
+            ],
+            "package": "com.vivo.globalsearch"
+          },
+          [
+            "个性化内容"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2324HA/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-store-promo",
@@ -813,7 +1462,54 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "aliases": {
+      "悬浮窗": [
+        "悬浮球"
+      ]
+    },
+    "routes": [
+      {
+        "package": "com.bbk.appstore",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "关于"
+          ],
+          [
+            "服务管理"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.bbk.appstore",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "关于"
+          ],
+          [
+            "服务管理"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V1986A/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-browser-home",
@@ -890,7 +1586,6 @@
     ],
     "targets": [
       "WiFi连接跳转新闻资讯",
-      "WiFi 连接跳转新闻资讯",
       "下载管理页展示热门应用",
       "下载管理页展示下载热榜"
     ],
@@ -900,7 +1595,53 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "aliases": {
+      "WiFi连接跳转新闻资讯": [
+        "WiFi 连接跳转新闻资讯",
+        "跳转新闻资讯"
+      ]
+    },
+    "routes": [
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "菜单",
+            "我的",
+            "@id:com.vivo.browser:id/menu_btn"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "更多设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "菜单",
+            "我的",
+            "@id:com.vivo.browser:id/menu_btn"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "更多设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2324HA/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-browser-privacy",
@@ -1206,5 +1947,947 @@
     "source": "recipes/meizu-MEIZU 21 Pro/recipe.py",
     "activity": "com.meizu.net.lockscreenlibrary.view.settings.PersonalizedRecommendationsActivity",
     "group": "系统推荐"
+  },
+  {
+    "id": "mi-browser-tasks",
+    "title": "浏览器金币营销任务",
+    "package": "com.android.browser",
+    "path": [
+      [
+        "菜单",
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "功能设置"
+      ]
+    ],
+    "targets": [
+      "运营任务"
+    ],
+    "brands": [
+      "xiaomi",
+      "redmi",
+      "poco"
+    ],
+    "source": "recipes/xiaomi-24129PN74C/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "mi-weather",
+    "title": "天气视频与内容推广",
+    "package": "com.miui.weather2",
+    "path": [
+      [
+        "更多设置"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "用户体验计划"
+      ]
+    ],
+    "targets": [
+      "天气视频卡片",
+      "内容推广"
+    ],
+    "brands": [
+      "xiaomi",
+      "redmi",
+      "poco"
+    ],
+    "source": "recipes/redmi-23113RKC6C/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.miui.weather2",
+        "path": [
+          [
+            "更多设置"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "用户体验计划"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/redmi-23113RKC6C/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.miui.weather2",
+        "path": [
+          [
+            "设置"
+          ],
+          [
+            "用户体验计划"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "mi-calendar",
+    "title": "日历内容推广",
+    "package": "com.android.calendar",
+    "path": [
+      [
+        "设置"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "用户体验计划"
+      ]
+    ],
+    "targets": [
+      "内容推广"
+    ],
+    "brands": [
+      "xiaomi",
+      "redmi",
+      "poco"
+    ],
+    "source": "recipes/redmi-23113RKC6C/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.android.calendar",
+        "path": [
+          [
+            "设置"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "用户体验计划"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/redmi-23113RKC6C/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.android.calendar",
+        "path": [
+          [
+            "设置"
+          ],
+          [
+            "用户体验计划"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-24129PN74C/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "op-browser-personal",
+    "title": "浏览器搜索与广告推荐",
+    "package": "com.heytap.browser",
+    "path": [
+      [
+        "隐私"
+      ],
+      [
+        "个性化管理"
+      ]
+    ],
+    "targets": [
+      "个性化搜索推荐",
+      "个性化广告推荐"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PLG110/recipe.py",
+    "activity": ".settings.component.BrowserPreferencesPage",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.heytap.browser",
+        "path": [
+          [
+            "隐私"
+          ],
+          [
+            "个性化管理"
+          ]
+        ],
+        "activity": ".settings.component.BrowserPreferencesPage",
+        "source": "recipes/oppo-PLG110/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.heytap.browser",
+        "path": [
+          [
+            "我的",
+            "菜单",
+            "更多"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私"
+          ],
+          [
+            "个性化管理"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/oppo-PLG110/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "op-video-personal",
+    "title": "视频内容与广告推荐",
+    "package": "com.heytap.yoli",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "个性化管理"
+      ]
+    ],
+    "targets": [
+      "个性化广告推荐",
+      "个性化内容推荐"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PKT110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-search-home",
+    "title": "搜索首页推广卡片",
+    "package": "com.heytap.quicksearchbox",
+    "path": [
+      [
+        "首页卡片管理"
+      ]
+    ],
+    "targets": [
+      "热搜应用",
+      "精选推荐",
+      "热搜榜单",
+      "活动皮肤",
+      "推荐卡片",
+      "未下载应用推荐"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PKT110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-search-source",
+    "title": "搜索内容推荐",
+    "package": "com.heytap.quicksearchbox",
+    "path": [
+      [
+        "搜索范围"
+      ]
+    ],
+    "targets": [
+      "个性化推荐",
+      "精选资讯",
+      "搜索建议"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PKT110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-search-hint",
+    "title": "搜索框推广提示词",
+    "package": "com.heytap.quicksearchbox",
+    "path": [
+      [
+        "功能管理"
+      ]
+    ],
+    "targets": [
+      "搜索框提示词"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PLG110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-search-personal",
+    "title": "搜索个性化推荐",
+    "package": "com.heytap.quicksearchbox",
+    "path": [
+      [
+        "隐私"
+      ]
+    ],
+    "targets": [
+      "个性化推荐"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PLG110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-ai-daily",
+    "title": "小布视界日报",
+    "package": "com.android.settings",
+    "path": [
+      [
+        "OPPO AI"
+      ],
+      {
+        "labels": [
+          "小布建议"
+        ],
+        "package": "com.oplus.pantanal.ums"
+      },
+      [
+        "资讯服务"
+      ],
+      [
+        "视界日报"
+      ]
+    ],
+    "targets": [
+      "视界日报"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PKT110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-ai-news",
+    "title": "小布资讯推荐",
+    "package": "com.android.settings",
+    "path": [
+      [
+        "OPPO AI"
+      ],
+      {
+        "labels": [
+          "小布建议"
+        ],
+        "package": "com.oplus.pantanal.ums"
+      },
+      [
+        "资讯服务"
+      ],
+      [
+        "小红书资讯"
+      ]
+    ],
+    "targets": [
+      "小红书资讯"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PKT110/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "op-theme-manual",
+    "title": "新版主题商店推荐设置",
+    "package": "com.heytap.themestore",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "隐私"
+      ]
+    ],
+    "targets": [
+      "个性化推荐设置"
+    ],
+    "brands": [
+      "oppo",
+      "oneplus",
+      "realme"
+    ],
+    "source": "recipes/oppo-PKT110/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "manual": true,
+    "explanation": "部分版本关闭后会弹窗并返回上一页。请手动关闭「个性化推荐设置」，再重新进入隐私页核对；不要切换服务模式或同意新协议。"
+  },
+  {
+    "id": "h-system",
+    "title": "系统智能推荐服务",
+    "package": "com.hihonor.id",
+    "path": [],
+    "targets": [
+      "智能推荐服务"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": ".oaid.ui.IntelligentRecommendActivity",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.hihonor.id",
+        "path": [],
+        "activity": ".oaid.ui.IntelligentRecommendActivity",
+        "source": "recipes/honor-WKL-AN20/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.android.settings",
+        "path": [
+          [
+            "隐私和安全"
+          ],
+          [
+            "其他隐私和安全功能"
+          ],
+          {
+            "labels": [
+              "广告与隐私"
+            ],
+            "package": "com.hihonor.id"
+          },
+          [
+            "智能推荐服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/honor-PNM-AN10/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "h-manager",
+    "title": "系统管家应用推荐",
+    "package": "com.hihonor.systemmanager",
+    "path": [],
+    "targets": [
+      "应用推荐"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": ".mainscreen.SettingActivity",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.hihonor.systemmanager",
+        "path": [],
+        "activity": ".mainscreen.SettingActivity",
+        "source": "recipes/honor-WKL-AN20/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.hihonor.systemmanager",
+        "path": [
+          [
+            "设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/honor-PNM-AN10/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "h-store-hot",
+    "title": "应用市场热门推荐",
+    "package": "com.hihonor.appmarket",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "热门推荐管理"
+      ]
+    ],
+    "targets": [
+      "热门推荐管理"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-browser-search",
+    "title": "浏览器搜索推荐",
+    "package": "com.hihonor.baidu.browser",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "隐私设置"
+      ]
+    ],
+    "targets": [
+      "搜索个性化推荐",
+      "搜索下一条推荐"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-PNM-AN10/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-browser-web-manual",
+    "title": "浏览器网页广告偏好",
+    "package": "com.hihonor.baidu.browser",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "隐私设置"
+      ],
+      [
+        "偏好设置"
+      ],
+      [
+        "广告设置"
+      ]
+    ],
+    "targets": [
+      "不看程序化广告",
+      "不看个性化广告"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-PNM-AN10/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "manual": true,
+    "explanation": "此页为网页开关，无障碍无法可靠回读。请手动打开「不看程序化广告」「不看个性化广告」，注意这里的目标是打开。"
+  },
+  {
+    "id": "h-browser-classic-push",
+    "title": "荣耀浏览器资讯推送",
+    "package": "com.honor.browser",
+    "path": [
+      [
+        "更多"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "消息通知"
+      ]
+    ],
+    "targets": [
+      "精彩推荐",
+      "每日推送",
+      "新闻热点",
+      "兴趣推送"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-browser-classic-personal",
+    "title": "荣耀浏览器个性化内容",
+    "package": "com.honor.browser",
+    "path": [
+      [
+        "更多"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "隐私管理"
+      ],
+      [
+        "个性化推荐"
+      ]
+    ],
+    "targets": [
+      "个性化内容"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-browser-classic-ads",
+    "title": "荣耀浏览器互动广告",
+    "package": "com.honor.browser",
+    "path": [
+      [
+        "更多"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "隐私管理"
+      ],
+      [
+        "互动广告管理"
+      ]
+    ],
+    "targets": [
+      "个性化广告",
+      "允许摇一摇进入广告"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-theme",
+    "title": "主题内容与广告推荐",
+    "package": "com.hihonor.android.thememanager",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "个性化服务"
+      ]
+    ],
+    "targets": [
+      "个性化内容",
+      "个性化广告"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-video",
+    "title": "视频广告与内容推荐",
+    "package": "com.hihonor.youku.video",
+    "path": [
+      [
+        "其他设置"
+      ]
+    ],
+    "targets": [
+      "个性化内容",
+      "个性化广告",
+      "允许视频采集OAID推荐广告"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "com.youku.android.youkusetting.activity.SettingsActivity",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.hihonor.youku.video",
+        "path": [
+          [
+            "其他设置"
+          ]
+        ],
+        "activity": "com.youku.android.youkusetting.activity.SettingsActivity",
+        "source": "recipes/honor-WKL-AN20/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.hihonor.youku.video",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "其他设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/honor-PNM-AN10/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "h-search",
+    "title": "荣耀搜索热榜",
+    "package": "com.hihonor.search",
+    "path": [
+      [
+        "更多"
+      ],
+      [
+        "设置"
+      ],
+      [
+        "首页显示"
+      ]
+    ],
+    "targets": [
+      "热搜榜",
+      "热搜词推荐"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "manual": true,
+    "explanation": "系统搜索通常没有可直接打开的应用入口。请从桌面下拉搜索，进入「更多 → 设置 → 首页显示」，关闭热搜榜、热搜词推荐；保留搜索功能。"
+  },
+  {
+    "id": "h-assistant-manual",
+    "title": "负一屏推荐与广告",
+    "package": "com.hihonor.hiboard",
+    "path": [
+      [
+        "头像"
+      ],
+      [
+        "设置"
+      ]
+    ],
+    "targets": [
+      "智能推荐",
+      "个性化广告",
+      "个性化消息"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "manual": true,
+    "explanation": "请在桌面滑至负一屏，从头像进入设置关闭列出的推荐项。资讯精选可在头像 → 资讯服务内关闭。保留日程、快递与常用功能卡片。"
+  },
+  {
+    "id": "h-music",
+    "title": "音乐动态与摇一摇广告",
+    "package": "com.hihonor.cloudmusic",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置",
+        "@id:com.hihonor.cloudmusic:id/ic_setting"
+      ],
+      [
+        "更多设置"
+      ],
+      [
+        "消息和隐私设置"
+      ]
+    ],
+    "targets": [
+      "朋友页显示推荐动态",
+      "展示“摇一摇”类开屏广告"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.hihonor.cloudmusic",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置",
+            "@id:com.hihonor.cloudmusic:id/ic_setting"
+          ],
+          [
+            "更多设置"
+          ],
+          [
+            "消息和隐私设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/honor-WKL-AN20/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.hihonor.cloudmusic",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置",
+            "@id:com.hihonor.cloudmusic:id/ic_setting"
+          ],
+          [
+            "更多设置"
+          ],
+          [
+            "消息和隐私设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/honor-PNM-AN10/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
+  },
+  {
+    "id": "h-music-ads",
+    "title": "音乐个性化广告",
+    "package": "com.hihonor.cloudmusic",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "设置",
+        "@id:com.hihonor.cloudmusic:id/ic_setting"
+      ],
+      [
+        "更多设置"
+      ],
+      [
+        "消息和隐私设置"
+      ],
+      [
+        "广告推荐设置"
+      ]
+    ],
+    "targets": [
+      "个性化广告推荐"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐"
+  },
+  {
+    "id": "h-reader-manual",
+    "title": "阅读个性化广告",
+    "package": "com.hihonor.dz.reader",
+    "path": [
+      [
+        "我的"
+      ],
+      [
+        "更多设置"
+      ],
+      [
+        "广告推荐服务"
+      ]
+    ],
+    "targets": [
+      "个性化广告"
+    ],
+    "brands": [
+      "honor"
+    ],
+    "source": "recipes/honor-WKL-AN20/recipe.py",
+    "activity": "",
+    "group": "系统推荐",
+    "manual": true,
+    "explanation": "此页使用自绘开关，无法可靠读取状态。请手动关闭个性化广告，保留接收新通知与阅读功能。"
   }
 ]

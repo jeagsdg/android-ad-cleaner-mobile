@@ -8,18 +8,23 @@ import android.provider.Settings;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.*;
 import java.util.function.BooleanSupplier;
+import org.json.*;
 
 /** Accessibility adapter: exact matching, unique rows, no blind coordinates or global toggles. */
 public final class UiDriver {
     public static final class Halt extends Exception{public final boolean terminal;public Halt(String message){this(message,false);}public Halt(String message,boolean terminal){super(message);this.terminal=terminal;}}
     public static final class Found {
         public final AccessibilityNodeInfo node,click;
-        public final boolean checked;
-        Found(AccessibilityNodeInfo n,AccessibilityNodeInfo c){node=n;click=c;checked=n.isChecked();}
+        public final boolean checked; public final String label;
+        Found(AccessibilityNodeInfo n,AccessibilityNodeInfo c,String text){node=n;click=c;checked=n.isChecked();label=text;}
     }
     private final AccessibilityService service;
     private final BooleanSupplier cancelled;
     private Rule rule;
+    private Route route; private String expectedPackage;
+    private final JSONArray attempts=new JSONArray();
+    public JSONArray attempts(){try{return new JSONArray(attempts.toString());}catch(JSONException e){throw new IllegalStateException(e);}}
+    public Rule pinnedRule(){return rule.notification()?rule:rule.pin(route);}
     public UiDriver(AccessibilityService s,BooleanSupplier c){service=s;cancelled=c;}
     public void check() throws Halt {
         if(cancelled.getAsBoolean()||Thread.currentThread().isInterrupted())throw new Halt("已停止，已完成的改动仍保存在记录中",true);
@@ -27,7 +32,7 @@ public final class UiDriver {
         if(k!=null&&k.isKeyguardLocked())throw new Halt("手机已锁屏，本次操作已停止",true);
     }
     void pause(long ms)throws Halt{long end=System.nanoTime()+ms*1_000_000L;while(System.nanoTime()<end){check();try{Thread.sleep(100);}catch(InterruptedException e){Thread.currentThread().interrupt();check();}}}
-    boolean allowed(String pkg){return rule.notification()?Arrays.asList("com.android.settings","com.oplus.notificationmanager","com.coloros.notificationmanager").contains(pkg):rule.pkg.equals(pkg);}
+    boolean allowed(String pkg){return rule.notification()?Arrays.asList("com.android.settings","com.oplus.notificationmanager","com.coloros.notificationmanager").contains(pkg):Objects.equals(expectedPackage,pkg);}
     AccessibilityNodeInfo root()throws Halt{
         check();AccessibilityNodeInfo r=service.getRootInActiveWindow();if(r==null)throw new Halt("暂时无法读取页面，请保持手机亮屏重试");
         String pkg=String.valueOf(r.getPackageName());if(!allowed(pkg))throw new Halt("目标页面已离开前台，任务已停止",true);
@@ -35,18 +40,33 @@ public final class UiDriver {
         return r;
     }
     public void open(Rule r)throws Halt{
-        rule=r;check();Intent intent;
+        rule=r;while(attempts.length()>0)attempts.remove(0);check();if(r.manual)throw new Halt("此项需要手动处理，请查看操作路径");
+        String last="没有匹配的设置路径";
+        for(Route candidate:r.routes){route=candidate;JSONObject attempt=new JSONObject();CleanerService.put(attempt,"route",candidate.name);CleanerService.put(attempt,"package",candidate.pkg);
+            try{openRoute(r,candidate);
+                // Route selection is read-only. A route is accepted only after an exact target is found.
+                boolean matched=false;for(String label:r.targets){try{top();if(find(label)!=null){matched=true;break;}}catch(Halt probe){if(probe.terminal)throw probe;}}
+                if(!matched)throw new Halt("此入口未识别到目标开关");
+                top();CleanerService.put(attempt,"result","matched");attempts.put(attempt);return;
+            }catch(Halt e){CleanerService.put(attempt,"result",e.getMessage());attempts.put(attempt);if(e.terminal)throw e;last=e.getMessage();}
+        }
+        throw new Halt("已检查 "+r.routes.size()+" 个入口："+last);
+    }
+    private void openRoute(Rule r,Route candidate)throws Halt{
+        check();expectedPackage=candidate.foreground;Intent intent;
         if(r.notification()){intent=new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,r.pkg).putExtra(Settings.EXTRA_CHANNEL_ID,r.channelId);}
-        else if(r.pkg.equals("com.android.settings")){intent=new Intent(Settings.ACTION_SETTINGS);}
-        else if(!r.activity.isEmpty()){String cls=r.activity.startsWith(".")?r.pkg+r.activity:r.activity;intent=new Intent().setComponent(new ComponentName(r.pkg,cls));}
-        else{intent=service.getPackageManager().getLaunchIntentForPackage(r.pkg);if(intent==null)throw new Halt("没有可打开的入口，请使用手动路径");}
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        else if(!candidate.uri.isEmpty()){intent=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(candidate.uri)).setPackage(candidate.pkg);}
+        else if(!candidate.activity.isEmpty()){String cls=candidate.activity.startsWith(".")?candidate.pkg+candidate.activity:candidate.activity;intent=new Intent().setComponent(new ComponentName(candidate.pkg,cls));}
+        else if(candidate.pkg.equals("com.android.settings")){intent=new Intent(Settings.ACTION_SETTINGS);}
+        else{intent=service.getPackageManager().getLaunchIntentForPackage(candidate.pkg);if(intent==null)throw new Halt("没有可打开的入口，请使用手动路径");}
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         try{service.startActivity(intent);}catch(Exception e){throw new Halt("系统不允许直接打开此设置，请使用手动路径");}
         pause(1400);root();
-        for(List<String> step:r.path){if(!tap(step))throw new Halt("未找到唯一入口「"+String.join(" / ",step)+"」，未改动");pause(650);root();}
+        for(int i=0;i<candidate.path.size();i++){List<String> step=candidate.path.get(i);if(!tap(step))throw new Halt("未找到唯一入口「"+String.join(" / ",step)+"」，未改动");expectedPackage=candidate.destinations.get(i);pause(650);root();}
+        for(String anchor:candidate.anchors){boolean present=false;for(AccessibilityNodeInfo n:walk(root()))if(n.isVisibleToUser()&&text(n).equals(anchor)){present=true;break;}if(!present)throw new Halt("页面标识不匹配，未操作");}
         if(r.notification())verifyChannel();
     }
-    public void current(Rule r)throws Halt{rule=r;root();if(r.notification())verifyChannel();}
+    public void current(Rule r)throws Halt{rule=r;route=r.routes.get(0);expectedPackage=route.finalPackage();root();if(r.notification())verifyChannel();}
     void verifyChannel()throws Halt{
         AccessibilityNodeInfo r=root();boolean title=false,app=false,entityPair=false;
         Rect screen=new Rect();r.getBoundsInScreen(screen);
@@ -64,7 +84,7 @@ public final class UiDriver {
     static List<AccessibilityNodeInfo> walk(AccessibilityNodeInfo r){List<AccessibilityNodeInfo> out=new ArrayList<>();if(r==null)return out;ArrayDeque<AccessibilityNodeInfo> q=new ArrayDeque<>();q.add(r);while(!q.isEmpty()&&out.size()<1800){AccessibilityNodeInfo n=q.remove();out.add(n);for(int i=0;i<n.getChildCount();i++){AccessibilityNodeInfo c=n.getChild(i);if(c!=null)q.add(c);}}return out;}
     static boolean toggle(AccessibilityNodeInfo n){String c=String.valueOf(n.getClassName());return n.isCheckable()&&(c.endsWith("Switch")||c.endsWith("SwitchCompat")||c.endsWith("CheckBox")||c.endsWith("ToggleButton"));}
     boolean tap(List<String> names)throws Halt{
-        for(int page=0;page<6;page++){
+        for(int page=0;page<12;page++){
             AccessibilityNodeInfo r=root();List<AccessibilityNodeInfo> hits=new ArrayList<>();
             for(String name:names){
                 for(AccessibilityNodeInfo n:walk(r))if(n.isVisibleToUser()&&n.isEnabled()&&!n.isEditable()&&(name.startsWith("@id:")?name.substring(4).equals(n.getViewIdResourceName()):text(n).equals(name))){
@@ -89,7 +109,7 @@ public final class UiDriver {
     private boolean containsToggle(AccessibilityNodeInfo n){for(AccessibilityNodeInfo c:walk(n))if(toggle(c))return true;return false;}
     public Found find(String label)throws Halt{
         if(rule.notification())verifyChannel();
-        for(int page=0;page<7;page++){
+        for(int page=0;page<12;page++){
             AccessibilityNodeInfo r=root();List<Found> found=new ArrayList<>();Rect screen=new Rect();r.getBoundsInScreen(screen);
             for(AccessibilityNodeInfo n:walk(r))if(n.isVisibleToUser()&&matchesLabel(text(n),label)){
                 AccessibilityNodeInfo row=n;
@@ -100,7 +120,7 @@ public final class UiDriver {
                     if(controls.size()==1){AccessibilityNodeInfo control=controls.get(0);Rect cb=new Rect();control.getBoundsInScreen(cb);
                         if(!control.isEnabled()||!row.isEnabled()||!screen.contains(cb))throw new Halt("开关不可操作或未完整显示，未点击");
                         AccessibilityNodeInfo click=control.isClickable()?control:row.isClickable()?row:null;
-                        if(click!=null){if(found.stream().noneMatch(x->x.node.equals(control)))found.add(new Found(control,click));break;}
+                        if(click!=null){if(found.stream().noneMatch(x->x.node.equals(control)))found.add(new Found(control,click,text(n)));break;}
                     }
                 }
             }
@@ -109,8 +129,8 @@ public final class UiDriver {
             if(!scroll(false))return null;pause(300);
         }return null;
     }
-    boolean matchesLabel(String value,String label){return rule.notification()&&label.equals("允许通知")?Arrays.asList("允许通知","显示通知","Show notifications","Allow notifications").contains(value):value.equals(label);}
-    public void top()throws Halt{for(int i=0;i<7;i++){if(!scroll(true))break;pause(120);}}
+    boolean matchesLabel(String value,String label){return rule.labels(label).contains(value);}
+    public void top()throws Halt{for(int i=0;i<12;i++){if(!scroll(true))break;pause(120);}}
     boolean scroll(boolean back)throws Halt{
         AccessibilityNodeInfo r=root(),best=null;long area=0;
         for(AccessibilityNodeInfo n:walk(r))if(n.isScrollable()&&n.isVisibleToUser()){Rect b=new Rect();n.getBoundsInScreen(b);long a=(long)b.width()*b.height();if(a>area){best=n;area=a;}}

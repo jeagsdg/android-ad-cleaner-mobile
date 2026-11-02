@@ -1,8 +1,8 @@
 {
-  "date": "2026-11-02",
-  "version": "0.1.0-preview",
-  "apk_sha256": "dbda954611c47edd94fd2ba86297a91cb98bf2c9fbd646320b5a53c21bf9991d",
-  "apk_bytes": 48271,
+  "date": "2026-11-03",
+  "version": "0.2.0-preview",
+  "apk_sha256": "953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994",
+  "apk_bytes": 59316,
   "unit_tests": [
     {
       "name": "app.clearscreen.PolicyTest",
@@ -11,8 +11,14 @@
       "errors": "0"
     },
     {
+      "name": "app.clearscreen.RouteTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0"
+    },
+    {
       "name": "app.clearscreen.ScreenTest",
-      "tests": "4",
+      "tests": "6",
       "failures": "0",
       "errors": "0"
     },
@@ -24,7 +30,7 @@
     },
     {
       "name": "app.clearscreen.UiDriverTest",
-      "tests": "12",
+      "tests": "19",
       "failures": "0",
       "errors": "0"
     }
@@ -34,17 +40,69 @@
     "android": "14",
     "api": 34,
     "environment": "AOSP emulator + disposable fixture; not OEM devices",
-    "instrumentation_assertions": 34,
+    "instrumentation_assertions": 49,
     "result": "PASS",
-    "debug_apk_sha256": "41d8c6879273ff4d5a04c1b8f5bee92246819005c0f9128dcc1c70a952073b9b",
-    "visible_flow_release_sha256": "8d9459290d7abc8f4d030b6cb5909849fc33d55a9e9f12f9433aefdb36278c74"
+    "instrumentation_target": "final release APK, same certificate signed test APK",
+    "release_apk_sha256": "953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994",
+    "visible_flow_release_sha256": "953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994",
+    "upgrade_from": "0.1.0-preview; preserved ledger and bulk restored through visible UI"
   },
   "rules": {
-    "paths": 49,
-    "target_definitions": 88,
+    "semantic_rules": 75,
+    "routes": 106,
+    "automatic_rules": 70,
+    "automatic_target_definitions": 140,
+    "manual_target_definitions": 9,
     "upstream_recipes": 36,
     "upstream_commit": "b437125829b7e78589850f6a0e54f865d25a8e08"
   },
+  "priority_models": [
+    {
+      "name": "OPPO Find X8 Pro",
+      "models": [
+        "PKC110",
+        "PKC130"
+      ],
+      "recognition_test": "PASS",
+      "oem_validation": "pending"
+    },
+    {
+      "name": "荣耀 Magic8",
+      "models": [
+        "BKQ-AN00",
+        "BKQ-AN80"
+      ],
+      "recognition_test": "PASS",
+      "oem_validation": "pending"
+    },
+    {
+      "name": "荣耀 GT Pro",
+      "models": [
+        "PPG-AN00"
+      ],
+      "recognition_test": "PASS",
+      "oem_validation": "pending"
+    },
+    {
+      "name": "小米 10 至尊纪念版",
+      "models": [
+        "M2007J1SC",
+        "cas",
+        "Mi 10 Ultra"
+      ],
+      "recognition_test": "PASS",
+      "oem_validation": "pending"
+    },
+    {
+      "name": "iQOO Neo9",
+      "models": [
+        "V2338A",
+        "iQOO Neo9"
+      ],
+      "recognition_test": "PASS",
+      "oem_validation": "pending"
+    }
+  ],
   "lint": {
     "errors": 0,
     "warnings": [
@@ -53,20 +111,22 @@
   },
   "oem_validation": "pending",
   "source_sha256": {
-    "app/build.gradle": "1713da189fe1cbeddd8f9126ed261ea319b116113742200433a984cfc033e3ee",
-    "app/src/androidTest/java/app/clearscreen/DeviceChecks.java": "a325adda50fe462d9f0173ebe329984fab70be87ba4b6068ffad5f7b4abc9dff",
-    "app/src/main/AndroidManifest.xml": "9d80fdb4e07f7b2eb633353f51ac96ea8ac3156b8f1e3630ea1ddd4854b4a1f4",
+    "app/build.gradle": "db853fa0e065b217d4c8ebd3b7b16c1e21c99d22eddac83800c9766dea28424f",
+    "app/src/androidTest/java/app/clearscreen/DeviceChecks.java": "538936c2537e6e8af2a274b89c783402ff91bc03447d59c152d46ac8c2563b1a",
+    "app/src/main/AndroidManifest.xml": "83a161c1d3dde099058d0d07f54c8b6b4118644daee3925d1aadd307cc9aca5d",
+    "app/src/main/assets/device-profiles.json": "4ef264557e238a04c633c014288781f5bb3f91953c24cb2087341fbc0f6978f8",
     "app/src/main/assets/policy.json": "9ceea011df9a694361ce2963659f9b6e0b6fb06c9f15ddd15fc70624cf2335d5",
-    "app/src/main/assets/rules.json": "f8b37cba725f44614d7a55d0dece1dbca878d2fdbd7458057972aa761857660d",
+    "app/src/main/assets/rules.json": "d90da2a425559b115d9b5876cf1fade5e93a6f69a01452b682c084354b29c177",
     "app/src/main/assets/upstream-license.txt": "3d9eb567abded21047833b5a0b5acf827c504d15d191e1ca0129672a45f6a6f7",
     "app/src/main/assets/upstream-manifest.json": "54aaf16450bdc74fddd26a6ca1b7493db95b2bef2f5d13b1111bf6ef63828675",
     "app/src/main/java/app/clearscreen/ChannelObserver.java": "9bf0fd14440f41f7721013c1bbe9755502e610a2670d414ce7e47f03f7d9010a",
-    "app/src/main/java/app/clearscreen/CleanerService.java": "9a7eec5e99e8a2b09599baa7f8e2ccf5b6b847422e7bec0af151f7ce99646a1f",
-    "app/src/main/java/app/clearscreen/MainActivity.java": "7109e46e46986ee0a5d7f2c75609ef5d4fa0080bdc641a7554646e5cb27493ec",
+    "app/src/main/java/app/clearscreen/CleanerService.java": "9ac2c03ecdcf0e94a4c1023612bd988109e62291ee1dd56ba563036d3a606a6b",
+    "app/src/main/java/app/clearscreen/MainActivity.java": "94d9734ffd1a2fe7ef9d4a490cebae7a7fe6efe07a76717e2de328f7c77b1d65",
     "app/src/main/java/app/clearscreen/Policy.java": "72d1b5c7fa0b330b08bcbeacff4d49af4f4eeceea468edd6f4a05f5e22914b18",
-    "app/src/main/java/app/clearscreen/Rule.java": "1c9a2dbdb6297f8bf445bf850cc49bbbf9faa71957e6e8669b740b0fbf068e30",
-    "app/src/main/java/app/clearscreen/Store.java": "2274729a563f868c9f008fe962e9f5776baf13c85fec3815d8580531185d8081",
-    "app/src/main/java/app/clearscreen/UiDriver.java": "9f9b565a76421f77766fa7252f0a59741158da7663e9c53b01bd30f487281954",
+    "app/src/main/java/app/clearscreen/Route.java": "49fae6879fd6ec02f85dde8d83925076a72e10f6df252def087cd74cfa947880",
+    "app/src/main/java/app/clearscreen/Rule.java": "f95f23651db1bd72c7f82dbf354cbd9b5e6e431f5498e33bef70a867ee0a3daf",
+    "app/src/main/java/app/clearscreen/Store.java": "f1a9eaa7f575afb9a7ecc9152d96f63d409ef700a9f116a39dc7933050148381",
+    "app/src/main/java/app/clearscreen/UiDriver.java": "4d4b588bc35b66a7c4b3a6052745e4ab8d075e5008621bd216529265e48cca13",
     "app/src/main/res/drawable/ic_app.xml": "c689715bd1fe89654f886ab30121b62cc7d76208073151058ec685cc76c4b1a5",
     "app/src/main/res/values/strings.xml": "5b06ecf5e603d6e4a64c62f7dc9eb886040f336075853efa1d6429d0755b24a3",
     "app/src/main/res/values/styles.xml": "a8db530ebabadafaebff85b46cd7adbd72ed9909f2d33b4bea6fe283d7c1cd54",
@@ -74,12 +134,17 @@
     "app/src/main/res/xml/accessibility_service.xml": "811834d4b1fcbe79244a9bef50b4947cdd19ce37d3daa685368020d0c268061c",
     "app/src/main/res/xml/data_extraction_rules.xml": "8f25dbf991b7447d1e769dc3e4f54e67ac0464f260a78d2c3b32f9b7fe2c6dbc",
     "app/src/main/res/xml-v31/accessibility_service.xml": "b2835bca9c1f5004b3d700f5e8d665fac5da9fb073dc412e27a374b5e39aacb3",
-    "app/src/test/java/app/clearscreen/PolicyTest.java": "c99caf73fffc8af2b35fd880f942df61dfbba428cc7ed2d4b4ebe0c42ef3621f",
-    "app/src/test/java/app/clearscreen/ScreenTest.java": "702082a7a211eb2cdf7619fe677b9b55e1f2eb70611332dd3f8d5f357e102831",
+    "app/src/test/java/app/clearscreen/PolicyTest.java": "bbb340ad05c749c3bea49cd6250d79d2a6dc33bf24691f603b2ef954de60ea94",
+    "app/src/test/java/app/clearscreen/RouteTest.java": "4cb5933260a3959e70b66c13f11eca07543b3ea14fdc228c533985d1f2005df3",
+    "app/src/test/java/app/clearscreen/ScreenTest.java": "3da8aaf02f9e6eb5b54fc6b1340a1a5837e7f3589cc3e74807b4544278dce848",
     "app/src/test/java/app/clearscreen/StoreTest.java": "788499c13d5b7575861d7d9ea6859de56cdc79d4b3be2a5be22047aa5c228ae8",
-    "app/src/test/java/app/clearscreen/UiDriverTest.java": "ff02c1204f65290f0fba9faa821f9eea6e5f02112a6202dbe6664f1c75cdd7d4",
+    "app/src/test/java/app/clearscreen/UiDriverTest.java": "9ef8e400050cb26a4b1190688b3e9532398d2de90f039d0ae0ea470612872b75",
     "build.gradle": "0946be50adcc2fbba5ebea125bcedbc43bfee52cd25044bd1b4bbd2803df3f2e",
+    "fixture/src/main/AndroidManifest.xml": "a29a5ff7a2e81fb810fd632492bf16dae7eddddea0b11c8f5be4d56786bada1a",
+    "fixture/src/main/java/app/clearscreen/testfixture/ConfirmActivity.java": "08e9f51d1d679906f555b8479747ab807280fbf0e806f0eca14940c1d178cf75",
+    "fixture/src/main/java/app/clearscreen/testfixture/FixtureActivity.java": "d413a8c4f574d4c34ac4138608cea0d71bc158df210e7d3290fb1c2c87f92877",
+    "fixture/src/main/java/app/clearscreen/testfixture/PrivateSettingsActivity.java": "c37a909220a996e5b2debecbc4a2dfb74f49c9151706171906d461ac072b6a4d",
+    "fixture/src/main/java/app/clearscreen/testfixture/RouteActivity.java": "d7398d05b0386c023174648ea1aeb384533e11560ef9177036e129403b302f1b",
     "settings.gradle": "9c0ee7948046844977c6fa6486114887da13ac94e485fc3509b0b39f331cec19"
-  },
-  "final_delta": "UI only: record source labels, restored-state wording, flat ripple buttons; 23 unit tests rerun; core unchanged"
+  }
 }
