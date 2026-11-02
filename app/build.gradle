@@ -1,0 +1,26 @@
+plugins { id 'com.android.application' }
+def releaseProperties = new Properties()
+def releasePropertiesFile = rootProject.file('.local/signing.properties')
+if (releasePropertiesFile.exists()) releasePropertiesFile.withInputStream { releaseProperties.load(it) }
+android {
+    namespace 'app.clearscreen'
+    compileSdk 35
+    defaultConfig { applicationId 'app.clearscreen'; minSdk 26; targetSdk 35; versionCode 1; versionName '0.1.0-preview'; testInstrumentationRunner 'app.clearscreen.DeviceChecks' }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions { unitTests.includeAndroidResources = true }
+    signingConfigs {
+        if (releasePropertiesFile.exists()) localRelease {
+            storeFile file(releaseProperties.getProperty('storeFile'))
+            storePassword releaseProperties.getProperty('storePassword')
+            keyAlias releaseProperties.getProperty('keyAlias')
+            keyPassword releaseProperties.getProperty('keyPassword')
+        }
+    }
+    buildTypes { release { minifyEnabled false; if (releasePropertiesFile.exists()) signingConfig signingConfigs.localRelease } }
+}
+dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.12.2' }
+tasks.withType(Test).configureEach {
+    systemProperty 'clearscreen.artifacts', rootProject.file('artifacts').absolutePath
+    systemProperty 'file.encoding', 'UTF-8'
+    systemProperty 'robolectric.dependency.repo.url', 'https://maven.aliyun.com/repository/public'
+}

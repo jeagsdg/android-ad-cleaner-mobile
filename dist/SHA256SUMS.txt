@@ -1,0 +1,4 @@
+dbda954611c47edd94fd2ba86297a91cb98bf2c9fbd646320b5a53c21bf9991d  ClearScreen-0.1.0-preview.apk
+
+Signing certificate SHA-256: 40d36629d9780396e88d286fa6f43771f8d663fbc0b9e9f951ad84c5153ddf4e
+Release signing; APK v2; minSdk 26; targetSdk 35; no INTERNET permission; not debuggable.

@@ -1,0 +1,331 @@
+{
+  "commit": "b437125829b7e78589850f6a0e54f865d25a8e08",
+  "recipes": [
+    {
+      "file": "recipes/honor-PNM-AN10/recipe.py",
+      "build": "",
+      "models": [
+        "PNM-AN10"
+      ],
+      "sha256": "4e62bb643fe6d18703638ff6038a0aac2708dc44a0af7659cefbac53c127d8a8",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/honor-WKL-AN20/recipe.py",
+      "build": "WKL-AN20 11.0.0.111(SP7C00E110R101P7)",
+      "models": [
+        "WKL-AN20"
+      ],
+      "sha256": "f426ec799e3fa97db7436f410ee105f2aaecd1c63fa0d179fd4cd6949d1abc55",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/meizu-MEIZU 21 Pro/recipe.py",
+      "build": "Flyme 12.6.0.0A",
+      "models": [
+        "MEIZU 21 Pro"
+      ],
+      "sha256": "a4d66a003db50b850da6b11ee3c07a69a73cfc483c41a1a068f81ed997b7dc79",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oneplus-PHK110/recipe.py",
+      "build": "PHK110_16.0.5.1201",
+      "models": [
+        "PHK110"
+      ],
+      "sha256": "9600317e8549834a844082d6f9ce7e4aa35cf3ac52c2f59551e624429df8e1e6",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oneplus-PHK110/recipe_android15.py",
+      "build": "PHK110_15.0.0.601(CN01)",
+      "models": [
+        "PHK110"
+      ],
+      "sha256": "78f6c1edab99189204073920bf559a6adc1088945f94946ac96a8f122b8c94ca",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oneplus-PJA110/recipe.py",
+      "build": "PJA110_14.0.0.812",
+      "models": [
+        "PJA110"
+      ],
+      "sha256": "7f35e7d5bdd1654aa4b2194c43c9b04dc64eed7b3c88119756ed6b37195bd156",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oneplus-PKX110/recipe.py",
+      "build": "PKX110_16.0.10",
+      "models": [
+        "PKX110"
+      ],
+      "sha256": "40ba41a0346c5fa4341a8a11f3bda353136d7a25a0470306694c8a227f3ed5e3",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oneplus-PLR110/recipe.py",
+      "build": "PLR110_17.0.0.101",
+      "models": [
+        "PLR110"
+      ],
+      "sha256": "a4b7584b40d3a121af172ea1d51094c6c60c67fb2c33021cb328d4f0b07b72fb",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oppo-PKH110/recipe.py",
+      "build": "PKH110_17.0.0.103",
+      "models": [
+        "PKH110"
+      ],
+      "sha256": "41aef3bb09d6df153e093e72353ca52f7bcfc56b9209ae5ed93360234dbaebb6",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oppo-PKT110/recipe.py",
+      "build": "PKT110_17.0.0.102(CN01)",
+      "models": [
+        "PKT110"
+      ],
+      "sha256": "f2b59edc9455a65260e1d0aed8ac12f404f84aae58aa18a5e2c092dcd7ba9a88",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oppo-PLG110/recipe.py",
+      "build": "PLG110_16.0.10",
+      "models": [
+        "PLG110"
+      ],
+      "sha256": "2d59df088a8bf0a175150bc808cb6a6bb70271b82d3137c9e41cb3a7ee0312fc",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oppo-PLP120/recipe.py",
+      "build": "PLP120_16.0.9",
+      "models": [
+        "PLP120"
+      ],
+      "sha256": "aa710d3622aa3680f7f5564474fb42f756c522457ffde60f6d7b8d9f1919c3de",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oppo-PMA110/recipe.py",
+      "build": "PMA110_17.0.0.106(CN01)",
+      "models": [
+        "PMA110"
+      ],
+      "sha256": "12dafb44df2d7f011395271a40410269c0b1672782d9ca171a85c99d68e99d71",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/oppo-PMX110/recipe.py",
+      "build": "PMX110_17.0.0",
+      "models": [
+        "PMX110"
+      ],
+      "sha256": "51f0ca80b768a0941535c4d5e3ae7790ae3ad2da5ce67495893e33978c15123b",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/realme-RMX3700/recipe.py",
+      "build": "RMX3700_16.0.5.1300",
+      "models": [
+        "RMX3700"
+      ],
+      "sha256": "5e62ba89222d36ea200e08b279250f20fe7e041b12967c6b8070ab74e3433be1",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/redmi-23049RAD8C/recipe.py",
+      "build": "OS3.0",
+      "models": [
+        "23049RAD8C"
+      ],
+      "sha256": "a0ca1b50133809ffb01b07c3670dcb1a9e412fdaa7c3d70aa92e753de364b666",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/redmi-23113RKC6C/recipe.py",
+      "build": "OS3.0.307.0",
+      "models": [
+        "23113RKC6C"
+      ],
+      "sha256": "2fc0026d5117448fe0f1b18f2f2593e0d5fec0a85fd10837af58c5e7819063e5",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/redmi-23117RK66C/recipe.py",
+      "build": "OS3.0.306.0.WNMCNXM",
+      "models": [
+        "23117RK66C"
+      ],
+      "sha256": "6778c3758b7ed61726bbfafc264408e267d037154adbe8b5779e488db8daee8f",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/redmi-24094RAD4C/recipe.py",
+      "build": "OS3.0.306.0",
+      "models": [
+        "24094RAD4C"
+      ],
+      "sha256": "bca66f4c8a331f42ed97ba1488d112f39939cbb47efabf478908e94d08af2ec9",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/redmi-24122RKC7C/recipe.py",
+      "build": "OS3.0.304.0",
+      "models": [
+        "24122RKC7C"
+      ],
+      "sha256": "6370acde337ab4cfe15736f856b6f77241164205c4f3bdce69ef2c03b89782ab",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/redmi-25060RK16C/recipe.py",
+      "build": "BP2A",
+      "models": [
+        "25060RK16C"
+      ],
+      "sha256": "ba0624c6673b4421da9a8d1732ec2eceff9f750883fe3bf7c5b9027ba5b4479c",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V1986A/recipe.py",
+      "build": "PD1986_A_8",
+      "models": [
+        "V1986A"
+      ],
+      "sha256": "499bb74d77c808530453955980ba4b04583569fc84059ee888292037df0949fc",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V2324HA/recipe.py",
+      "build": "PD2324J_A_16",
+      "models": [
+        "V2324HA"
+      ],
+      "sha256": "dd7e83c10c6f9474bf67dd76d9ab7edd5ae7dcfe7e509d41b957c974af7ab9e4",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V2361A/recipe.py",
+      "build": "PD2361B_A_16",
+      "models": [
+        "V2361A"
+      ],
+      "sha256": "5898869cdeac0a9377846957f331c9f7d6eb3acc7f0624976a3fc4cff3248d95",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V2417A/recipe.py",
+      "build": "PD2417D_A_16.2.14.1.W10",
+      "models": [
+        "V2417A"
+      ],
+      "sha256": "7b84d4806371386950cf913cbc702f928de8fd3f5fce59b0f1f15296e5ca8060",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V2545A/recipe.py",
+      "build": "PD2545B_A_16",
+      "models": [
+        "V2545A"
+      ],
+      "sha256": "dff78c32c78ee573edf5cde8304c6177634eb903e149bea65d02690c3a1253ca",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V2547A/recipe.py",
+      "build": "PD2547B_A_17.1.10.2",
+      "models": [
+        "V2547A"
+      ],
+      "sha256": "493ebc1a5a32bfe08310dfa1641a6afbdf4952e169ca28ca937e1aa25e64425f",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/vivo-V2547DA/recipe.py",
+      "build": "PD2547D_A_16",
+      "models": [
+        "V2547DA"
+      ],
+      "sha256": "353a4e7007c9203c27a77f2e3cb2472f663b12e949c6f60b298e2ff1b328f38d",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-2304FPN6DC/recipe.py",
+      "build": "OS3.0.308",
+      "models": [
+        "2304FPN6DC",
+        "23116PN5BC"
+      ],
+      "sha256": "65412371dd20aa6673ee975e0fb141e6d7e141d76dff54517569939f0d3b8a85",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-24090RA29C/recipe.py",
+      "build": "OS3.0.309.0",
+      "models": [
+        "24090RA29C"
+      ],
+      "sha256": "6765b0a86b7155014ce39cf20e329ddbcaf31db8bdee125e46027ce4ebd66628",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-2410CRP4CC/recipe.py",
+      "build": "OS2.0.208",
+      "models": [
+        "2410CRP4CC"
+      ],
+      "sha256": "ec06c64e240fd7db57195896205b4e2f3f4d028b9485a8316451a12c39cecaae",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-24129PN74C/recipe.py",
+      "build": "BP2A.250605.031",
+      "models": [
+        "24129PN74C"
+      ],
+      "sha256": "b313b73dc01a683f87c344eb18558ffeea6ea2e786dd361570dd91306fce5ab2",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-24129PN74C/recipe_os4.py",
+      "build": "OS4.0",
+      "models": [
+        "24129PN74C"
+      ],
+      "sha256": "f78d1a43d09affe10f09411200d837f9df2fbca1803d6a7d79da16458b9914a5",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-25102RKBEC/recipe.py",
+      "build": "OS4.0",
+      "models": [
+        "25102RKBEC"
+      ],
+      "sha256": "0fc0a04ce24a645aa459a6655de737c556b991997e9e50650ea24f588633dd41",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-2512BPNDAC/recipe.py",
+      "build": "OS4.0.5.0",
+      "models": [
+        "2512BPNDAC"
+      ],
+      "sha256": "14167ad0982f7bd5d4670bb9726ee02144bc536806709222690c91c637310b17",
+      "status": "reference_only"
+    },
+    {
+      "file": "recipes/xiaomi-M154FF/recipe.py",
+      "build": "OS4.0",
+      "models": [
+        "M154FF",
+        "2608BPX34C"
+      ],
+      "sha256": "3e8e007cd210012a2cb0820e277106c7b14f3c01b448846d4366ca2257c98246",
+      "status": "reference_only"
+    }
+  ]
+}

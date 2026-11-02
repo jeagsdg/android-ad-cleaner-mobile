@@ -1,0 +1,1 @@
+<resources><string name="service_description">仅在你发起检查、清理或恢复时读取目标设置页面并操作明确的开关。不读取聊天正文，不截图，不上传数据。可随时用浮条停止；完成后可关闭此服务。</string></resources>

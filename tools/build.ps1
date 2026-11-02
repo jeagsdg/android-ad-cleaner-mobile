@@ -1,0 +1,35 @@
+param([switch]$Offline, [switch]$UseExistingCache, [switch]$Release, [string]$JavaHome)
+$ErrorActionPreference = 'Stop'
+$projectRoot = Split-Path -Parent $PSScriptRoot
+if ($JavaHome) { $env:JAVA_HOME = $JavaHome }
+if (-not $env:JAVA_HOME -or -not (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'bin/javac.exe'))) {
+    throw '请设置 JAVA_HOME 为 JDK 17 或 21，或传入 -JavaHome。'
+}
+Push-Location -LiteralPath $projectRoot
+try {
+    if ($UseExistingCache) { python tools/cache_repository.py; if ($LASTEXITCODE) { throw '缓存映射失败' } }
+    # Gradle worker classpaths can fail on non-ASCII Windows paths. Keep the same checkout.
+    if ($projectRoot -match '[^\x00-\x7F]') {
+        $hasher = [Security.Cryptography.SHA256]::Create()
+        $hash = [BitConverter]::ToString($hasher.ComputeHash([Text.Encoding]::UTF8.GetBytes($projectRoot))).Replace('-', '').Substring(0,10)
+        $hasher.Dispose()
+        $aliasPath = Join-Path $env:TEMP ('clearscreen-' + $hash)
+        if (Test-Path -LiteralPath $aliasPath) {
+            $existing = Get-Item -LiteralPath $aliasPath
+            if ($existing.LinkType -ne 'Junction' -or $existing.Target -ne $projectRoot) { throw '临时构建别名已被其他路径占用，未更改。' }
+        } else { New-Item -ItemType Junction -Path $aliasPath -Target $projectRoot | Out-Null }
+        Set-Location -LiteralPath $aliasPath
+    }
+    $variant = if ($Release) { 'release' } else { 'debug' }
+    if ($Release -and -not (Test-Path -LiteralPath '.local/signing.properties')) { throw '发布构建需要本地签名配置，详见 README。' }
+    $assemble = if ($Release) { ':app:assembleRelease' } else { ':app:assembleDebug' }
+    $buildArgs = @('--no-daemon',':app:testDebugUnitTest',':app:lintDebug',$assemble,'--console=plain')
+    if ($Offline) { $buildArgs += '--offline' }
+    & .\gradlew.bat @buildArgs
+    if ($LASTEXITCODE) { throw '构建或检查失败；未更新交付 APK。' }
+    New-Item -ItemType Directory -Path (Join-Path $projectRoot 'dist') -Force | Out-Null
+    $name = if ($Release) { 'ClearScreen-0.1.0-preview.apk' } else { 'ClearScreen-0.1.0-debug.apk' }
+    $apk = Join-Path $projectRoot ('dist/' + $name)
+    Copy-Item -LiteralPath ('app/build/outputs/apk/'+$variant+'/app-'+$variant+'.apk') -Destination $apk -Force
+    Get-FileHash -LiteralPath $apk -Algorithm SHA256
+} finally { Pop-Location }

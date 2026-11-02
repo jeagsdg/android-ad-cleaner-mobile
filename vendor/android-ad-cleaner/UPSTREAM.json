@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/rddmwmddr/android-ad-cleaner",
+  "commit": "b437125829b7e78589850f6a0e54f865d25a8e08",
+  "license": "MIT",
+  "note": "只读源码快照。手机端运行原生迁移规则；此目录中的 Python 脚本不在手机上执行。"
+}
