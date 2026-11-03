@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application android:label="净屏测试夹具" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:allowBackup="false">
+        <activity android:name=".DelayedActivity" android:exported="true"/>
+        <activity android:name=".SplashActivity" android:exported="true"/>
         <activity android:name=".PrivateSettingsActivity" android:exported="false"/>
         <activity android:name=".RouteActivity" android:exported="true"/>
         <activity android:name=".ConfirmActivity" android:exported="true"/>

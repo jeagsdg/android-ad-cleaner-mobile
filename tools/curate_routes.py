@@ -166,6 +166,23 @@ add('h-music-ads', '音乐个性化广告', 'com.hihonor.cloudmusic', music_path
 add('h-reader-manual', '阅读个性化广告', 'com.hihonor.dz.reader', steps('我的', '更多设置', '广告推荐服务'), ['个性化广告'], HO, ho,
     manual=True, explanation='此页使用自绘开关，无法可靠读取状态。请手动关闭个性化广告，保留接收新通知与阅读功能。')
 
+# Newer pinned upstream variants. Explicit labels only; unnamed toggles are excluded.
+op_new = 'recipes/oppo-PLP120/recipe.py'
+vi_new = 'recipes/vivo-V2547DA/recipe_android17.py'
+by_id['op-browser']['aliases'] = {'摇一摇广告': ['摇一摇']}
+by_id['op-browser']['routes'].append(route('com.heytap.browser', steps(['我的', '菜单', '更多'], '设置', '隐私', '广告管理'), source=op_new))
+add('op-theme-splash', '主题商店开屏广告', 'com.heytap.themestore', steps('我的', '设置', '服务管理', '消息与广告'), ['开屏广告'], OP, op_new)
+# Content-source switches and generic search suggestions are not unambiguous advertising.
+by_id['op-search-source']['targets'] = ['个性化推荐', '精选资讯']
+for id in ['v-store', 'v-store-promo']:
+    r = by_id[id]
+    extras = [route(r['package'], r['path'][2:], '.ui.menu.AppstoreSettingsActivity', vi_new)]
+    if id == 'v-store-promo': extras.append(route(r['package'], r['path'], source='recipes/vivo-V1986A/recipe.py'))
+    variants(id, *extras)
+for id in ['v-browser-home', 'v-browser-web', 'v-browser-more', 'v-browser-privacy']:
+    r = by_id[id]
+    variants(id, route(r['package'], steps('我的', '设置') + r['path'][2:], source='recipes/vivo-V2417A/recipe.py'))
+
 # Route provenance remains public and static; package visibility is scoped to bundled targets.
 packages = {'com.android.settings'}
 for r in rules:

@@ -1,5 +1,6 @@
 dbda954611c47edd94fd2ba86297a91cb98bf2c9fbd646320b5a53c21bf9991d  ClearScreen-0.1.0-preview.apk
 953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994  ClearScreen-0.2.0-preview.apk
+939d9be2b3f695ed6fcc41a74f2c703df83e698c76c7b3d2695280174bf00258  ClearScreen-0.3.0-preview.apk
 
 Release certificate SHA-256: 40d36629d9780396e88d286fa6f43771f8d663fbc0b9e9f951ad84c5153ddf4e
 APK signature v2; RSA 3072; no debug flag.

@@ -15,7 +15,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class) @Config(sdk=28)
 public class UiDriverTest {
-    public static class TestService extends AccessibilityService {AccessibilityNodeInfo root;java.util.function.Consumer<android.content.Intent> launch;public AccessibilityNodeInfo getRootInActiveWindow(){return root;}public void onAccessibilityEvent(AccessibilityEvent e){}public void onInterrupt(){}@Override public void startActivity(android.content.Intent intent){if(launch!=null)launch.accept(intent);else super.startActivity(intent);} }
+    public static class TestService extends AccessibilityService {volatile AccessibilityNodeInfo root;java.util.function.Consumer<android.content.Intent> launch;public AccessibilityNodeInfo getRootInActiveWindow(){return root;}public void onAccessibilityEvent(AccessibilityEvent e){}public void onInterrupt(){}@Override public void startActivity(android.content.Intent intent){if(launch!=null)launch.accept(intent);else super.startActivity(intent);} }
     TestService service;Rule rule;UiDriver driver;
     @Before public void setup()throws Exception{service=Robolectric.buildService(TestService.class).create().get();rule=new Rule(new JSONObject("{\"id\":\"fixture\",\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"]}"));service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));driver=new UiDriver(service,()->false);driver.current(rule);}
     AccessibilityNodeInfo node(String label,String cls,Rect b){AccessibilityNodeInfo n=AccessibilityNodeInfo.obtain();n.setPackageName("com.android.settings");n.setText(label);n.setClassName(cls);n.setVisibleToUser(true);n.setEnabled(true);n.setBoundsInScreen(b);return n;}
@@ -79,5 +79,22 @@ public class UiDriverTest {
     @Test public void disabledChildDoesNotHideOtherValidTargetsOnPage()throws Exception{
         row("摇一摇广告",100,true).setEnabled(false);row("开屏广告",220,true);service.launch=intent->{};
         Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"activity\":\".Settings\",\"targets\":[\"摇一摇广告\",\"开屏广告\"]}"));driver.open(r);assertNotNull(driver.find("开屏广告"));
+    }
+    @Test public void stableWaitDoesNotAcceptLoadingPageOrClickItsControls()throws Exception{
+        UiDriver.PageStamp previous=new UiDriver.PageStamp(service.root);
+        AccessibilityNodeInfo loading=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));
+        shadowOf(loading).addChild(node("正在加载","android.widget.ProgressBar",new Rect(0,200,700,300)));
+        service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));AccessibilityNodeInfo toggle=row("个性化推荐",100,true);AccessibilityNodeInfo ready=service.root;service.root=loading;
+        Thread delayed=new Thread(()->{try{Thread.sleep(500);}catch(InterruptedException e){Thread.currentThread().interrupt();}service.root=ready;});
+        delayed.start();long start=System.nanoTime();driver.awaitPage(previous,java.util.Collections.singletonList("个性化推荐"),2500);delayed.join();
+        assertTrue(System.nanoTime()-start>=750_000_000L);assertTrue(toggle.isChecked());assertTrue(shadowOf(toggle).getPerformedActions().isEmpty());
+    }
+    @Test public void waitCapturesSourceBeforeItMutatesAndStopsOnUnrelatedApp()throws Exception{
+        UiDriver.PageStamp previous=new UiDriver.PageStamp(service.root);service.root.setPackageName("com.example.chat");
+        try{driver.awaitPage(previous,java.util.Collections.emptyList(),300);fail();}catch(UiDriver.Halt e){assertTrue(e.terminal);assertFalse(e.retryable);}
+    }
+    @Test public void ambiguousOnlyPageDoesNotScheduleAutomaticRetry()throws Exception{
+        row("个性化推荐",100,true);row("个性化推荐",220,true);service.launch=intent->{};
+        try{driver.open(rule);fail();}catch(UiDriver.Halt e){assertFalse(e.retryable);}
     }
 }

@@ -1,0 +1,130 @@
+package app.clearscreen;
+
+import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
+import org.json.JSONException;
+import org.json.JSONObject;
+import java.util.Locale;
+
+/** Read-only permission checks and user-driven navigation. Never grants permissions. */
+final class PermissionAccess {
+    enum State { OFF, DISCONNECTED, READY, UNKNOWN }
+    enum Destination { DETAILS, ACCESSIBILITY, SETTINGS, UNAVAILABLE }
+    interface Launcher { void start(Intent intent); }
+
+    private PermissionAccess() {}
+
+    static ComponentName component(Context context) {
+        return new ComponentName(context, CleanerService.class);
+    }
+
+    static boolean containsService(String enabled, ComponentName expected) {
+        if (enabled == null) return false;
+        for (String item : enabled.split(":")) {
+            if (expected.equals(ComponentName.unflattenFromString(item))) return true;
+        }
+        return false;
+    }
+
+    static State state(Context context) {
+        if (CleanerService.get() != null) return State.READY;
+        try {
+            return containsService(Settings.Secure.getString(context.getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES), component(context))
+                    ? State.DISCONNECTED : State.OFF;
+        } catch (SecurityException e) {
+            return State.UNKNOWN;
+        }
+    }
+
+    static String title(State state) {
+        switch (state) {
+            case READY: return "自动操作已就绪";
+            case DISCONNECTED: return "开关已开启，服务未连接";
+            case UNKNOWN: return "暂时无法读取授权状态";
+            default: return "需要自动操作权限";
+        }
+    }
+
+    static String hint(State state) {
+        switch (state) {
+            case READY: return "开始前可查看并调整本次清理范围。";
+            case DISCONNECTED: return "请稍等系统连接；若持续不可用，可在权限帮助中排查。";
+            case UNKNOWN: return "请到系统无障碍设置中查看净屏服务，返回后会重新检查。";
+            default: return "首次清理前，需在系统设置中开启净屏服务。";
+        }
+    }
+
+    static Destination openAccessibility(Context context, Launcher launcher) {
+        // AOSP restricts this details action to system/installer callers. Some OEMs expose it.
+        // Permission denial is expected: fall back to the public list, without private fragments.
+        Intent details = new Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
+                .setPackage("com.android.settings")
+                .putExtra(Intent.EXTRA_COMPONENT_NAME, component(context));
+        if (tryStart(launcher, details)) return Destination.DETAILS;
+        Intent list = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+        // A best-effort row highlight understood by AOSP Settings; OEMs may ignore it.
+        String key = component(context).flattenToString();
+        Bundle arguments = new Bundle();
+        arguments.putString(":settings:fragment_args_key", key);
+        list.putExtra(":settings:fragment_args_key", key);
+        list.putExtra(":settings:show_fragment_args", arguments);
+        if (tryStart(launcher, list)) return Destination.ACCESSIBILITY;
+        if (tryStart(launcher, new Intent(Settings.ACTION_SETTINGS))) return Destination.SETTINGS;
+        return Destination.UNAVAILABLE;
+    }
+
+    static boolean openAppInfo(Context context, Launcher launcher) {
+        return tryStart(launcher, new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.getPackageName(), null)));
+    }
+
+    static boolean openNotificationAccess(Launcher launcher) {
+        return tryStart(launcher, new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
+    }
+
+    private static boolean tryStart(Launcher launcher, Intent intent) {
+        try { launcher.start(intent); return true; }
+        catch (ActivityNotFoundException | SecurityException e) { return false; }
+    }
+
+    static String family() {
+        String brand = (Build.MANUFACTURER + " " + Build.BRAND).toLowerCase(Locale.ROOT);
+        if (brand.matches(".*(oppo|oneplus|realme).*")) return "coloros";
+        if (brand.matches(".*(xiaomi|redmi|poco).*")) return "xiaomi";
+        return "generic";
+    }
+
+    static String restrictedHelp() {
+        String base = "如果系统明确提示「受限制的设置」或「系统已拒绝向此应用授予访问权限」，可打开下方应用详情，查看是否提供「允许受限制的设置」。只有你确认信任净屏后才允许。\n\n";
+        if (family().equals("coloros")) return base
+                + "ColorOS 16 的系统帮助给出的路径是：应用详情 → 权限管理 → 右上角 ⋮ → 解除所有授权限制。菜单在「权限管理」里面，并不在应用详情首页。解除后还要返回无障碍页面开启净屏。系统提示解除操作不可撤销，请先确认信任此应用。\n\n若「权限管理」灰显并写着「未请求任何权限」，请查看下方说明。其他版本请以本机系统帮助为准。";
+        if (family().equals("xiaomi")) return base
+                + "部分 MIUI / HyperOS 版本将入口放在「高级设置」中，不一定在右上角。若没有此入口，请查看下面的「没有解除入口」。";
+        return base + "不同系统的入口和名称可能不同；有的位于右上角菜单，有的在「高级设置」，也可能完全不提供。未找到时请查看下面的「没有解除入口」。";
+    }
+
+    static JSONObject diagnostics(Context context) {
+        JSONObject out = new JSONObject();
+        try {
+            out.put("accessibilityState", state(context).name());
+            out.put("serviceComponent", component(context).flattenToString());
+            // An OFF service does not prove restricted settings or a dangerous-app verdict.
+            out.put("restrictionStatus", "not_determined");
+            String installer;
+            try {
+                installer = Build.VERSION.SDK_INT >= 30
+                        ? context.getPackageManager().getInstallSourceInfo(context.getPackageName()).getInstallingPackageName()
+                        : context.getPackageManager().getInstallerPackageName(context.getPackageName());
+            } catch (Exception e) { installer = null; }
+            out.put("installingPackage", installer == null ? JSONObject.NULL : installer);
+        } catch (JSONException e) { throw new IllegalStateException(e); }
+        return out;
+    }
+}

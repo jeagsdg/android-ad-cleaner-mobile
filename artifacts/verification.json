@@ -1,60 +1,97 @@
 {
   "date": "2026-11-03",
-  "version": "0.2.0-preview",
-  "apk_sha256": "953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994",
-  "apk_bytes": 59316,
+  "version": "0.3.0-preview",
+  "version_code": 4,
+  "apk_sha256": "939d9be2b3f695ed6fcc41a74f2c703df83e698c76c7b3d2695280174bf00258",
+  "apk_bytes": 1668320,
   "unit_tests": [
     {
+      "name": "app.clearscreen.CleanRetryTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "app.clearscreen.DnsTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "app.clearscreen.PermissionAccessTest",
+      "tests": 20,
+      "failures": 0,
+      "errors": 0
+    },
+    {
       "name": "app.clearscreen.PolicyTest",
-      "tests": "4",
-      "failures": "0",
-      "errors": "0"
+      "tests": 4,
+      "failures": 0,
+      "errors": 0
     },
     {
       "name": "app.clearscreen.RouteTest",
-      "tests": "7",
-      "failures": "0",
-      "errors": "0"
+      "tests": 7,
+      "failures": 0,
+      "errors": 0
     },
     {
       "name": "app.clearscreen.ScreenTest",
-      "tests": "6",
-      "failures": "0",
-      "errors": "0"
+      "tests": 7,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "app.clearscreen.SplashTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0
     },
     {
       "name": "app.clearscreen.StoreTest",
-      "tests": "3",
-      "failures": "0",
-      "errors": "0"
+      "tests": 3,
+      "failures": 0,
+      "errors": 0
     },
     {
       "name": "app.clearscreen.UiDriverTest",
-      "tests": "19",
-      "failures": "0",
-      "errors": "0"
+      "tests": 22,
+      "failures": 0,
+      "errors": 0
     }
   ],
+  "unit_test_total": 84,
   "policy_parity_cases": 102,
+  "lint": {
+    "errors": 0,
+    "warnings": [
+      "OldTargetApi: targetSdk 35; newer OEM platforms unverified"
+    ]
+  },
   "emulator": {
     "android": "14",
     "api": 34,
-    "environment": "AOSP emulator + disposable fixture; not OEM devices",
-    "instrumentation_assertions": 49,
+    "environment": "AOSP x86_64 emulator + disposable fixture; not OEM devices",
+    "core_assertions": 59,
+    "network_assertions": 16,
     "result": "PASS",
-    "instrumentation_target": "final release APK, same certificate signed test APK",
-    "release_apk_sha256": "953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994",
-    "visible_flow_release_sha256": "953f4fd4bdbf26f000559f0b452fca9f57ae7c530fbe9f881a54c4c72d432994",
-    "upgrade_from": "0.1.0-preview; preserved ledger and bulk restored through visible UI"
+    "core_test_apk_sha256": "9d0d97f391652fd07b5a43941e591fba154c68d11257deb0b6023f87341ba056",
+    "note": "Core and network suites on candidate5; candidate6 only guards the optional notification settings launch. Engines unchanged. Final permission UI and installed hash in emulator/v03-验收记录.md.",
+    "final_permission_ui": "PASS: notification access page and help to network navigation",
+    "installed_final_apk_sha256": "939d9be2b3f695ed6fcc41a74f2c703df83e698c76c7b3d2695280174bf00258",
+    "oem_denial_ui": "unverified; simulated launch failure covered by unit tests"
   },
   "rules": {
     "semantic_rules": 75,
-    "routes": 106,
-    "automatic_rules": 70,
-    "automatic_target_definitions": 140,
+    "routes": 112,
+    "automatic_target_definitions": 139,
     "manual_target_definitions": 9,
-    "upstream_recipes": 36,
-    "upstream_commit": "b437125829b7e78589850f6a0e54f865d25a8e08"
+    "upstream_recipes": 37,
+    "upstream_commit": "19bb74fbefece01763f713c3c26220f63659ed87",
+    "dns_hosts": 235866,
+    "splash_app_selectors": 21,
+    "splash_candidate_apps": 18,
+    "splash_sdk_resource_names": 2
   },
   "priority_models": [
     {
@@ -103,48 +140,70 @@
       "oem_validation": "pending"
     }
   ],
-  "lint": {
-    "errors": 0,
-    "warnings": [
-      "OldTargetApi: targetSdk 35; newer platform compatibility unverified"
-    ]
-  },
   "oem_validation": "pending",
+  "tip_image": {
+    "sha256": "5dfc946feeca2ae7956bc4e6322b331a47e12d1ad6d511c1a4f2caea9bc33e77",
+    "display": "PASS",
+    "saved_bytes": "PASS on API34",
+    "wechat_recognition_and_payment": "unverified"
+  },
   "source_sha256": {
-    "app/build.gradle": "db853fa0e065b217d4c8ebd3b7b16c1e21c99d22eddac83800c9766dea28424f",
-    "app/src/androidTest/java/app/clearscreen/DeviceChecks.java": "538936c2537e6e8af2a274b89c783402ff91bc03447d59c152d46ac8c2563b1a",
-    "app/src/main/AndroidManifest.xml": "83a161c1d3dde099058d0d07f54c8b6b4118644daee3925d1aadd307cc9aca5d",
+    "app/build.gradle": "bed8becf567c12d1512e221e7de0a70ed398d060f794c436c821012d5d3851bc",
+    "app/src/androidTest/java/app/clearscreen/DeviceChecks.java": "d0ea1bce5a43eefe35befe6df4c84bbc635e0bf78dd1fad4341a903b413cff19",
+    "app/src/androidTest/java/app/clearscreen/NetworkChecks.java": "3af2234f1b0d5e0e43caddf7e4e34f4724b01292b55028cad92f8f246172fb11",
+    "app/src/main/AndroidManifest.xml": "e011d2f776347b83bff42be9aba47b803192ab9b4387af5b9d486077ec24781c",
     "app/src/main/assets/device-profiles.json": "4ef264557e238a04c633c014288781f5bb3f91953c24cb2087341fbc0f6978f8",
-    "app/src/main/assets/policy.json": "9ceea011df9a694361ce2963659f9b6e0b6fb06c9f15ddd15fc70624cf2335d5",
-    "app/src/main/assets/rules.json": "d90da2a425559b115d9b5876cf1fade5e93a6f69a01452b682c084354b29c177",
+    "app/src/main/assets/dns-hosts.bin": "f7bfaf3cf288c234278c819f7890683c68b56e7982c9ab693b9398a474a1a5c3",
+    "app/src/main/assets/dns-license.txt": "6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e",
+    "app/src/main/assets/dns-source.json": "7dfffddcfd01abfa85c70c27444100b3654e37a359c3d1789fba36a9c673efdb",
+    "app/src/main/assets/policy.json": "01322ec0ae493c0fd0256be977328235e645803a436e51f20a50fe0a85538c1a",
+    "app/src/main/assets/rules.json": "cffc65e379235be24e803e8921c02eb3063fb7813342fc440b87e5c6afdc1af3",
+    "app/src/main/assets/splash-license.txt": "3771ee111d68071b0e2994817cff88599d59d7272e75ea026f87af810160340e",
+    "app/src/main/assets/splash-rules.json": "114a63c0515513784f18f9adf201686a3bf17021eb0300e2b5ab8e9d667779d2",
+    "app/src/main/assets/support-code.jpg": "5dfc946feeca2ae7956bc4e6322b331a47e12d1ad6d511c1a4f2caea9bc33e77",
     "app/src/main/assets/upstream-license.txt": "3d9eb567abded21047833b5a0b5acf827c504d15d191e1ca0129672a45f6a6f7",
-    "app/src/main/assets/upstream-manifest.json": "54aaf16450bdc74fddd26a6ca1b7493db95b2bef2f5d13b1111bf6ef63828675",
+    "app/src/main/assets/upstream-manifest.json": "2cc516de0dec6821f275d2719a03364a3d297b978a72df0e2ddb00f48d7e733e",
+    "app/src/main/java/app/clearscreen/AdFilterService.java": "f1fa8849c36523d77a820c167b27230fb3c67a12c58baa8f1fcb0f36089cb1cb",
     "app/src/main/java/app/clearscreen/ChannelObserver.java": "9bf0fd14440f41f7721013c1bbe9755502e610a2670d414ce7e47f03f7d9010a",
-    "app/src/main/java/app/clearscreen/CleanerService.java": "9ac2c03ecdcf0e94a4c1023612bd988109e62291ee1dd56ba563036d3a606a6b",
-    "app/src/main/java/app/clearscreen/MainActivity.java": "94d9734ffd1a2fe7ef9d4a490cebae7a7fe6efe07a76717e2de328f7c77b1d65",
-    "app/src/main/java/app/clearscreen/Policy.java": "72d1b5c7fa0b330b08bcbeacff4d49af4f4eeceea468edd6f4a05f5e22914b18",
+    "app/src/main/java/app/clearscreen/CleanerService.java": "8146d2c361fffd6145fa8560b7d20c0d9d2e2ff022fc8421b29acba3fbd1dc24",
+    "app/src/main/java/app/clearscreen/DnsTcp.java": "cf8ba2b6ab2dc237900f196b7735e04e79c39f6d2e011f14bc3f5a682f11f638",
+    "app/src/main/java/app/clearscreen/DnsWire.java": "dd7178e32c8ea5549694e1a847d8fb5886073d9e0a6fc00ef4ff2a5870cc2217",
+    "app/src/main/java/app/clearscreen/DomainRules.java": "e375db3e3d1a720276d368a6ed11d87f2522d3706cd9b24cb3d6cc4853deb79d",
+    "app/src/main/java/app/clearscreen/FilterStore.java": "5ceec2c1f503c08a416d9af3b38c9679b8c9ff8a6af0fc9bc674964a3bf8d834",
+    "app/src/main/java/app/clearscreen/MainActivity.java": "5603f06f82db7b68cb8a16a5794823c861e3f11b73920434258bfe886244effd",
+    "app/src/main/java/app/clearscreen/PermissionAccess.java": "40784d908330831804809f625b2d5abff769bbbe2b59beef699fc65b216fdd24",
+    "app/src/main/java/app/clearscreen/Policy.java": "97ef6f676537159c4d44e3a94f61b004f9f548d025b125352d629492752b7e7b",
     "app/src/main/java/app/clearscreen/Route.java": "49fae6879fd6ec02f85dde8d83925076a72e10f6df252def087cd74cfa947880",
-    "app/src/main/java/app/clearscreen/Rule.java": "f95f23651db1bd72c7f82dbf354cbd9b5e6e431f5498e33bef70a867ee0a3daf",
-    "app/src/main/java/app/clearscreen/Store.java": "f1a9eaa7f575afb9a7ecc9152d96f63d409ef700a9f116a39dc7933050148381",
-    "app/src/main/java/app/clearscreen/UiDriver.java": "4d4b588bc35b66a7c4b3a6052745e4ab8d075e5008621bd216529265e48cca13",
+    "app/src/main/java/app/clearscreen/Rule.java": "445d9478ed5ad692ae1c27d0ab4ad1cf812e54a81e85fe4b92e92ba74006ee25",
+    "app/src/main/java/app/clearscreen/SplashRules.java": "7196c41f2ebec21a9d9740da85b76460a08171a9de46a3d3a146dd591c761d3f",
+    "app/src/main/java/app/clearscreen/SplashSkipper.java": "9c721379a1ec344118ad004ad2598a6ff8e2fc3270d6b6e91464950bc1369330",
+    "app/src/main/java/app/clearscreen/Store.java": "84592fe2282805c2b2e89c5cded3c63e737c316e6d922227c2e6f5efcd24c1d4",
+    "app/src/main/java/app/clearscreen/UiDriver.java": "04488683074d08bb8814023b0a2708858f46985dca01d5a7456f17b874b30221",
     "app/src/main/res/drawable/ic_app.xml": "c689715bd1fe89654f886ab30121b62cc7d76208073151058ec685cc76c4b1a5",
-    "app/src/main/res/values/strings.xml": "5b06ecf5e603d6e4a64c62f7dc9eb886040f336075853efa1d6429d0755b24a3",
+    "app/src/main/res/values/strings.xml": "340a8832fb179239230b1bd614d2106166de257664146c67ab045721367dd6d7",
     "app/src/main/res/values/styles.xml": "a8db530ebabadafaebff85b46cd7adbd72ed9909f2d33b4bea6fe283d7c1cd54",
     "app/src/main/res/values-v27/styles.xml": "08367e9fdfd435313601f15e1b53b13443b5afbed14dd891119ae889fc387e4d",
-    "app/src/main/res/xml/accessibility_service.xml": "811834d4b1fcbe79244a9bef50b4947cdd19ce37d3daa685368020d0c268061c",
+    "app/src/main/res/xml/accessibility_service.xml": "6d59335a5a2fc71563bc3c46ebe1129938eb930291a2566cef1acb78092a5751",
     "app/src/main/res/xml/data_extraction_rules.xml": "8f25dbf991b7447d1e769dc3e4f54e67ac0464f260a78d2c3b32f9b7fe2c6dbc",
     "app/src/main/res/xml-v31/accessibility_service.xml": "b2835bca9c1f5004b3d700f5e8d665fac5da9fb073dc412e27a374b5e39aacb3",
+    "app/src/test/java/app/clearscreen/CleanRetryTest.java": "47c99b571a87371332bcba3a2b5d2f8c02b8c1002717592131d0333f9b5fc0bd",
+    "app/src/test/java/app/clearscreen/DnsTest.java": "e71a963c3aea69c6453a0b4a3a8c62000aea6c48bb2800492788f7732c510fdb",
+    "app/src/test/java/app/clearscreen/PermissionAccessTest.java": "cce828b62e3dd391dbad0815172d3d19bf2be049d31f9597fa3aa98296231c1e",
     "app/src/test/java/app/clearscreen/PolicyTest.java": "bbb340ad05c749c3bea49cd6250d79d2a6dc33bf24691f603b2ef954de60ea94",
     "app/src/test/java/app/clearscreen/RouteTest.java": "4cb5933260a3959e70b66c13f11eca07543b3ea14fdc228c533985d1f2005df3",
-    "app/src/test/java/app/clearscreen/ScreenTest.java": "3da8aaf02f9e6eb5b54fc6b1340a1a5837e7f3589cc3e74807b4544278dce848",
+    "app/src/test/java/app/clearscreen/ScreenTest.java": "8f38171d99bcd2aea8b2edd4873a48e11ee3c81f6a556409b58b9477e18a1604",
+    "app/src/test/java/app/clearscreen/SplashTest.java": "ad4590174ce38378c98bcd4f7ceb2ba2068b74b870de78e5f69b153255776675",
     "app/src/test/java/app/clearscreen/StoreTest.java": "788499c13d5b7575861d7d9ea6859de56cdc79d4b3be2a5be22047aa5c228ae8",
-    "app/src/test/java/app/clearscreen/UiDriverTest.java": "9ef8e400050cb26a4b1190688b3e9532398d2de90f039d0ae0ea470612872b75",
+    "app/src/test/java/app/clearscreen/UiDriverTest.java": "b71e3c16bcde2aa253dc61854603ec1d7c7ce7f889d04b97f9298aba74a74900",
     "build.gradle": "0946be50adcc2fbba5ebea125bcedbc43bfee52cd25044bd1b4bbd2803df3f2e",
-    "fixture/src/main/AndroidManifest.xml": "a29a5ff7a2e81fb810fd632492bf16dae7eddddea0b11c8f5be4d56786bada1a",
+    "fixture/src/main/AndroidManifest.xml": "95e839037c040fe95ec2f1a558cd024679de51d56b74888df0e0ca7fda8bca10",
     "fixture/src/main/java/app/clearscreen/testfixture/ConfirmActivity.java": "08e9f51d1d679906f555b8479747ab807280fbf0e806f0eca14940c1d178cf75",
+    "fixture/src/main/java/app/clearscreen/testfixture/DelayedActivity.java": "efffcdc0b06e3cfe6c3f1b7db4b173ac9cfe3a46d454b9eee0cf4a5463e5155e",
     "fixture/src/main/java/app/clearscreen/testfixture/FixtureActivity.java": "d413a8c4f574d4c34ac4138608cea0d71bc158df210e7d3290fb1c2c87f92877",
     "fixture/src/main/java/app/clearscreen/testfixture/PrivateSettingsActivity.java": "c37a909220a996e5b2debecbc4a2dfb74f49c9151706171906d461ac072b6a4d",
     "fixture/src/main/java/app/clearscreen/testfixture/RouteActivity.java": "d7398d05b0386c023174648ea1aeb384533e11560ef9177036e129403b302f1b",
+    "fixture/src/main/java/app/clearscreen/testfixture/SplashActivity.java": "a4f40c72aabd34d9c1e58d03c9a0f01e3eb3dce7ebf27cad8e27a19a1d8f7939",
+    "fixture/src/main/res/values/ids.xml": "abc25b9d7b412b7da3d8456d3be74836915cf2e63ba9c3b67d0c21383324feae",
     "settings.gradle": "9c0ee7948046844977c6fa6486114887da13ac94e485fc3509b0b39f331cec19"
   }
 }

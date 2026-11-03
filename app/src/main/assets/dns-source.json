@@ -1,0 +1,12 @@
+{
+  "source": "https://raw.githubusercontent.com/blocklistproject/Lists/ee3bdbaddf49c756cf3340bb2e6a9dee5282d1c6/ads.txt",
+  "commit": "ee3bdbaddf49c756cf3340bb2e6a9dee5282d1c6",
+  "sourceSha256": "bf23271a8dab547e6aeff1940d1a4d1263940c92fc3a5d1e299779a3ca712692",
+  "license": "Unlicense",
+  "hosts": 235866,
+  "matching": "exact-host-only",
+  "excluded": [
+    "connect.rom.miui.com"
+  ],
+  "normalizedSha256": "43a0d33e77a0740c6db03fa05170f3821823d96dfe5ac3c310886ecd6d69b944"
+}

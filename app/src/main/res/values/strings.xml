@@ -1,1 +1,4 @@
-<resources><string name="service_description">仅在你发起检查、清理或恢复时读取目标设置页面并操作明确的开关。不读取聊天正文，不截图，不上传数据。可随时用浮条停止；完成后可关闭此服务。</string></resources>
+<resources>
+    <string name="service_description">在你发起清理或恢复时读取目标设置页并操作明确的开关。另行开启开屏跳过后，会在应用进入前台的短时间内读取页面控件，尝试点击明确的广告跳过按钮。不保存截图、输入内容或页面正文，不上传这些数据。可在净屏关闭开屏跳过，或关闭此服务停止自动操作。</string>
+    <string name="dns_counter">累计拦截 %1$d 次 DNS 请求（不等于广告条数）</string>
+</resources>

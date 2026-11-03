@@ -1,0 +1,265 @@
+{
+  "source": "https://github.com/ganlinte/GKD-subscription",
+  "sourcePath": "dist/ganlin_gkd.json5",
+  "sourceSha256": "5624137f8c70566a8dc985990dd18571600efa1c76129734703533ca5ee71c23",
+  "version": 72,
+  "license": "MIT",
+  "retrieved": "2026-11-03",
+  "rules": [
+    {
+      "class": "ImageView",
+      "id": "com.eco.global.app:id/adview_jump",
+      "package": "com.eco.global.app",
+      "name": "ECOVACS HOME",
+      "selector": "ImageView[id=\"com.eco.global.app:id/adview_jump\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/13538616"
+    },
+    {
+      "id": "com.ksf.yyx:id/ksad_splash_circle_skip_view",
+      "package": "com.ksf.yyx",
+      "name": "OMOFUN",
+      "selector": "[id=\"com.ksf.yyx:id/ksad_splash_circle_skip_view\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/12775918",
+      "activityIds": [
+        "com.ksf.yyx.MainActivity"
+      ]
+    },
+    {
+      "class": "TextView",
+      "id": "com.dubox.drive:id/tv_skip",
+      "package": "com.dubox.drive",
+      "name": "TeraBox",
+      "selector": "TextView[id=\"com.dubox.drive:id/tv_skip\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/13200574"
+    },
+    {
+      "class": "View",
+      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "com.baidu.tieba",
+      "name": "百度贴吧",
+      "selector": "View[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12775906",
+        "https://i.gkd.li/import/12566191",
+        "https://i.gkd.li/import/12870916",
+        "https://i.gkd.li/import/13233500",
+        "https://i.gkd.li/import/13168386",
+        "https://i.gkd.li/import/13322227",
+        "https://i.gkd.li/i/18730575"
+      ]
+    },
+    {
+      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "com.byfen.market",
+      "name": "百分网游戏盒子",
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/13298944"
+    },
+    {
+      "class": "TextView",
+      "id": "tv.danmaku.bili:id/count_down",
+      "text": {
+        "op": "^=",
+        "value": "跳过"
+      },
+      "package": "tv.danmaku.bili",
+      "name": "哔哩哔哩",
+      "selector": "TextView[id=\"tv.danmaku.bili:id/count_down\"][text^=\"跳过\"]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12705270",
+        "https://i.gkd.li/i/19142386"
+      ]
+    },
+    {
+      "class": "TextView",
+      "id": "tv.danmaku.bili:id/skip",
+      "text": {
+        "op": "^=",
+        "value": "跳过"
+      },
+      "package": "tv.danmaku.bili",
+      "name": "哔哩哔哩",
+      "selector": "TextView[id=\"tv.danmaku.bili:id/skip\"][text^=\"跳过\"]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12705270",
+        "https://i.gkd.li/i/19142386"
+      ]
+    },
+    {
+      "id": "tv.danmaku.bilibilihd:id/count_down",
+      "package": "tv.danmaku.bilibilihd",
+      "name": "哔哩哔哩HD",
+      "selector": "[id=\"tv.danmaku.bilibilihd:id/count_down\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/13031261"
+    },
+    {
+      "id": "com.huawei.appmarket:id/skip_textview",
+      "package": "com.huawei.appmarket",
+      "name": "华为应用市场",
+      "selector": "[id=\"com.huawei.appmarket:id/skip_textview\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/16611800"
+    },
+    {
+      "id": "com.hihonor.appmarket:id/tv_operation_skip",
+      "package": "com.hihonor.appmarket",
+      "name": "荣耀应用市场",
+      "selector": "[id=\"com.hihonor.appmarket:id/tv_operation_skip\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/15087199",
+      "activityIds": [
+        "com.hihonor.appmarket.module.main.MainActivity"
+      ]
+    },
+    {
+      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "com.waimaiii.waimaiii",
+      "name": "歪麦霸王餐",
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/13346451"
+    },
+    {
+      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "com.netease.mobimail",
+      "name": "网易邮箱",
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/12686093"
+    },
+    {
+      "id": "com.netease.mobimail:id/ad_skip",
+      "clickable": true,
+      "package": "com.netease.mobimail",
+      "name": "网易邮箱",
+      "selector": "[id=\"com.netease.mobimail:id/ad_skip\"][clickable=true]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12667519",
+        "https://i.gkd.li/import/13328425"
+      ]
+    },
+    {
+      "class": "TextView",
+      "id": "com.hihonor.phoneservice:id/start_skip_count_down",
+      "package": "com.hihonor.phoneservice",
+      "name": "我的荣耀",
+      "selector": "TextView[id=\"com.hihonor.phoneservice:id/start_skip_count_down\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/14896804",
+      "activityIds": [
+        "com.hihonor.phoneservice.OpenScreenAdActivity"
+      ]
+    },
+    {
+      "id": "com.xiaote:id/ad_close",
+      "text": {
+        "op": "*=",
+        "value": "关闭"
+      },
+      "package": "com.xiaote",
+      "name": "小特",
+      "selector": "[id=\"com.xiaote:id/ad_close\"][text*=\"关闭\"]",
+      "groupKey": 1,
+      "snapshots": "https://i.gkd.li/import/14035706"
+    },
+    {
+      "class": "TextView",
+      "id": "com.zhihu.android:id/btn_skip",
+      "package": "com.zhihu.android",
+      "name": "知乎",
+      "selector": "TextView[id=\"com.zhihu.android:id/btn_skip\"]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12707641",
+        "https://i.gkd.li/import/12899263",
+        "https://i.gkd.li/import/13070251",
+        "https://i.gkd.li/import/12841423",
+        "https://i.gkd.li/import/12883329",
+        "https://i.gkd.li/import/12981146"
+      ]
+    },
+    {
+      "id": "com.ct.client:id/btSkip",
+      "package": "com.ct.client",
+      "name": "中国电信",
+      "selector": "[id=\"com.ct.client:id/btSkip\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/i/17584648"
+    },
+    {
+      "id": "cn.mil.junhao:id/splash_adv_ship",
+      "package": "cn.mil.junhao",
+      "name": "中国军号",
+      "selector": "[id=\"cn.mil.junhao:id/splash_adv_ship\"]",
+      "groupKey": 0,
+      "snapshots": "https://i.gkd.li/import/13806892"
+    },
+    {
+      "id": "gov.pianzong.androidnga:id/ksad_splash_circle_skip_view",
+      "package": "gov.pianzong.androidnga",
+      "name": "NGA玩家社区",
+      "selector": "[id=\"gov.pianzong.androidnga:id/ksad_splash_circle_skip_view\"]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12476484",
+        "https://i.gkd.li/import/12706127",
+        "https://i.gkd.li/import/12864707",
+        "https://i.gkd.li/import/12911882",
+        "https://i.gkd.li/import/13798686"
+      ]
+    },
+    {
+      "id": "gov.pianzong.androidnga:id/ksad_skip_view_skip",
+      "package": "gov.pianzong.androidnga",
+      "name": "NGA玩家社区",
+      "selector": "[id=\"gov.pianzong.androidnga:id/ksad_skip_view_skip\"]",
+      "groupKey": 0,
+      "snapshots": [
+        "https://i.gkd.li/import/12476484",
+        "https://i.gkd.li/import/12706127",
+        "https://i.gkd.li/import/12864707",
+        "https://i.gkd.li/import/12911882",
+        "https://i.gkd.li/import/13798686"
+      ]
+    },
+    {
+      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "com.UCMobile",
+      "name": "UC浏览器",
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "groupKey": -1,
+      "snapshots": "https://i.gkd.li/import/13188653"
+    }
+  ],
+  "sdkRules": [
+    {
+      "resourceName": "tt_splash_skip_btn",
+      "name": "广告 SDK 开屏跳过控件",
+      "evidencePackage": "com.baidu.tieba",
+      "snapshots": [
+        "https://i.gkd.li/import/12775906",
+        "https://i.gkd.li/import/12566191",
+        "https://i.gkd.li/import/12870916",
+        "https://i.gkd.li/import/13233500",
+        "https://i.gkd.li/import/13168386",
+        "https://i.gkd.li/import/13322227",
+        "https://i.gkd.li/i/18730575"
+      ]
+    },
+    {
+      "resourceName": "ksad_splash_circle_skip_view",
+      "name": "广告 SDK 开屏跳过控件",
+      "evidencePackage": "com.ksf.yyx",
+      "snapshots": "https://i.gkd.li/import/12775918"
+    }
+  ]
+}

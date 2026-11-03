@@ -12,6 +12,17 @@ public final class Store {
     public String asset(String name){try(var in=context.getAssets().open(name);var out=new java.io.ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);return new String(out.toByteArray(),StandardCharsets.UTF_8);}catch(Exception e){throw new IllegalStateException("规则文件无法读取",e);}}
     public Policy policy(){try{return new Policy(new JSONObject(asset("policy.json")));}catch(JSONException e){throw new IllegalStateException(e);}}
     private SharedPreferences prefs(){return context.getSharedPreferences("local-ledger",Context.MODE_PRIVATE);}
+    public boolean splashEnabled(){return prefs().getBoolean("splash-enabled",false);}
+    public void setSplashEnabled(boolean enabled){prefs().edit().putBoolean("splash-enabled",enabled).apply();}
+    public Set<String> splashExcluded(){return new HashSet<>(prefs().getStringSet("splash-excluded",Collections.emptySet()));}
+    public void setSplashExcluded(Set<String> packages){prefs().edit().putStringSet("splash-excluded",new HashSet<>(packages)).apply();}
+    public synchronized void recordSplash(String pkg,boolean confirmed){
+        JSONArray old=read("splash-history"),next=new JSONArray();JSONObject item=new JSONObject();
+        CleanerService.put(item,"package",pkg);CleanerService.put(item,"confirmed",confirmed);CleanerService.put(item,"time",System.currentTimeMillis());next.put(item);
+        for(int i=0;i<Math.min(19,old.length());i++)next.put(old.opt(i));save("splash-history",next);
+        if(confirmed)prefs().edit().putLong("splash-confirmed",splashCount()+1).apply();
+    }
+    public long splashCount(){return prefs().getLong("splash-confirmed",0);}
     public String lastRun(){return prefs().getString("last-run","");}
     public void setLastRun(String value){if(!prefs().edit().putString("last-run",value).commit())throw new IllegalStateException("记录保存失败");}
     public synchronized JSONArray read(String key){try{return new JSONArray(prefs().getString(key,"[]"));}catch(JSONException e){throw new IllegalStateException("本地记录损坏，已停止操作",e);}}
@@ -33,6 +44,6 @@ public final class Store {
         try{j.put("id",id);j.put("rule",rule.json());j.put("packageVersion",packageVersion(rule.pkg));j.put("routeVersions",routeVersions(rule));j.put("label",label);j.put("before",before);j.put("after",after);j.put("status","pending");j.put("time",System.currentTimeMillis());j.put("build",Build.FINGERPRINT);j.put("message","操作前已保存原值");a.put(j);save("journal",a);return id;}catch(JSONException e){throw new IllegalStateException(e);}
     }
     public synchronized void finish(String id,String status,String message){JSONArray a=read("journal");for(int i=0;i<a.length();i++){JSONObject j=a.optJSONObject(i);if(j!=null&&id.equals(j.optString("id"))){try{j.put("status",status);j.put("message",message);j.put("updated",System.currentTimeMillis());}catch(JSONException e){throw new IllegalStateException(e);}}}save("journal",a);}
-    public String export(){JSONObject root=new JSONObject();try{root.put("app","净屏 "+appVersion());root.put("device",deviceInfo());root.put("lastRun",lastRun());root.put("journal",read("journal"));root.put("scan",read("scan"));}catch(JSONException e){throw new IllegalStateException(e);}return root.toString();}
+    public String export(){JSONObject root=new JSONObject();try{root.put("app","净屏 "+appVersion());root.put("device",deviceInfo());root.put("permissions",PermissionAccess.diagnostics(context));JSONObject network=new JSONObject();network.put("running",AdFilterService.running());network.put("status",new FilterStore(context).message());network.put("blockedDnsRequests",AdFilterService.blocked(context));root.put("networkFilter",network);root.put("splashEnabled",splashEnabled());root.put("splashConfirmed",splashCount());root.put("lastRun",lastRun());root.put("journal",read("journal"));root.put("scan",read("scan"));}catch(JSONException e){throw new IllegalStateException(e);}return root.toString();}
     public String exportText(){try{return new JSONObject(export()).toString(2);}catch(JSONException e){throw new IllegalStateException(e);}}
 }

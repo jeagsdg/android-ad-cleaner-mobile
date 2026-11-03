@@ -54,6 +54,11 @@ public final class Rule {
             return new Rule(out);
         } catch (JSONException e) { throw new IllegalStateException(e); }
     }
+    public Rule onlyTargets(List<String> selected) {
+        JSONObject out=json();
+        try{out.put("targets",new JSONArray(selected));return new Rule(out);}
+        catch(JSONException e){throw new IllegalStateException(e);}
+    }
     public String pathDescription() {
         if (notification()) return "系统设置 → 通知管理 → " + channelApp + " → " + channelName;
         StringBuilder text = new StringBuilder();

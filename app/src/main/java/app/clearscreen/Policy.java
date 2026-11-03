@@ -11,9 +11,9 @@ public final class Policy {
     boolean hit(String name,String value){return patterns.get(name).matcher(value).find();}
     public boolean desired(String title){return hit("NEG_PREFIX",title.trim());}
     public boolean protectedTitle(String title){return hit("PHOTO_SPOT",title.replaceAll("[\\s\u200b\ufeff]",""));}
-    public boolean protectedSetting(String title){return protectedTitle(title)||title.matches(".*(天气预警|应用更新通知|下载通知|安装通知|订单通知|物流通知|支付通知|聊天消息|私信通知|安全提醒|验证通知).*");}
+    public boolean protectedSetting(String title){return protectedTitle(title)||title.matches(".*(天气预警|天氣預警|应用更新通知|應用更新通知|下载通知|下載通知|安装通知|安裝通知|订单通知|訂單通知|物流通知|支付通知|聊天消息|聊天訊息|私信通知|安全提醒|验证通知|驗證通知).*");}
     /** Additional mobile safeguard: never let an advertising SDK id override a critical channel title. */
-    public boolean criticalNotification(String title){return title.matches(".*(订单|物流|快递|交易|支付|付款|验证|安全|天气预警|通话|来电|聊天|私信|下载|更新|安装).*");}
+    public boolean criticalNotification(String title){return title.matches(".*(订单|訂單|物流|快递|快遞|交易|支付|付款|验证|驗證|安全|天气预警|天氣預警|通话|通話|来电|來電|聊天|私信|下载|下載|更新|安装|安裝).*");}
     public Decision classify(String name,String id,String pkg,String app){
         boolean vivo=hit("VIVO_MARKETING",id), ad=hit("AD_NETWORK",id);
         boolean protectedValue=protectedTitle(name+" "+id);

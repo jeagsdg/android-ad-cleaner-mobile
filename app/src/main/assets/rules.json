@@ -654,8 +654,35 @@
         "activity": "",
         "source": "recipes/realme-RMX3700/recipe.py",
         "name": "应用菜单入口"
+      },
+      {
+        "package": "com.heytap.browser",
+        "path": [
+          [
+            "我的",
+            "菜单",
+            "更多"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私"
+          ],
+          [
+            "广告管理"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/oppo-PLP120/recipe.py",
+        "name": "应用菜单入口"
       }
-    ]
+    ],
+    "aliases": {
+      "摇一摇广告": [
+        "摇一摇"
+      ]
+    }
   },
   {
     "id": "op-theme",
@@ -892,7 +919,43 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.bbk.appstore",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "关于"
+          ],
+          [
+            "个性化推荐"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.bbk.appstore",
+        "path": [
+          [
+            "关于"
+          ],
+          [
+            "个性化推荐"
+          ]
+        ],
+        "activity": ".ui.menu.AppstoreSettingsActivity",
+        "source": "recipes/vivo-V2547DA/recipe_android17.py",
+        "name": "设置直达入口"
+      }
+    ]
   },
   {
     "id": "v-manager",
@@ -1493,6 +1556,20 @@
         "package": "com.bbk.appstore",
         "path": [
           [
+            "关于"
+          ],
+          [
+            "服务管理"
+          ]
+        ],
+        "activity": ".ui.menu.AppstoreSettingsActivity",
+        "source": "recipes/vivo-V2547DA/recipe_android17.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.bbk.appstore",
+        "path": [
+          [
             "我的"
           ],
           [
@@ -1537,7 +1614,45 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "菜单",
+            "我的",
+            "@id:com.vivo.browser:id/menu_btn"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "首页设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "首页设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2417A/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-browser-web",
@@ -1565,7 +1680,45 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "菜单",
+            "我的",
+            "@id:com.vivo.browser:id/menu_btn"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "网页浏览设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "网页浏览设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2417A/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-browser-more",
@@ -1626,9 +1779,7 @@
         "package": "com.vivo.browser",
         "path": [
           [
-            "菜单",
-            "我的",
-            "@id:com.vivo.browser:id/menu_btn"
+            "我的"
           ],
           [
             "设置"
@@ -1638,7 +1789,7 @@
           ]
         ],
         "activity": "",
-        "source": "recipes/vivo-V2324HA/recipe.py",
+        "source": "recipes/vivo-V2417A/recipe.py",
         "name": "应用菜单入口"
       }
     ]
@@ -1671,7 +1822,45 @@
     ],
     "source": "recipes/vivo-V2547DA/recipe.py",
     "activity": "",
-    "group": "系统推荐"
+    "group": "系统推荐",
+    "routes": [
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "菜单",
+            "我的",
+            "@id:com.vivo.browser:id/menu_btn"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私权限设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2547DA/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.vivo.browser",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私权限设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/vivo-V2417A/recipe.py",
+        "name": "应用菜单入口"
+      }
+    ]
   },
   {
     "id": "v-assistant",
@@ -2225,8 +2414,7 @@
     ],
     "targets": [
       "个性化推荐",
-      "精选资讯",
-      "搜索建议"
+      "精选资讯"
     ],
     "brands": [
       "oppo",

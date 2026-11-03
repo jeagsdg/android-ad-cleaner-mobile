@@ -9,10 +9,12 @@ import java.util.*;
 /** Real Android execution against a separate disposable fixture, never OEM evidence. */
 public class DeviceChecks extends Instrumentation {
     int assertions=0;
+    String suite="clean";
     void require(boolean ok,String message){assertions++;if(!ok)throw new AssertionError(message);}
-    @Override public void onCreate(Bundle args){super.onCreate(args);start();}
+    @Override public void onCreate(Bundle args){super.onCreate(args);if(args!=null)suite=args.getString("suite","clean");start();}
     void await(CleanerService s)throws Exception{long deadline=System.currentTimeMillis()+90000;while(s.busy&&System.currentTimeMillis()<deadline)Thread.sleep(100);require(!s.busy,"task timed out");Thread.sleep(800);}
     @Override public void onStart(){Bundle result=new Bundle();try{
+        if(suite.equals("network")){NetworkChecks.run(this);result.putString("stream","PASS: "+assertions+" network assertions on Android "+Build.VERSION.RELEASE+"\n");finish(RESULT_OK,result);return;}
         android.app.UiAutomation automation=getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         // Instrumentation restarts the target process: reconnect its service only in this disposable emulator.
         shell(automation,"settings put secure enabled_accessibility_services null");
@@ -54,8 +56,24 @@ public class DeviceChecks extends Instrumentation {
         boolean halted=false;try{new UiDriver(service,()->true).current(rule);}catch(UiDriver.Halt expected){halted=true;}require(halted,"cancellation prevents access");
         getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(1000);
         halted=false;try{ui.current(rule);}catch(UiDriver.Halt expected){halted=true;}require(halted,"foreign foreground stops");
+        Rule delayed=new Rule(new JSONObject("{\"id\":\"delayed-fixture\",\"title\":\"延迟加载\",\"package\":\"app.clearscreen.testfixture\",\"activity\":\".DelayedActivity\",\"targets\":[\"个性化推荐\"]}"));
+        long began=SystemClock.elapsedRealtime();service.clean(Collections.singletonList(delayed));await(service);require(SystemClock.elapsedRealtime()-began>=2300,"waited for delayed controls");require(store.read("scan").getJSONObject(0).optString("status").equals("changed"),"delayed setting cleaned in one run");
+        splashChecks(store,service);
         result.putString("stream","PASS: "+assertions+" real-device assertions; Android "+Build.VERSION.RELEASE+"; isolated fixture only\n");finish(RESULT_OK,result);
     }catch(Throwable e){result.putString("stream","FAIL after "+assertions+" assertions: "+android.util.Log.getStackTraceString(e));finish(0,result);}}
     static final int RESULT_OK=-1;
+    void splashChecks(Store store,CleanerService service)throws Exception{
+        store.setSplashEnabled(true);store.setSplashExcluded(Collections.emptySet());long count=store.splashCount();
+        for(String mode:new String[]{"plain","consent","editable","ad","sdk"}){
+            getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(900);
+            getTargetContext().startActivity(new Intent().setClassName("app.clearscreen.testfixture","app.clearscreen.testfixture.SplashActivity").putExtra("mode",mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            Thread.sleep(2400);StringBuilder texts=new StringBuilder();for(android.view.accessibility.AccessibilityNodeInfo n:UiDriver.walk(service.getRootInActiveWindow()))texts.append(UiDriver.text(n));
+            require((mode.equals("ad")||mode.equals("sdk"))==texts.toString().contains("已进入测试内容"),"splash mode "+mode+" guarded correctly");
+        }
+        require(store.splashCount()==count+2,"only confirmed ad skips counted");
+        store.setSplashExcluded(Collections.singleton("app.clearscreen.testfixture"));getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(900);
+        getTargetContext().startActivity(new Intent().setClassName("app.clearscreen.testfixture","app.clearscreen.testfixture.SplashActivity").putExtra("mode","ad").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));Thread.sleep(1800);
+        require(store.splashCount()==count+2,"excluded application not clicked");store.setSplashEnabled(false);store.setSplashExcluded(Collections.emptySet());
+    }
     void shell(android.app.UiAutomation a,String command)throws Exception{try(ParcelFileDescriptor fd=a.executeShellCommand(command);java.io.FileInputStream in=new java.io.FileInputStream(fd.getFileDescriptor())){byte[] b=new byte[1024];while(in.read(b)!=-1){}}}
 }

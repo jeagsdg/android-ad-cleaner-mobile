@@ -27,7 +27,8 @@ import backups
 import events
 import wait
 from reader import Reader
-from row import SWITCH_ROW_DEPTH, bounds, control, dedupe, disabled_at, own, summary, title_of
+from row import (SWITCH_ROW_DEPTH, bounds, control, dedupe, disabled_at, is_switch, own,
+                 summary, switches_in, title_of)
 
 DISMISS = ("以后再说", "暂不更新", "暂不", "取消", "我知道了", "跳过", "禁止", "不再提示", "不同意")
 # 应用内更新弹窗的标题（主题商店 17.22.0beta2 是「检测到新版本」，#286）。它通常把更新说明放进可滚动容器，
@@ -503,11 +504,17 @@ class Phone:
                 n = parent.get(n)
             return False
 
+        # 设置页里含「关闭」的说明行本身可能就是开关，点它等于替用户拨一次（#378）。
+        # 按候选子树判定而不是整屏——ColorOS 17 隐私页的浮层 ✕ 盖在带开关的页面上，仍然要能点。
+        def is_switch_row(n):
+            return is_switch(n) or bool(switches_in(n, self.on_screen))
+
         for n in root.iter("node"):
             if n.get("clickable") != "true" or n.get("package") == "com.android.systemui":
                 continue
             key = (n.get("content-desc") or "") + " " + (n.get("resource-id") or "")
-            if self.CLOSE.search(key) and not (n.get("text") or "").strip() and not in_list(n):
+            if (self.CLOSE.search(key) and not (n.get("text") or "").strip()
+                    and not in_list(n) and not is_switch_row(n)):
                 l, t, r, b = bounds(n)
                 # 只点屏幕内的图标：屏幕外还留着上一层的节点，点它会抛「点击坐标在屏幕外」把整段打断
                 if 0 < r - l < self.W * 0.3 and 0 < b - t < self.H * 0.12 and self.on_screen(n):
@@ -752,27 +759,42 @@ class Phone:
             self.settle(b, 0.6)
 
     def confirm(self):
-        """开关后弹确认框就点确认类按钮。只认真按钮（Button 类），
+        """开关后弹确认框就点确认类按钮。严格档只认 Button 类，
         ColorOS 开关旁边的「开启/关闭」状态文字不算——点了会把开关又拨回去。
         按钮文字不一定在 text 上：vivo 阅图锁屏的 Button text 为空、文字在 content-desc（#246 / PR #249）；
         vivo / iQOO 另一种弹窗把文字放在 Button 下级的 TextView（vbutton_title，PR #239）。
         都要整段等于确认词，避免点到说明文字。
-        屏幕外的节点跳过：页面里常留着上一层对话框的按钮，点它会抛「点击坐标在屏幕外」把整段打断（PR #248）。"""
+        屏幕外的节点跳过：页面里常留着上一层对话框的按钮，点它会抛「点击坐标在屏幕外」把整段打断（PR #248）。
+        严格档全没命中再退一档：HyperOS 4 的部分弹窗把确认键画成可点击的 TextView（小米 17 热榜页，PR #408 / #500）。
+        兜底档靠 TextView 类过滤挡掉 ColorOS 的 View 状态文字，尺寸只用来排除整行。"""
         time.sleep(0.2)
         root = self.tree()
-        for c in CONFIRM:
-            for n in root.iter("node"):
-                if "Button" not in (n.get("class") or ""):
-                    continue
-                label = (n.get("text") or "").strip() or (n.get("content-desc") or "").strip()
-                inner = {(x.get("text") or "").strip() for x in n.iter("node") if x is not n}
-                if label != c and not (not label and c in inner):
-                    continue
-                l, t, r, b = bounds(n)
-                if r > l and b > t and self.on_screen(n):
-                    self.click((l + r) // 2, (t + b) // 2)
-                    time.sleep(0.3)
-                    return c
+
+        def button_hit(n, c):
+            if "Button" not in (n.get("class") or ""):
+                return False
+            label = (n.get("text") or "").strip() or (n.get("content-desc") or "").strip()
+            inner = {(x.get("text") or "").strip() for x in n.iter("node") if x is not n}
+            return label == c or (not label and c in inner)
+
+        def text_view_hit(n, c):
+            if "TextView" not in (n.get("class") or ""):
+                return False
+            if (n.get("text") or "").strip() != c or n.get("clickable") != "true":
+                return False
+            l, t, r, b = bounds(n)
+            return r - l < self.W * 0.5 and b - t < self.H * 0.12
+
+        for hit in (button_hit, text_view_hit):
+            for c in CONFIRM:
+                for n in root.iter("node"):
+                    if not hit(n, c):
+                        continue
+                    l, t, r, b = bounds(n)
+                    if r > l and b > t and self.on_screen(n):
+                        self.click((l + r) // 2, (t + b) // 2)
+                        time.sleep(0.3)
+                        return c
         return None
 
     def off(self, keep=(), only=None, page="", max_screens=40):
@@ -780,6 +802,8 @@ class Phone:
         每屏第一下单独点、看有没有弹窗/跳页；没有就把这一屏剩下的连着点完，最后统一核对。
         关掉一项这一行就消失的页面（下面的行整体上移）：从下往上点，上移的只可能是已经点过的行；
         首击后剩下的目标若已不在原坐标，这一屏剩下的改成每点一项前重读坐标（#480）。
+        点过的普通开关行在回读里消失、回读仍见到本屏计划时的非目标行且没跳走，按已关记账；
+        整页读空、换到别的页（含同 Activity 的子页）或保护类开关消失，仍报失败（#486）。
         开关是灰的（被上级开关禁用）的行不点、也不算失败：点了也不会变，以前报成「关不掉」（#333）。"""
         # 页面刚打开还没画完：等开关出现，最多试 10 次（本段已走丢就不等）
         wait.until(self.switches, tries=2 if self.miss else 10, poll=0.2,
@@ -788,22 +812,25 @@ class Phone:
         done, slow, checked, kept, greyed = 0, False, set(), set(), set()
 
         def plan_page(root):
-            return plan_switches(self.switches(root), keep, only, self.safe_mode, screen_h=self.H,
-                                 disabled=lambda xy: disabled_at(root, xy))
+            rows = self.switches(root)
+            return (plan_switches(rows, keep, only, self.safe_mode, screen_h=self.H,
+                                  disabled=lambda xy: disabled_at(root, xy)), rows)
 
         for _ in range(max_screens):
             root = self.tree()
-            plan = plan_page(root)
+            plan, planned = plan_page(root)
             if plan.disabled:
                 # 开关可能在页面加载中短暂不可用：复读一次再定，别把恢复可用的开关整屏跳过（#333）
                 root = self.tree()
-                plan = plan_page(root)
+                plan, planned = plan_page(root)
             checked |= plan.checked
             kept |= plan.kept
             page_greyed = set(plan.disabled)
             targets = plan.targets
+            others = {title for title, _, _ in planned if title} - {t for t, _, _ in targets}
             order = list(reversed(targets))             # 先点下面的：它消失时上移的只可能是已点过的行
             shift = False                               # 剩下的目标是不是还准在计划坐标上
+            clicked = set()                             # 本屏真的点过的标题：点完从列表消失的靠它认
             for i, (t, xy, w) in enumerate(order):
                 if i and shift:
                     # 页面重排过：每点一项前重读，旧坐标可能已经指向邻行
@@ -816,6 +843,7 @@ class Phone:
                         continue                        # 已不在、已到位、已在带外或已变灰：交给收尾回读
                     xy = row[1]
                 self.click(*xy)
+                clicked.add(t)
                 if i == 0 or slow:
                     if self.confirm():
                         slow = True                     # 这页会弹确认框，逐个点
@@ -836,29 +864,68 @@ class Phone:
                 def wrong():                            # 还没到目标状态的标题，以及其中灰掉的
                     root = self.tree()
                     rows = self.switches(root)
-                    now = {t: c for t, c, _ in rows}
-                    still = {t for t, _, w in targets if now.get(t) != w}
+                    states, want = {}, {t: w for t, _, w in targets}
+                    for title, on, _ in rows:
+                        states.setdefault(title, []).append(on)
+                    page_same = None                    # 惰性查：没有消失行时不额外读一次前台
+                    still, vanished = set(), set()
+                    for t, _, w in targets:
+                        seen = states.get(t)
+                        if seen is not None:
+                            if any(on != w for on in seen):   # 同名双列：还有一行没到目标态（#403）
+                                still.add(t)
+                        elif t in clicked and rows and not w:
+                            # 点过的普通开关行从列表里消失了：回读里还有本屏计划时见过的非目标行，
+                            # 且没跳走，才算随行消失。整页读空、换成标题全新的页（同 Activity 的子页）
+                            # 时这一页已无法核对，不能把读屏失败当成关闭成功（#486）。
+                            # 保护类开关是「主动打开」，行消失证明不了它开了，仍报打不开。
+                            if page_same is None:
+                                page_same = self.focus() == start
+                            if page_same and others & states.keys():
+                                vanished.add(t)
+                            else:
+                                still.add(t)
+                        else:
+                            still.add(t)
                     return still, still & greyed_titles(
-                        ((t, xy) for t, _, xy in rows), lambda xy: disabled_at(root, xy))
+                        ((title, xy) for title, on, xy in rows
+                         if title in still and on != want[title]),
+                        lambda xy: disabled_at(root, xy)), vanished
 
                 def retry(still):
                     # 只重试当前仍能识别的开关，不能在节点消失后沿用旧坐标；灰掉的点了也不会变。
+                    if not still:
+                        return
+                    here = self.focus()
+                    if here and here != start:
+                        return                          # 页面已经换了：新页上的同名行不是这一屏的开关
+                                                        # here 为空只是这一次没读到前台，不拦补点
                     root = self.tree()
                     rows = self.switches(root)
-                    now = {t: (c, xy) for t, c, xy in rows}
+                    want = {t: w for t, _, w in targets}
                     grey = still & greyed_titles(
-                        ((t, xy) for t, _, xy in rows), lambda xy: disabled_at(root, xy))
+                        ((title, xy) for title, on, xy in rows
+                         if title in still and on != want[title]),
+                        lambda xy: disabled_at(root, xy))
+                    retried = set()                     # 一次补点里同名标题只点一下
                     for t, _, w in targets:
-                        if t in still and t not in grey and t in now and now[t][0] != w:
-                            self.click(*now[t][1]); self.confirm()
-                still, grey = wrong()
+                        if t not in still or t in grey or t in retried:
+                            continue
+                        # 同名双列挑还开着、且不是灰的行：按标题取最后读到的那行会让补点取决于读屏顺序（#403）
+                        row = next(((on, at) for title, on, at in rows
+                                    if title == t and on != w and not disabled_at(root, at)), None)
+                        if row is not None:
+                            retried.add(t)
+                            self.click(*row[1]); self.confirm()
+                            clicked.add(t)              # 补点也算点过：行随后消失同样是随行消失（#486）
+                still, grey, vanished = wrong()
                 retry(still)
-                still, grey = wrong()
+                still, grey, vanished = wrong()
                 if still:                               # 还有没拨过去的：等动画结束再点一次
                     time.sleep(0.8)
                     retry(still)
                     time.sleep(0.4)
-                    still, grey = wrong()
+                    still, grey, vanished = wrong()
                 page_greyed |= grey                     # 这一屏关到一半才变灰的，同样不报成拨不动
                 for t, _, w in targets:
                     if t in still and t in grey:
@@ -866,7 +933,8 @@ class Phone:
                     if t in still:
                         self.say(f"  ✗ {'打不开' if w else '关不掉'} {t}")
                     else:
-                        self.say(f"  {'开（保护类开关）' if w else '关'} {t}")
+                        self.say(f"  {'开（保护类开关）' if w else '关'} {t}"
+                                 + ("（点后从列表消失）" if t in vanished else ""))
                         self.changed.append((page, t))
                         done += 1
             for t in page_greyed - greyed:

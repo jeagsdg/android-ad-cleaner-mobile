@@ -20,35 +20,55 @@ public final class CleanerService extends AccessibilityService {
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout overlay;private TextView overlayText;
-    @Override protected void onServiceConnected(){reference=new java.lang.ref.WeakReference<>(this);}
-    @Override public void onAccessibilityEvent(AccessibilityEvent event){}
+    private SplashSkipper skipper;
+    @Override protected void onServiceConnected(){reference=new java.lang.ref.WeakReference<>(this);if(skipper!=null)skipper.close();skipper=new SplashSkipper(this);}
+    @Override public void onAccessibilityEvent(AccessibilityEvent event){if(skipper!=null)skipper.event(event);}
     @Override public void onInterrupt(){stop();}
-    @Override public void onDestroy(){stop();worker.shutdownNow();reference.clear();hideOverlay();super.onDestroy();}
+    @Override public boolean onUnbind(Intent intent){stop();if(skipper!=null)skipper.close();if(reference.get()==this)reference.clear();hideOverlay();return super.onUnbind(intent);}
+    @Override public void onDestroy(){stop();if(skipper!=null)skipper.close();worker.shutdownNow();if(reference.get()==this)reference.clear();hideOverlay();super.onDestroy();}
     public void stop(){cancelled=true;progress="正在停止…";}
     private void note(String s){progress=s;main.post(()->{if(overlayText!=null)overlayText.setText(s);});}
     /** One user-approved run: inspect each exact target, save original, change, and verify. */
     public synchronized void clean(List<Rule> rules){if(busy)return;resultTab=0;start(()->{
         Store store=new Store(this);Policy policy=store.policy();JSONArray results=new JSONArray();store.setLastRun("上次任务未完整结束，请核对记录");store.save("scan",results);
-        UiDriver ui=new UiDriver(this,()->cancelled);int index=0;
-        for(Rule rule:rules){if(cancelled)break;note("清理 "+(++index)+" / "+rules.size()+" · "+rule.title);
+        UiDriver ui=new UiDriver(this,()->cancelled);List<Rule> pending=new ArrayList<>(rules);int retried=0;
+        for(int pass=0;pass<2&&!cancelled&&!pending.isEmpty();pass++){
+        int index=0;
+        for(Rule rule:pending){if(cancelled)break;note((pass==0?"清理 ":"自动补查 ")+(++index)+" / "+pending.size()+" · "+rule.title);
+            if(pass>0)retried+=rule.targets.size();
             try{if(rule.notification()&&(!policy.classify(rule.channelName,rule.channelId,rule.pkg,rule.channelApp).recommended()||policy.criticalNotification(rule.channelName)))throw new UiDriver.Halt("通知渠道用途不明确或包含重要服务，未操作");ui.open(rule);
-                for(String label:rule.targets){if(cancelled)break;String record="";JSONObject item=scanItem(rule,label);
+                for(String label:rule.targets){if(cancelled)break;String record="";JSONObject item=scanItem(rule,label);put(item,"pass",pass+1);
                     try{if(policy.protectedSetting(label))throw new UiDriver.Halt("服务类功能受到保护，未操作");
                         ui.top();UiDriver.Found f=ui.find(label);String actual=f==null?label:f.label;boolean desired=policy.desired(actual);
                         if(policy.protectedSetting(actual))throw new UiDriver.Halt("服务类功能受到保护，未操作");put(item,"matchedLabel",actual);put(item,"attempts",ui.attempts());
-                        if(f==null){put(item,"status","missing");put(item,"message","未识别目标开关，未操作");}
+                        if(f==null){put(item,"status","missing");put(item,"message","未识别目标开关，未操作");put(item,"retryable",true);}
                         else if(f.checked==desired){put(item,"status","already");put(item,"message","已经是目标状态");}
                         else{put(item,"before",f.checked);record=store.prepare(ui.pinnedRule(),actual,f.checked,desired);
                             if(!ui.set(actual,f.checked,desired))throw new UiDriver.Halt("未确认改变结果，请核对原设置");
-                            store.finish(record,"changed","已回读确认");put(item,"status","changed");put(item,"message","已回读确认");}
-                    }catch(Exception e){if(e instanceof UiDriver.Halt&&((UiDriver.Halt)e).terminal)cancelled=true;if(!record.isEmpty()){store.finish(record,"unknown",e.getMessage());cancelled=true;}put(item,"status","failed");put(item,"message",e.getMessage());}
-                    results.put(item);store.save("scan",results);
+                            store.finish(record,"changed","已回读确认");put(item,"status","changed");put(item,"message",pass==0?"已回读确认":"补查后已回读确认");}
+                    }catch(Exception e){if(e instanceof UiDriver.Halt&&((UiDriver.Halt)e).terminal)cancelled=true;if(!record.isEmpty()){store.finish(record,"unknown",e.getMessage());cancelled=true;}put(item,"status","failed");put(item,"message",e.getMessage());put(item,"retryable",record.isEmpty()&&e instanceof UiDriver.Halt&&((UiDriver.Halt)e).retryable);}
+                    upsertResult(results,item);store.save("scan",results);
                 }
-            }catch(Exception e){if(e instanceof UiDriver.Halt&&((UiDriver.Halt)e).terminal)cancelled=true;JSONObject item=scanItem(rule,"");put(item,"status","skipped");put(item,"message",e.getMessage());put(item,"attempts",ui.attempts());results.put(item);store.save("scan",results);}
+            }catch(Exception e){if(e instanceof UiDriver.Halt&&((UiDriver.Halt)e).terminal)cancelled=true;for(String label:rule.targets){JSONObject item=scanItem(rule,label);put(item,"pass",pass+1);put(item,"status","skipped");put(item,"message",e.getMessage());put(item,"attempts",ui.attempts());put(item,"retryable",e instanceof UiDriver.Halt&&((UiDriver.Halt)e).retryable);upsertResult(results,item);}store.save("scan",results);}
+        }
+        pending=pass==0?automaticRetry(rules,results):Collections.emptyList();
         }
         if(cancelled){recordUnrun(rules,results);store.save("scan",results);}
-        store.setLastRun(cancelled?"已停止，已完成的改动已保存":"本轮清理结束");note(store.lastRun());
+        store.setLastRun(cancelled?"已停止，已完成的改动已保存":retried>0?"本轮清理结束，已自动补查 "+retried+" 项":"本轮清理结束");note(store.lastRun());
     });}
+    static void upsertResult(JSONArray results,JSONObject item){
+        for(int i=0;i<results.length();i++){JSONObject old=results.optJSONObject(i);if(old!=null&&old.optString("key").equals(item.optString("key"))){
+            put(item,"previousMessage",old.optString("message"));try{results.put(i,item);}catch(JSONException e){throw new IllegalStateException(e);}return;
+        }}results.put(item);
+    }
+    static List<Rule> automaticRetry(List<Rule> rules,JSONArray results){
+        Map<String,Set<String>> targets=new LinkedHashMap<>();
+        for(int i=0;i<results.length();i++){JSONObject item=results.optJSONObject(i);if(item==null||!item.optBoolean("retryable")||item.optJSONObject("rule")==null)continue;
+            if(!Arrays.asList("missing","failed","skipped").contains(item.optString("status")))continue;
+            targets.computeIfAbsent(item.optJSONObject("rule").optString("id"),k->new LinkedHashSet<>()).add(item.optString("label"));
+        }
+        List<Rule> retry=new ArrayList<>();for(Rule rule:rules){Set<String> wanted=targets.get(rule.id);if(wanted==null||rule.manual)continue;List<String> labels=new ArrayList<>();for(String label:rule.targets)if(wanted.contains(label))labels.add(label);if(!labels.isEmpty())retry.add(rule.onlyTargets(labels));}return retry;
+    }
     private static JSONObject scanItem(Rule r,String label){JSONObject j=new JSONObject();put(j,"rule",r.json());put(j,"label",label);put(j,"key",r.id+":"+label);put(j,"build",Build.FINGERPRINT);return j;}
     static void recordUnrun(List<Rule> rules,JSONArray results){Set<String> done=new HashSet<>(),groups=new HashSet<>();for(int i=0;i<results.length();i++){JSONObject item=results.optJSONObject(i);if(item==null||item.optJSONObject("rule")==null)continue;String id=item.optJSONObject("rule").optString("id"),label=item.optString("label");if(label.isEmpty())groups.add(id);else done.add(id+":"+label);}for(Rule rule:rules){if(groups.contains(rule.id))continue;for(String label:rule.targets)if(!done.contains(rule.id+":"+label)){JSONObject item=scanItem(rule,label);put(item,"status","skipped");put(item,"message","任务停止前尚未执行，可在未完成列表中重试");results.put(item);}}}
     public synchronized void restore(JSONObject entry){restoreAll(Collections.singletonList(entry));}

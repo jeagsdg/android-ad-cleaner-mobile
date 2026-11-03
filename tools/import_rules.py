@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 UP = ROOT / 'vendor/android-ad-cleaner'
 ASSETS = ROOT / 'app/src/main/assets'
 ASSETS.mkdir(parents=True, exist_ok=True)
-SHA = 'b437125829b7e78589850f6a0e54f865d25a8e08'
+SHA = '19bb74fbefece01763f713c3c26220f63659ed87'
 spec = importlib.util.spec_from_file_location('upstream_policy', UP / 'tool/channel_policy.py')
 policy = importlib.util.module_from_spec(spec)
 import sys

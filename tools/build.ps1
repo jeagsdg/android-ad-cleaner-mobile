@@ -27,8 +27,13 @@ try {
     if ($Offline) { $buildArgs += '--offline' }
     & .\gradlew.bat @buildArgs
     if ($LASTEXITCODE) { throw '构建或检查失败；未更新交付 APK。' }
+    python tools/verify_apk.py ('app/build/outputs/apk/'+$variant+'/app-'+$variant+'.apk')
+    if ($LASTEXITCODE) { throw '安装包资产校验失败；未更新交付 APK。' }
     New-Item -ItemType Directory -Path (Join-Path $projectRoot 'dist') -Force | Out-Null
-    $name = if ($Release) { 'ClearScreen-0.2.0-preview.apk' } else { 'ClearScreen-0.2.0-debug.apk' }
+    $versionMatch = [regex]::Match((Get-Content -LiteralPath (Join-Path $projectRoot 'app/build.gradle') -Raw), "versionName '([^']+)'")
+    if (-not $versionMatch.Success) { throw '无法读取应用版本；未更新交付 APK。' }
+    $versionName = $versionMatch.Groups[1].Value
+    $name = if ($Release) { 'ClearScreen-' + $versionName + '.apk' } else { 'ClearScreen-' + $versionName + '-debug.apk' }
     $apk = Join-Path $projectRoot ('dist/' + $name)
     Copy-Item -LiteralPath ('app/build/outputs/apk/'+$variant+'/app-'+$variant+'.apk') -Destination $apk -Force
     Get-FileHash -LiteralPath $apk -Algorithm SHA256

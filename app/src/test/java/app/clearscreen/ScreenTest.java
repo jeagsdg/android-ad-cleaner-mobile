@@ -14,6 +14,11 @@ import static org.junit.Assert.*;
 @Config(sdk=28, qualifiers="zh-rCN-w411dp-h891dp-xhdpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class ScreenTest {
+    @Test public void supportIsOptionalAndExportsOriginalImage()throws Exception{
+        MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();assertNotNull(find(a.getWindow().getDecorView(),"开始清理"));find(a.getWindow().getDecorView(),"支持作者  ·  自愿赞赏").performClick();assertNotNull(find(a.getWindow().getDecorView(),"保存赞赏码"));
+        java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();a.copySupportCode(output);byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(output.toByteArray());StringBuilder hex=new StringBuilder();for(byte b:hash)hex.append(String.format(java.util.Locale.ROOT,"%02x",b));assertEquals("5dfc946feeca2ae7956bc4e6322b331a47e12d1ad6d511c1a4f2caea9bc33e77",hex.toString());
+        find(a.getWindow().getDecorView(),"保存赞赏码").performClick();android.content.Intent save=org.robolectric.Shadows.shadowOf(a).getNextStartedActivityForResult().intent;assertEquals(android.content.Intent.ACTION_CREATE_DOCUMENT,save.getAction());assertEquals("image/jpeg",save.getType());find(a.getWindow().getDecorView(),"返回清理").performClick();assertNotNull(find(a.getWindow().getDecorView(),"开始清理"));
+    }
     @Test @Config(sdk=34) public void android14HomeStartsAndNavigates()throws Exception{MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();assertNotNull(find(a.getWindow().getDecorView(),"开始清理"));find(a.getWindow().getDecorView(),"使用说明  ›").performClick();assertNotNull(find(a.getWindow().getDecorView(),"数据留在你的手机"));}
     @Test public void navigationEmptyStatesAndRecordPersistence()throws Exception{
         MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();
@@ -71,7 +76,7 @@ public class ScreenTest {
         MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();
         View view=a.getWindow().getDecorView();view.measure(View.MeasureSpec.makeMeasureSpec(822,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(1782,View.MeasureSpec.EXACTLY));view.layout(0,0,822,1782);
         Bitmap b=Bitmap.createBitmap(822,1782,Bitmap.Config.ARGB_8888);view.draw(new Canvas(b));File dir=new File(System.getProperty("clearscreen.artifacts"),"screenshots");dir.mkdirs();try(FileOutputStream out=new FileOutputStream(new File(dir,"home.png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}
-        View start=find(view,"开始清理");assertNotNull(start);start.performClick();assertNotNull(org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog());
+        View start=find(view,"开始清理");assertNotNull(start);start.performClick();assertNotNull(find(a.getWindow().getDecorView(),"前往系统授权"));assertNotNull(find(a.getWindow().getDecorView(),"开启遇到问题"));
     }
     static View find(View view,String text){if(view instanceof TextView&&((TextView)view).getText().toString().equals(text))return view;if(view instanceof ViewGroup)for(int i=0;i<((ViewGroup)view).getChildCount();i++){View v=find(((ViewGroup)view).getChildAt(i),text);if(v!=null)return v;}return null;}
 }

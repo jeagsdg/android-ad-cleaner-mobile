@@ -12,7 +12,12 @@ import org.json.*;
 
 /** Accessibility adapter: exact matching, unique rows, no blind coordinates or global toggles. */
 public final class UiDriver {
-    public static final class Halt extends Exception{public final boolean terminal;public Halt(String message){this(message,false);}public Halt(String message,boolean terminal){super(message);this.terminal=terminal;}}
+    public static final class Halt extends Exception{
+        public final boolean terminal,retryable;
+        public Halt(String message){this(message,false,false);}
+        public Halt(String message,boolean terminal){this(message,terminal,false);}
+        public Halt(String message,boolean terminal,boolean retryable){super(message);this.terminal=terminal;this.retryable=retryable&&!terminal;}
+    }
     public static final class Found {
         public final AccessibilityNodeInfo node,click;
         public final boolean checked; public final String label;
@@ -34,26 +39,65 @@ public final class UiDriver {
     void pause(long ms)throws Halt{long end=System.nanoTime()+ms*1_000_000L;while(System.nanoTime()<end){check();try{Thread.sleep(100);}catch(InterruptedException e){Thread.currentThread().interrupt();check();}}}
     boolean allowed(String pkg){return rule.notification()?Arrays.asList("com.android.settings","com.oplus.notificationmanager","com.coloros.notificationmanager").contains(pkg):Objects.equals(expectedPackage,pkg);}
     AccessibilityNodeInfo root()throws Halt{
-        check();AccessibilityNodeInfo r=service.getRootInActiveWindow();if(r==null)throw new Halt("暂时无法读取页面，请保持手机亮屏重试");
+        check();AccessibilityNodeInfo r=service.getRootInActiveWindow();if(r==null)throw new Halt("暂时无法读取页面，请保持手机亮屏重试",false,true);
         String pkg=String.valueOf(r.getPackageName());if(!allowed(pkg))throw new Halt("目标页面已离开前台，任务已停止",true);
         for(AccessibilityNodeInfo n:walk(r))if(n.isVisibleToUser()&&n.isClickable()&&text(n).matches("同意|同意并继续|同意并使用|允许|允许所有|立即授权"))throw new Halt("遇到协议或权限申请，请自行处理后重试",true);
         return r;
     }
     public void open(Rule r)throws Halt{
         rule=r;while(attempts.length()>0)attempts.remove(0);check();if(r.manual)throw new Halt("此项需要手动处理，请查看操作路径");
-        String last="没有匹配的设置路径";
+        String last="没有匹配的设置路径";boolean retryable=false;
         for(Route candidate:r.routes){route=candidate;JSONObject attempt=new JSONObject();CleanerService.put(attempt,"route",candidate.name);CleanerService.put(attempt,"package",candidate.pkg);
             try{openRoute(r,candidate);
                 // Route selection is read-only. A route is accepted only after an exact target is found.
-                boolean matched=false;for(String label:r.targets){try{top();if(find(label)!=null){matched=true;break;}}catch(Halt probe){if(probe.terminal)throw probe;}}
-                if(!matched)throw new Halt("此入口未识别到目标开关");
+                boolean matched=false,missing=false;for(String label:r.targets){try{top();if(find(label)!=null){matched=true;break;}missing=true;}catch(Halt probe){if(probe.terminal)throw probe;missing|=probe.retryable;}}
+                if(!matched)throw new Halt("此入口未识别到目标开关",false,missing);
                 top();CleanerService.put(attempt,"result","matched");attempts.put(attempt);return;
-            }catch(Halt e){CleanerService.put(attempt,"result",e.getMessage());attempts.put(attempt);if(e.terminal)throw e;last=e.getMessage();}
+            }catch(Halt e){CleanerService.put(attempt,"result",e.getMessage());attempts.put(attempt);if(e.terminal)throw e;last=e.getMessage();retryable|=e.retryable;}
         }
-        throw new Halt("已检查 "+r.routes.size()+" 个入口："+last);
+        throw new Halt("已检查 "+r.routes.size()+" 个入口："+last,false,retryable);
     }
+    static String fingerprint(AccessibilityNodeInfo root){
+        if(root==null)return "";StringBuilder value=new StringBuilder().append(root.getWindowId()).append(':').append(root.getPackageName());
+        for(AccessibilityNodeInfo node:walk(root))if(node.isVisibleToUser())value.append('|').append(text(node)).append(':').append(node.getViewIdResourceName()).append(':').append(node.isChecked()).append(':').append(node.getChildCount());
+        return value.toString();
+    }
+    static boolean loading(AccessibilityNodeInfo root){
+        List<AccessibilityNodeInfo> nodes=walk(root);if(nodes.size()<2)return true;
+        for(AccessibilityNodeInfo n:nodes)if(n.isVisibleToUser()&&(String.valueOf(n.getClassName()).endsWith("ProgressBar")||text(n).matches("正在加载[.…]*|加载中[.…]*|请稍候[.…]*|Loading[.…]*")))return true;
+        return false;
+    }
+    /** Wait only on the source or declared destination. Unexpected foreground changes still stop. */
+    static final class PageStamp {
+        final String pkg,value;
+        PageStamp(AccessibilityNodeInfo root){pkg=root==null?"":String.valueOf(root.getPackageName());value=fingerprint(root);}
+    }
+    void awaitPage(PageStamp previous,List<String> expected,long timeout)throws Halt{
+        String source=previous.pkg,before=previous.value,last="";
+        long deadline=System.nanoTime()+timeout*1_000_000L,stableSince=System.nanoTime(),began=stableSince;
+        while(System.nanoTime()<deadline){
+            check();AccessibilityNodeInfo current=service.getRootInActiveWindow();
+            if(current!=null){String pkg=String.valueOf(current.getPackageName());
+                if(!allowed(pkg)&&!pkg.equals(source))throw new Halt("目标页面已离开前台，任务已停止",true);
+                if(allowed(pkg)){
+                    current=root();String value=fingerprint(current);long now=System.nanoTime();
+                    if(!value.equals(last)){last=value;stableSince=now;}
+                    boolean known=false;for(AccessibilityNodeInfo n:walk(current))if(n.isVisibleToUser()&&expected.contains(text(n))){known=true;break;}
+                    boolean changed=!value.equals(before);
+                    if(!loading(current)&&now-stableSince>=400_000_000L&&(changed||(known&&now-began>=900_000_000L)))return;
+                }else{last="";stableSince=System.nanoTime();}
+            }else{last="";stableSince=System.nanoTime();}
+            pause(100);
+        }
+        // Do not click or relaunch against a stale source page after the wait budget expires.
+        AccessibilityNodeInfo current=service.getRootInActiveWindow();
+        if(current==null||!allowed(String.valueOf(current.getPackageName()))||loading(current))
+            throw new Halt("页面尚未加载完成，未点击",false,true);
+        root();
+    }
+    private List<String> targetLabels(Rule r){List<String> all=new ArrayList<>();for(String label:r.targets)all.addAll(r.labels(label));return all;}
     private void openRoute(Rule r,Route candidate)throws Halt{
-        check();expectedPackage=candidate.foreground;Intent intent;
+        check();PageStamp previous=new PageStamp(service.getRootInActiveWindow());expectedPackage=candidate.foreground;Intent intent;
         if(r.notification()){intent=new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,r.pkg).putExtra(Settings.EXTRA_CHANNEL_ID,r.channelId);}
         else if(!candidate.uri.isEmpty()){intent=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(candidate.uri)).setPackage(candidate.pkg);}
         else if(!candidate.activity.isEmpty()){String cls=candidate.activity.startsWith(".")?candidate.pkg+candidate.activity:candidate.activity;intent=new Intent().setComponent(new ComponentName(candidate.pkg,cls));}
@@ -61,9 +105,14 @@ public final class UiDriver {
         else{intent=service.getPackageManager().getLaunchIntentForPackage(candidate.pkg);if(intent==null)throw new Halt("没有可打开的入口，请使用手动路径");}
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
         try{service.startActivity(intent);}catch(Exception e){throw new Halt("系统不允许直接打开此设置，请使用手动路径");}
-        pause(1400);root();
-        for(int i=0;i<candidate.path.size();i++){List<String> step=candidate.path.get(i);if(!tap(step))throw new Halt("未找到唯一入口「"+String.join(" / ",step)+"」，未改动");expectedPackage=candidate.destinations.get(i);pause(650);root();}
-        for(String anchor:candidate.anchors){boolean present=false;for(AccessibilityNodeInfo n:walk(root()))if(n.isVisibleToUser()&&text(n).equals(anchor)){present=true;break;}if(!present)throw new Halt("页面标识不匹配，未操作");}
+        awaitPage(previous,candidate.path.isEmpty()?targetLabels(r):candidate.path.get(0),8000);
+        for(int i=0;i<candidate.path.size();i++){
+            List<String> step=candidate.path.get(i);PageStamp before=new PageStamp(root());
+            if(!tap(step))throw new Halt("未找到唯一入口「"+String.join(" / ",step)+"」，未改动",false,true);
+            expectedPackage=candidate.destinations.get(i);
+            awaitPage(before,i+1<candidate.path.size()?candidate.path.get(i+1):targetLabels(r),8000);
+        }
+        for(String anchor:candidate.anchors){boolean present=false;for(AccessibilityNodeInfo n:walk(root()))if(n.isVisibleToUser()&&text(n).equals(anchor)){present=true;break;}if(!present)throw new Halt("页面标识不匹配，未操作",false,true);}
         if(r.notification())verifyChannel();
     }
     public void current(Rule r)throws Halt{rule=r;route=r.routes.get(0);expectedPackage=route.finalPackage();root();if(r.notification())verifyChannel();}
