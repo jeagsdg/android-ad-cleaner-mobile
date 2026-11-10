@@ -66,7 +66,14 @@ public final class Rule {
             Route route = routes.get(i);
             if (i > 0) text.append("\n\n");
             text.append(i + 1).append(". ").append(route.name).append("\n").append(route.pkg);
-            for (List<String> step : route.path) text.append(" → ").append(String.join(" / ", step));
+            for (List<String> step : route.path) {
+                List<String> labels = new ArrayList<>();
+                for (String label : step) {
+                    if (!label.startsWith("@id:")) labels.add(label);
+                    else if (label.endsWith(":id/setting_menu")) labels.add("右上角设置");
+                }
+                text.append(" → ").append(labels.isEmpty() ? "相应的菜单按钮" : String.join(" / ", labels));
+            }
             if (!route.activity.isEmpty()) text.append("\n直达页面：").append(route.activity);
         }
         return text.toString();

@@ -17,5 +17,13 @@ public class PolicyTest {
     }
     @Test public void inverseProtectionSwitchesAreEnabled(){Policy p=new Store(RuntimeEnvironment.getApplication()).policy();assertTrue(p.desired("限制广告跟踪"));assertTrue(p.desired("关闭个性化推荐"));assertFalse(p.desired("个性化推荐"));assertTrue(p.protectedTitle("机 位 推 荐"));}
     @Test public void importantNotificationNamesStayProtectedEvenWithAdSdkIds(){Policy p=new Store(RuntimeEnvironment.getApplication()).policy();assertTrue(p.criticalNotification("天气预警"));assertTrue(p.criticalNotification("支付与优惠"));assertTrue(p.protectedSetting("应用更新通知"));assertFalse(p.criticalNotification("活动优惠"));}
+    @Test public void importantEnglishNotificationNamesStayProtectedEvenWithAdSdkIds(){
+        Policy policy=new Store(RuntimeEnvironment.getApplication()).policy();
+        for(String name:new String[]{"Order and payment updates","Security alerts","WEATHER ALERTS","Missed calls"}){
+            assertTrue(policy.classify(name,"admob","com.example.app","Example").recommended());
+            assertTrue(name,policy.criticalNotification(name));
+        }
+        assertFalse(policy.criticalNotification("Weekly offers and promotions"));
+    }
     @Test public void rulesAreBoundedAndSourceTracked(){Store s=new Store(RuntimeEnvironment.getApplication());assertEquals(75,s.allRules().size());java.util.Set<String> ids=new java.util.HashSet<>();for(Rule r:s.allRules()){assertTrue(ids.add(r.id));assertFalse(r.pkg.isEmpty());assertFalse(r.targets.isEmpty());assertTrue(r.routes.size()<=6);for(Route route:r.routes)assertTrue(route.path.size()<=8);assertTrue(r.source.startsWith("recipes/"));for(String t:r.targets)assertFalse(s.policy().protectedSetting(t));}}
 }

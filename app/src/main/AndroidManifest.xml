@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <queries>
         <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
@@ -24,6 +25,7 @@
         <package android:name="com.hihonor.appmarket"/>
         <package android:name="com.hihonor.baidu.browser"/>
         <package android:name="com.hihonor.cloudmusic"/>
+        <package android:name="com.hihonor.devicemanager"/>
         <package android:name="com.hihonor.dz.reader"/>
         <package android:name="com.hihonor.hiboard"/>
         <package android:name="com.hihonor.id"/>
@@ -60,6 +62,10 @@
         <service android:name=".CleanerService" android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" android:exported="true">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService"/></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/accessibility_service"/>
+        </service>
+        <service android:name=".SkipKeepAliveService" android:exported="false" android:foregroundServiceType="specialUse">
+            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="User-enabled foreground support for active accessibility-based ad skipping, with a visible notification and stop control"/>
         </service>
         <service android:name=".ChannelObserver" android:label="净屏 · 营销渠道检查" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service>
     </application>

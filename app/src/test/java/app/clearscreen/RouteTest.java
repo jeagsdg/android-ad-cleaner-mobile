@@ -29,6 +29,15 @@ public class RouteTest {
         Rule r=new Rule(new JSONObject("{\"package\":\"com.example\",\"targets\":[\"猜你想搜\"],\"aliases\":{\"猜你想搜\":[\"显示猜你想搜模块\"]}}"));
         assertEquals(2,new Rule(r.json()).labels("猜你想搜").size());assertEquals(1,r.labels("其他开关").size());
     }
+    @Test public void modernHonorRouteShowsReadableMenuAndRetainsOldPackageGate(){
+        Store store=new Store(RuntimeEnvironment.getApplication());
+        Rule manager=store.allRules().stream().filter(rule->rule.id.equals("h-manager")).findFirst().orElseThrow();
+        assertEquals("com.hihonor.devicemanager",manager.routes.get(0).foreground);
+        assertEquals("com.hihonor.systemmanager",manager.routes.get(0).finalPackage());
+        assertTrue(manager.pathDescription().contains("右上角设置"));
+        assertFalse(manager.pathDescription().contains("@id:"));
+        assertEquals("com.hihonor.devicemanager",new Rule(manager.json()).routes.get(2).skipWhenPackagePresent);
+    }
     @Test public void fivePriorityModelsAreIdentifiedWithoutInventedOsVersion()throws Exception{
         Store s=new Store(RuntimeEnvironment.getApplication());String[][] devices={{"oppo","PKC110","OPPO Find X8 Pro"},{"HONOR","BKQ-AN00","荣耀 Magic8"},{"HONOR","PPG-AN00","荣耀 GT Pro"},{"Xiaomi","M2007J1SC","小米 10 至尊纪念版"},{"vivo","V2338A","iQOO Neo9"}};
         for(String[] device:devices){ReflectionHelpers.setStaticField(Build.class,"MANUFACTURER",device[0]);ReflectionHelpers.setStaticField(Build.class,"BRAND",device[0]);ReflectionHelpers.setStaticField(Build.class,"MODEL",device[1]);assertEquals(device[2],s.deviceName());assertFalse(s.deviceInfo().getBoolean("oemVerified"));assertTrue(s.deviceDescription().contains("Android "+Build.VERSION.RELEASE));}

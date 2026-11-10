@@ -1,12 +1,15 @@
 package app.clearscreen;
 
+import android.app.ActivityManager;
 import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.provider.Settings;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -89,6 +92,26 @@ final class PermissionAccess {
         return tryStart(launcher, new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS));
     }
 
+    static boolean openBatterySettings(Context context, Launcher launcher) {
+        return tryStart(launcher, new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                || openAppInfo(context, launcher);
+    }
+
+    static Boolean backgroundRestricted(Context context) {
+        if (Build.VERSION.SDK_INT < 28) return null;
+        try {
+            ActivityManager manager = context.getSystemService(ActivityManager.class);
+            return manager == null ? null : manager.isBackgroundRestricted();
+        } catch (SecurityException e) { return null; }
+    }
+
+    static Boolean batteryExempt(Context context) {
+        try {
+            PowerManager manager = context.getSystemService(PowerManager.class);
+            return manager == null ? null : manager.isIgnoringBatteryOptimizations(context.getPackageName());
+        } catch (SecurityException e) { return null; }
+    }
+
     private static boolean tryStart(Launcher launcher, Intent intent) {
         try { launcher.start(intent); return true; }
         catch (ActivityNotFoundException | SecurityException e) { return false; }
@@ -96,15 +119,25 @@ final class PermissionAccess {
 
     static String family() {
         String brand = (Build.MANUFACTURER + " " + Build.BRAND).toLowerCase(Locale.ROOT);
-        if (brand.matches(".*(oppo|oneplus|realme).*")) return "coloros";
+        if (brand.matches(".*(oppo|oplus|oneplus|realme).*")) return "coloros";
         if (brand.matches(".*(xiaomi|redmi|poco).*")) return "xiaomi";
         return "generic";
     }
 
+    static boolean showColorOsNotificationHelp() {
+        return Build.VERSION.SDK_INT >= 33 && family().equals("coloros");
+    }
+
+    static boolean needsNotificationPermission(Context context) {
+        return Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED;
+    }
+
     static String restrictedHelp() {
-        String base = "如果系统明确提示「受限制的设置」或「系统已拒绝向此应用授予访问权限」，可打开下方应用详情，查看是否提供「允许受限制的设置」。只有你确认信任净屏后才允许。\n\n";
-        if (family().equals("coloros")) return base
-                + "ColorOS 16 的系统帮助给出的路径是：应用详情 → 权限管理 → 右上角 ⋮ → 解除所有授权限制。菜单在「权限管理」里面，并不在应用详情首页。解除后还要返回无障碍页面开启净屏。系统提示解除操作不可撤销，请先确认信任此应用。\n\n若「权限管理」灰显并写着「未请求任何权限」，请查看下方说明。其他版本请以本机系统帮助为准。";
+        String prompt = "如果系统明确提示「受限制的设置」或「系统已拒绝向此应用授予访问权限」，";
+        if (family().equals("coloros")) return prompt
+                + "请先确认安装包来源和你是否信任净屏。\n\nOPPO Find X8 Pro 的 ColorOS 16 系统帮助给出的路径为「应用详情 → 权限管理 → 右上角 ⋮ → 解除所有授权限制」。系统提示此操作不可撤销。解除后，返回无障碍设置手动开启净屏。\n\n其他版本请按本机系统帮助查看是否提供「允许受限制的设置」。若「权限管理」灰显或没有解除入口，请查看下方说明。";
+        String base = prompt + "可打开下方应用详情，查看是否提供「允许受限制的设置」。只有你确认信任净屏后才允许。\n\n";
         if (family().equals("xiaomi")) return base
                 + "部分 MIUI / HyperOS 版本将入口放在「高级设置」中，不一定在右上角。若没有此入口，请查看下面的「没有解除入口」。";
         return base + "不同系统的入口和名称可能不同；有的位于右上角菜单，有的在「高级设置」，也可能完全不提供。未找到时请查看下面的「没有解除入口」。";
@@ -117,6 +150,11 @@ final class PermissionAccess {
             out.put("serviceComponent", component(context).flattenToString());
             // An OFF service does not prove restricted settings or a dangerous-app verdict.
             out.put("restrictionStatus", "not_determined");
+            out.put("notificationRuntimePermission", Build.VERSION.SDK_INT >= 33
+                    ? !needsNotificationPermission(context) : JSONObject.NULL);
+            Boolean restricted = backgroundRestricted(context), exempt = batteryExempt(context);
+            out.put("backgroundRestricted", restricted == null ? JSONObject.NULL : restricted);
+            out.put("batteryOptimizationExempt", exempt == null ? JSONObject.NULL : exempt);
             String installer;
             try {
                 installer = Build.VERSION.SDK_INT >= 30

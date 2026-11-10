@@ -139,7 +139,14 @@ add('h-system', '系统智能推荐服务', 'com.hihonor.id', [], ['智能推荐
 variants('h-system', route('com.android.settings', steps('隐私和安全', '其他隐私和安全功能',
          {'labels': ['广告与隐私'], 'package': 'com.hihonor.id'}, '智能推荐服务'), source=ho10))
 add('h-manager', '系统管家应用推荐', 'com.hihonor.systemmanager', [], ['应用推荐'], HO, ho, '.mainscreen.SettingActivity')
-variants('h-manager', route('com.hihonor.systemmanager', steps('设置'), source=ho10))
+# System Manager 15.0.0.347 forwards its public launcher to Device Manager 15.0.0.316.
+# Device Manager's setting_menu listener opens the original package's protected SettingActivity.
+variants('h-manager', route('com.hihonor.systemmanager', steps({
+    'labels': ['@id:com.hihonor.devicemanager:id/setting_menu'],
+    'package': 'com.hihonor.systemmanager',
+}), source=ho10, foreground='com.hihonor.devicemanager'), first=True)
+by_id['h-manager']['routes'].append(route('com.hihonor.systemmanager', steps('设置'),
+    source=ho10, skipWhenPackagePresent='com.hihonor.devicemanager'))
 add('h-store-hot', '应用市场热门推荐', 'com.hihonor.appmarket', steps('我的', '设置', '热门推荐管理'), ['热门推荐管理'], HO, ho)
 add('h-browser-search', '浏览器搜索推荐', 'com.hihonor.baidu.browser', steps('我的', '设置', '隐私设置'), ['搜索个性化推荐', '搜索下一条推荐'], HO, ho10)
 add('h-browser-web-manual', '浏览器网页广告偏好', 'com.hihonor.baidu.browser', steps('我的', '设置', '隐私设置', '偏好设置', '广告设置'),

@@ -2626,6 +2626,21 @@
     "routes": [
       {
         "package": "com.hihonor.systemmanager",
+        "path": [
+          {
+            "labels": [
+              "@id:com.hihonor.devicemanager:id/setting_menu"
+            ],
+            "package": "com.hihonor.systemmanager"
+          }
+        ],
+        "activity": "",
+        "source": "recipes/honor-PNM-AN10/recipe.py",
+        "name": "应用菜单入口",
+        "foreground": "com.hihonor.devicemanager"
+      },
+      {
+        "package": "com.hihonor.systemmanager",
         "path": [],
         "activity": ".mainscreen.SettingActivity",
         "source": "recipes/honor-WKL-AN20/recipe.py",
@@ -2640,7 +2655,8 @@
         ],
         "activity": "",
         "source": "recipes/honor-PNM-AN10/recipe.py",
-        "name": "应用菜单入口"
+        "name": "应用菜单入口",
+        "skipWhenPackagePresent": "com.hihonor.devicemanager"
       }
     ]
   },

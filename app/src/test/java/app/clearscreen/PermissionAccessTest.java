@@ -1,6 +1,9 @@
 package app.clearscreen;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.os.*;
 import android.provider.Settings;
 import android.view.View;
@@ -12,6 +15,10 @@ import org.junit.runner.RunWith;
 import org.robolectric.*;
 import org.robolectric.annotation.Config;
 import org.robolectric.android.controller.ActivityController;
+import org.robolectric.shadows.ShadowActivity;
+import org.robolectric.shadows.ShadowAlertDialog;
+import org.robolectric.shadows.ShadowBuild;
+import org.robolectric.shadows.ShadowToast;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -73,17 +80,23 @@ public class PermissionAccessTest {
         assertEquals(PermissionAccess.State.OFF, PermissionAccess.state(context()));
     }
     @Test public void helpCoversAllBrandsAndDoesNotAssumeMenuExists() {
-        for (String brand : Arrays.asList("oppo", "oneplus", "realme", "xiaomi", "redmi", "poco", "honor", "vivo", "samsung", "google", "other")) {
-            org.robolectric.shadows.ShadowBuild.setManufacturer(brand);
-            org.robolectric.shadows.ShadowBuild.setBrand(brand);
+        List<String> colorOsBrands = Arrays.asList("oppo", "oplus", "oneplus", "realme");
+        for (String brand : Arrays.asList("oppo", "oplus", "oneplus", "realme", "xiaomi", "redmi", "poco", "honor", "vivo", "samsung", "google", "other")) {
+            ShadowBuild.setManufacturer(brand);
+            ShadowBuild.setBrand(brand);
             String help = PermissionAccess.restrictedHelp();
             assertTrue(help.contains("如果系统明确提示"));
             assertTrue(help.contains("查看是否提供"));
-            if (brand.equals("oppo")) {assertTrue(help.contains("权限管理 → 右上角"));assertTrue(help.contains("解除所有授权限制"));}
+            if (colorOsBrands.contains(brand)) {
+                assertTrue(help.contains("权限管理 → 右上角"));
+                assertTrue(help.contains("解除所有授权限制"));
+            }
+            assertEquals(Build.VERSION.SDK_INT >= 33 && colorOsBrands.contains(brand), PermissionAccess.showColorOsNotificationHelp());
             if (brand.equals("xiaomi")) assertTrue(help.contains("高级设置"));
         }
     }
     @Test public void diagnosticsSeparateDisabledFromRestrictedAndKeepLedger() throws Exception {
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(Manifest.permission.POST_NOTIFICATIONS);
         Store store = new Store(context());
         Rule rule = store.allRules().get(0);
         String id = store.prepare(rule, rule.targets.get(0), true, false);
@@ -92,6 +105,8 @@ public class PermissionAccessTest {
         assertEquals("OFF", permissions.getString("accessibilityState"));
         assertEquals("not_determined", permissions.getString("restrictionStatus"));
         assertTrue(permissions.has("installingPackage"));
+        if (Build.VERSION.SDK_INT >= 33) assertFalse(permissions.getBoolean("notificationRuntimePermission"));
+        else assertTrue(permissions.isNull("notificationRuntimePermission"));
         assertEquals(id, export.getJSONArray("journal").getJSONObject(0).getString("id"));
     }
     @Test public void returningFromSettingsRefreshesStateWithoutStartingCleaning() {
@@ -103,10 +118,11 @@ public class PermissionAccessTest {
                 PermissionAccess.component(context()).flattenToString());
         controller.resume();
         assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "开关已开启，服务未连接"));
+        assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "管理系统授权"));
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         service.onServiceConnected();
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-        View ready = ScreenTest.find(activity.getWindow().getDecorView(), "返回开始清理");
+        View ready = ScreenTest.find(activity.getWindow().getDecorView(), "完成");
         assertNotNull(ready);
         ready.performClick();
         assertEquals(0, activity.tab);
@@ -130,5 +146,85 @@ public class PermissionAccessTest {
         next.onBackPressed();
         assertNotNull(ScreenTest.find(next.getWindow().getDecorView(), "前往系统授权"));
         recreated.pause().stop().destroy();
+    }
+    @Test @Config(sdk = 34) public void colorOsNotificationGrantReturnsToAppInfoWithoutEnablingAccessibility() throws Exception {
+        ShadowBuild.setManufacturer("OPPO");
+        ShadowBuild.setBrand("OPPO");
+        String notificationPermission = Manifest.permission.POST_NOTIFICATIONS;
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(notificationPermission);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            activity.accessibility();
+            ScreenTest.find(activity.getWindow().getDecorView(), "开启遇到问题").performClick();
+            assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "申请过滤状态通知").performClick());
+            ShadowActivity shadow = shadowOf(activity);
+            ShadowActivity.PermissionsRequest request = shadow.getLastRequestedPermission();
+            assertEquals(MainActivity.COLOROS_FILTER_NOTIFICATIONS, request.requestCode);
+            assertArrayEquals(new String[]{notificationPermission}, request.requestedPermissions);
+
+            shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(notificationPermission);
+            activity.onRequestPermissionsResult(request.requestCode, request.requestedPermissions,
+                    new int[]{PackageManager.PERMISSION_GRANTED});
+            assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "重新检查权限管理").performClick());
+            Intent appInfo = shadow.getNextStartedActivity();
+            assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, appInfo.getAction());
+            assertEquals("package:" + activity.getPackageName(), appInfo.getDataString());
+            assertEquals(PermissionAccess.State.OFF, PermissionAccess.state(activity));
+            assertTrue(PermissionAccess.diagnostics(activity).getBoolean("notificationRuntimePermission"));
+            assertNull(AdFilterService.active);
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    @Test @Config(sdk = 34) public void colorOsNotificationDenialCanStillOpenAppInfo() {
+        ShadowBuild.setManufacturer("OPPO");
+        String notificationPermission = Manifest.permission.POST_NOTIFICATIONS;
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(notificationPermission);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            activity.accessibility();
+            ScreenTest.find(activity.getWindow().getDecorView(), "开启遇到问题").performClick();
+            ScreenTest.find(activity.getWindow().getDecorView(), "申请过滤状态通知").performClick();
+            activity.onRequestPermissionsResult(MainActivity.COLOROS_FILTER_NOTIFICATIONS,
+                    new String[]{notificationPermission}, new int[]{PackageManager.PERMISSION_DENIED});
+
+            AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+            assertTrue(dialog.isShowing());
+            assertEquals("检查权限管理", dialog.getButton(AlertDialog.BUTTON_POSITIVE).getText().toString());
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            Intent appInfo = shadowOf(activity).getNextStartedActivity();
+            assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, appInfo.getAction());
+            assertEquals("package:" + activity.getPackageName(), appInfo.getDataString());
+            assertEquals(PermissionAccess.State.OFF, PermissionAccess.state(activity));
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    @Test @Config(sdk = 34) public void networkNotificationManagementKeepsItsOwnContext() {
+        ShadowBuild.setManufacturer("OPPO");
+        String notificationPermission = Manifest.permission.POST_NOTIFICATIONS;
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(notificationPermission);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            activity.showPage(6);
+            assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "管理过滤通知").performClick());
+            ShadowActivity shadow = shadowOf(activity);
+            ShadowActivity.PermissionsRequest request = shadow.getLastRequestedPermission();
+            assertEquals(MainActivity.FILTER_NOTIFICATIONS, request.requestCode);
+
+            shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(notificationPermission);
+            activity.onRequestPermissionsResult(request.requestCode, request.requestedPermissions,
+                    new int[]{PackageManager.PERMISSION_GRANTED});
+            assertEquals("过滤状态通知已允许", ShadowToast.getTextOfLatestToast());
+            assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "管理过滤通知").performClick());
+            assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, shadow.getNextStartedActivity().getAction());
+            assertNull(AdFilterService.active);
+        } finally {
+            controller.pause().stop().destroy();
+        }
     }
 }

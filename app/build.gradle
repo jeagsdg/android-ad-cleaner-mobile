@@ -5,7 +5,7 @@ if (releasePropertiesFile.exists()) releasePropertiesFile.withInputStream { rele
 android {
     namespace 'app.clearscreen'
     compileSdk 35
-    defaultConfig { applicationId 'app.clearscreen'; minSdk 26; targetSdk 35; versionCode 4; versionName '0.3.0-preview'; testInstrumentationRunner 'app.clearscreen.DeviceChecks' }
+    defaultConfig { applicationId 'app.clearscreen'; minSdk 26; targetSdk 35; versionCode 10; versionName '0.8.1-preview'; testInstrumentationRunner 'app.clearscreen.DeviceChecks' }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     testOptions { unitTests.includeAndroidResources = true }
     signingConfigs {

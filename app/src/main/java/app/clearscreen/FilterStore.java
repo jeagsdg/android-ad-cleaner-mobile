@@ -17,5 +17,6 @@ final class FilterStore {
     List<String> recent(){String s=prefs.getString("recent","");return s.isEmpty()?new ArrayList<>():new ArrayList<>(Arrays.asList(s.split("\n")));}
     Set<String> allowed(){return new HashSet<>(prefs.getStringSet("allowed",Collections.emptySet()));}
     void allow(String host,boolean value){Set<String> set=allowed();if(value)set.add(host);else set.remove(host);prefs.edit().putStringSet("allowed",set).apply();}
-    void clearHistory(){prefs.edit().remove("recent").apply();AdFilterService.clearRecent();}
+    void clearHistory(){if(!AdFilterService.clearRecent())forgetRecent();}
+    void forgetRecent(){prefs.edit().remove("recent").apply();}
 }

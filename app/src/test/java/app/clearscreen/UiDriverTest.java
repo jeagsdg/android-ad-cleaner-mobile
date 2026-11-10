@@ -15,7 +15,7 @@ import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class) @Config(sdk=28)
 public class UiDriverTest {
-    public static class TestService extends AccessibilityService {volatile AccessibilityNodeInfo root;java.util.function.Consumer<android.content.Intent> launch;public AccessibilityNodeInfo getRootInActiveWindow(){return root;}public void onAccessibilityEvent(AccessibilityEvent e){}public void onInterrupt(){}@Override public void startActivity(android.content.Intent intent){if(launch!=null)launch.accept(intent);else super.startActivity(intent);} }
+    public static class TestService extends AccessibilityService {volatile AccessibilityNodeInfo root;Runnable beforeRead;java.util.function.Consumer<android.content.Intent> launch;public AccessibilityNodeInfo getRootInActiveWindow(){if(beforeRead!=null)beforeRead.run();return root;}public void onAccessibilityEvent(AccessibilityEvent e){}public void onInterrupt(){}@Override public void startActivity(android.content.Intent intent){if(launch!=null)launch.accept(intent);else super.startActivity(intent);} }
     TestService service;Rule rule;UiDriver driver;
     @Before public void setup()throws Exception{service=Robolectric.buildService(TestService.class).create().get();rule=new Rule(new JSONObject("{\"id\":\"fixture\",\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"]}"));service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));driver=new UiDriver(service,()->false);driver.current(rule);}
     AccessibilityNodeInfo node(String label,String cls,Rect b){AccessibilityNodeInfo n=AccessibilityNodeInfo.obtain();n.setPackageName("com.android.settings");n.setText(label);n.setClassName(cls);n.setVisibleToUser(true);n.setEnabled(true);n.setBoundsInScreen(b);return n;}
@@ -23,11 +23,41 @@ public class UiDriverTest {
     @Test public void selectsOnlyUniqueNamedSwitch()throws Exception{row("自动更新",100,true);AccessibilityNodeInfo target=row("个性化推荐",220,true);UiDriver.Found f=driver.find("个性化推荐");assertNotNull(f);assertEquals(target,f.node);assertTrue(f.checked);assertNull(driver.find("不存在"));}
     @Test public void duplicateLabelsStopInsteadOfGuessing()throws Exception{row("个性化推荐",100,true);row("个性化推荐",220,true);try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("不唯一"));}}
     @Test public void disabledSwitchCannotBeChanged()throws Exception{row("个性化推荐",100,true).setEnabled(false);try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("不可操作"));}}
+    @Test public void clippedSwitchIsReadAgainAfterLayoutSettles()throws Exception{
+        AccessibilityNodeInfo target=row("个性化推荐",100,true);
+        target.setBoundsInScreen(new Rect(600,120,860,180));
+        java.util.concurrent.atomic.AtomicInteger reads=new java.util.concurrent.atomic.AtomicInteger();
+        service.beforeRead=()->{if(reads.incrementAndGet()==2)target.setBoundsInScreen(new Rect(600,120,740,180));};
+        assertEquals(target,driver.find("个性化推荐").node);
+        service.beforeRead=null;
+        assertTrue(shadowOf(target).getPerformedActions().isEmpty());
+        target.setBoundsInScreen(new Rect(600,120,860,180));
+        try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt e){assertTrue(e.retryable);}
+    }
     @Test public void otherForegroundAppStops()throws Exception{service.root.setPackageName("com.example.chat");try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("前台"));}}
     @Test public void cancellationPreventsAction()throws Exception{driver=new UiDriver(service,()->true);try{driver.current(rule);fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("停止"));}}
-    @Test public void clickIsVerifiedAndRepeatedRunDoesNotToggleBack()throws Exception{AccessibilityNodeInfo target=row("个性化推荐",100,true);shadowOf(target).setOnPerformActionListener((action,args)->{target.setChecked(!target.isChecked());return true;});assertTrue(driver.set("个性化推荐",true,false));assertFalse(target.isChecked());int count=shadowOf(target).getPerformedActions().size();assertTrue(driver.set("个性化推荐",true,false));assertFalse(target.isChecked());assertEquals(count,shadowOf(target).getPerformedActions().size());}
-    @Test public void ignoredClickCannotReportSuccess()throws Exception{AccessibilityNodeInfo target=row("个性化推荐",100,true);shadowOf(target).setOnPerformActionListener((action,args)->true);assertFalse(driver.set("个性化推荐",true,false));assertTrue(target.isChecked());}
-    @Test public void restorationWritesSavedOriginalValue()throws Exception{AccessibilityNodeInfo target=row("个性化推荐",100,false);shadowOf(target).setOnPerformActionListener((action,args)->{target.setChecked(true);return true;});assertTrue(driver.set("个性化推荐",false,true));assertTrue(target.isChecked());}
+    @Test public void clickIsVerifiedAndRepeatedRunDoesNotToggleBack()throws Exception{
+        AccessibilityNodeInfo target=row("个性化推荐",100,true);
+        shadowOf(target).setOnPerformActionListener((action,args)->{target.setChecked(!target.isChecked());return true;});
+        UiDriver.Found observed=driver.find("个性化推荐");
+        assertTrue(driver.set(observed,false,()->assertTrue(target.isChecked())));
+        assertFalse(target.isChecked());
+        int count=shadowOf(target).getPerformedActions().size();
+        assertTrue(driver.set(observed,false,()->fail("no write should be recorded")));
+        assertFalse(target.isChecked());
+        assertEquals(count,shadowOf(target).getPerformedActions().size());
+    }
+    @Test public void ignoredClickCannotReportSuccess()throws Exception{AccessibilityNodeInfo target=row("个性化推荐",100,true);shadowOf(target).setOnPerformActionListener((action,args)->true);assertFalse(driver.set(driver.find("个性化推荐"),false,()->{}));assertTrue(target.isChecked());}
+    @Test public void restorationWritesSavedOriginalValue()throws Exception{AccessibilityNodeInfo target=row("个性化推荐",100,false);shadowOf(target).setOnPerformActionListener((action,args)->{target.setChecked(true);return true;});assertTrue(driver.set(driver.findExact("个性化推荐"),true,()->{}));assertTrue(target.isChecked());}
+    @Test public void ledgerFailurePreventsAnyClick()throws Exception{
+        AccessibilityNodeInfo target=row("个性化推荐",100,true);
+        try{
+            driver.set(driver.find("个性化推荐"),false,()->{throw new IllegalStateException("write failed");});
+            fail("expected ledger failure");
+        }catch(IllegalStateException expected){assertEquals("write failed",expected.getMessage());}
+        assertTrue(target.isChecked());
+        assertTrue(shadowOf(target).getPerformedActions().isEmpty());
+    }
     @Test public void settingsIconDoesNotMatchUnrelatedSettingSwitch()throws Exception{AccessibilityNodeInfo icon=node("","android.widget.ImageView",new Rect(680,30,750,100));icon.setViewIdResourceName("com.android.settings:id/settings_icon");icon.setClickable(true);shadowOf(service.root).addChild(icon);AccessibilityNodeInfo unrelated=row("设置壁纸",240,true);unrelated.setViewIdResourceName("com.android.settings:id/securitySettingSwitchLayout");shadowOf(icon).setOnPerformActionListener((action,args)->true);assertTrue(driver.tap(java.util.Collections.singletonList("设置")));assertEquals(1,shadowOf(icon).getPerformedActions().size());assertEquals(0,shadowOf(unrelated).getPerformedActions().size());}
     @Test public void appNotificationPageIsNotChannelPage()throws Exception{rule.channelId="promo";rule.channelName="营销通知";rule.channelApp="测试应用";shadowOf(service.root).addChild(node("测试应用","android.widget.TextView",new Rect(0,0,500,80)));row("营销通知",200,true);try{driver.current(rule);fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("渠道名"));}}
     @Test public void onlyExplicitMatchingDisableDialogCanBeConfirmed()throws Exception{
@@ -66,6 +96,15 @@ public class UiDriverTest {
         driver.current(r);row("关闭个性化推荐",100,false);UiDriver.Found found=driver.find("个性化推荐");assertEquals("关闭个性化推荐",found.label);assertTrue(new Store(service).policy().desired(found.label));
         row("个性化推荐",220,true);try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt expected){assertTrue(expected.getMessage().contains("不唯一"));}
     }
+    @Test public void restoreUsesTheRecordedLabelEvenWhenAnotherAliasIsVisible()throws Exception{
+        Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化广告推荐\"],\"aliases\":{\"个性化广告推荐\":[\"个性化推荐\"]}}"));
+        AccessibilityNodeInfo recorded=row("个性化推荐",100,false);
+        AccessibilityNodeInfo other=row("个性化广告推荐",220,false);
+        service.launch=intent->{};
+        driver.openForRestore(r,"个性化推荐");
+        assertEquals(recorded,driver.findExact("个性化推荐").node);
+        assertTrue(shadowOf(other).getPerformedActions().isEmpty());
+    }
     @Test public void packageTransitionIsScopedToItsStep()throws Exception{
         Rule r=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"path\":[{\"labels\":[\"广告设置\"],\"package\":\"com.example.id\"}]}"));
         AccessibilityNodeInfo entry=node("广告设置","android.widget.Button",new Rect(0,100,700,200));entry.setClickable(true);shadowOf(service.root).addChild(entry);
@@ -93,8 +132,95 @@ public class UiDriverTest {
         UiDriver.PageStamp previous=new UiDriver.PageStamp(service.root);service.root.setPackageName("com.example.chat");
         try{driver.awaitPage(previous,java.util.Collections.emptyList(),300);fail();}catch(UiDriver.Halt e){assertTrue(e.terminal);assertFalse(e.retryable);}
     }
+    @Test public void recognizesOnlyTheKnownHonorMarketSplashAsLoading(){
+        String pkg="com.hihonor.appmarket";
+        service.root.setPackageName(pkg);
+        AccessibilityNodeInfo skip=node("跳过 5","android.widget.TextView",new Rect(600,50,740,100));
+        skip.setPackageName(pkg);
+        shadowOf(service.root).addChild(skip);
+        skip.setViewIdResourceName(pkg+":id/btn_skip_quick_game_center");
+        assertFalse(UiDriver.loading(service.root));
+        skip.setViewIdResourceName(pkg+":id/btn_skip");
+        assertTrue(UiDriver.loading(service.root));
+        skip.setViewIdResourceName(pkg+":id/tv_operation_skip");
+        assertTrue(UiDriver.loading(service.root));
+        skip.setVisibleToUser(false);
+        assertFalse(UiDriver.loading(service.root));
+    }
     @Test public void ambiguousOnlyPageDoesNotScheduleAutomaticRetry()throws Exception{
         row("个性化推荐",100,true);row("个性化推荐",220,true);service.launch=intent->{};
         try{driver.open(rule);fail();}catch(UiDriver.Halt e){assertFalse(e.retryable);}
+    }
+    @Test public void repeatedViewportDoesNotKeepScrollingWhenTheListCannotMove()throws Exception{
+        row("其他开关",100,true);
+        service.root.setScrollable(true);
+        shadowOf(service.root).setOnPerformActionListener((action,args)->true);
+        assertNull(driver.find("个性化推荐"));
+        assertEquals(1,shadowOf(service.root).getPerformedActions().size());
+    }
+    @Test public void expiredGroupBudgetSkipsBeforeLaunchingAnotherRoute()throws Exception{
+        service.launch=intent->{throw new AssertionError("expired group launched a route");};
+        UiDriver bounded=new UiDriver(service,()->false,1);
+        Thread.sleep(10);
+        try{bounded.open(rule);fail();}
+        catch(UiDriver.Halt halt){
+            assertFalse(halt.terminal);
+            assertFalse(halt.retryable);
+            assertTrue(halt.getMessage().contains("本组检查超时"));
+        }
+    }
+    @Test public void consentInTargetAppSkipsGroupWithoutClickingOrTryingAnotherRoute()throws Exception{
+        AccessibilityNodeInfo consent=node("同意并继续","android.widget.Button",new Rect(80,600,600,700));
+        consent.setClickable(true);
+        java.util.concurrent.atomic.AtomicInteger launches=new java.util.concurrent.atomic.AtomicInteger();
+        service.launch=intent->{launches.incrementAndGet();shadowOf(service.root).addChild(consent);};
+        Rule routes=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"routes\":[{\"activity\":\".First\"},{\"activity\":\".Second\"}]}"));
+        try{driver.open(routes);fail();}
+        catch(UiDriver.Halt halt){
+            assertFalse(halt.terminal);
+            assertFalse(halt.retryable);
+            assertTrue(halt.getMessage().contains("确认协议"));
+        }
+        assertEquals(1,launches.get());
+        assertTrue(shadowOf(consent).getPerformedActions().isEmpty());
+    }
+    @Test public void waitsPastPriorConsentPageDuringSamePackageLaunch()throws Exception{
+        AccessibilityNodeInfo consent=node("同意并继续","android.widget.Button",new Rect(80,600,600,700));
+        consent.setClickable(true);
+        shadowOf(service.root).addChild(consent);
+        UiDriver.PageStamp previous=new UiDriver.PageStamp(service.root);
+        AccessibilityNodeInfo blocked=service.root;
+        service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));
+        AccessibilityNodeInfo target=row("个性化推荐",100,true);
+        AccessibilityNodeInfo ready=service.root;
+        service.root=blocked;
+        java.util.concurrent.atomic.AtomicInteger reads=new java.util.concurrent.atomic.AtomicInteger();
+        service.beforeRead=()->{if(reads.incrementAndGet()==3)service.root=ready;};
+        driver.awaitPage(previous,java.util.Collections.singletonList("个性化推荐"),2500);
+        assertEquals(target,driver.find("个性化推荐").node);
+        assertTrue(shadowOf(consent).getPerformedActions().isEmpty());
+    }
+    @Test public void explicitLauncherMayHandOffOnlyToTheDeclaredPackage()throws Exception{
+        String destination="com.example.device.settings";
+        android.content.pm.PackageInfo installed=new android.content.pm.PackageInfo();
+        installed.packageName=destination;
+        shadowOf(service.getPackageManager()).installPackage(installed);
+        AccessibilityNodeInfo launcher=service.root;
+        service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));
+        service.root.setPackageName(destination);
+        AccessibilityNodeInfo target=row("个性化推荐",100,true);
+        AccessibilityNodeInfo ready=service.root;
+        service.root=node("","android.widget.LinearLayout",new Rect(0,0,800,1600));
+        service.root.setPackageName("app.clearscreen");
+        java.util.concurrent.atomic.AtomicInteger reads=new java.util.concurrent.atomic.AtomicInteger();
+        service.launch=intent->{
+            service.root=launcher;
+            service.beforeRead=()->{if(reads.incrementAndGet()==3)service.root=ready;};
+        };
+        Rule route=new Rule(new JSONObject("{\"package\":\"com.android.settings\",\"targets\":[\"个性化推荐\"],\"routes\":[{\"activity\":\".Launcher\",\"foreground\":\""+destination+"\"}]}"));
+        driver.open(route);
+        assertEquals(destination,driver.pinnedRule().pkg);
+        assertEquals(target,driver.find("个性化推荐").node);
+        assertTrue(shadowOf(target).getPerformedActions().isEmpty());
     }
 }

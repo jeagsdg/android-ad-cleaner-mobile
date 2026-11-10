@@ -19,7 +19,13 @@
 
 用户提供的“李跳跳 · 派大星2.2”安装包只用于本地参考核对，没有分发该 APK、提取其受保护代码或将其资源打包进净屏。其 ARM64 原生库无法在现有 x86_64 模拟器运行；不能声称已对该参考产品完成实际 UI 对比验收。
 
-开屏控件候选额外参考 [ganlinte/GKD-subscription](https://github.com/ganlinte/GKD-subscription)，MIT，Copyright (c) 2024 ganlinte。获取的订阅版本 v72，源 SHA256 `5624137f8c70566a8dc985990dd18571600efa1c76129734703533ca5ee71c23`；GitHub 公共 API 限流时未取得精确提交，故以完整源文件哈希固定，不伪造 commit。源文件及许可证保存在 vendor/gkd-splash-reference，应用内打包并展示 splash-license.txt。tools/import_splash.py 只导入 21 条可完整表达约束的应用规则及 2 类明确 SDK 开屏资源名，不移植任意表达式执行器或坐标点击。
+开屏控件候选参考 MIT 许可的 ganlinte/GKD-subscription，Copyright (c) 2024 ganlinte。订阅版本 v72，以源文件 SHA256 `5624137f8c70566a8dc985990dd18571600efa1c76129734703533ca5ee71c23` 固定。源文件及许可证保存在 vendor/gkd-splash-reference，应用内打包并展示 splash-license.txt。0.5 的 tools/import_splash.py 生成 64 条受限谓词规则及 2 类明确 SDK 开屏资源名，保留应用范围、匹配期限及可表达的上下文条件。[订阅源码](https://github.com/ganlinte/GKD-subscription)
+
+0.4 继续使用固定的 v72 资料核对抖音与网易云音乐的更新控件，以及微信与 QQ 的原图控件。已有兼容规则的执行由净屏独立实现，社区 JSON 用于核对历史格式。当前备份还原只接受净屏格式。来源见 [作者进阶指南](https://juejin.cn/post/6938590373740544007) 和 [社区规则样本](https://github.com/wtwang1998/LiTiaotiao-Custom-Rules/blob/main/BasicRules.json)。
+
+0.6 的 `tools/import_popup_ads.py` 从同一固定 MIT 订阅生成 72 条应用内广告候选，另加入一条依照公开控件关系实现的携程首页规则。三款优先应用的本地预设使用公开记录中的包名、页面及控件条件。应用按前台包名、可见节点、广告上下文和原生点击能力决定是否执行。[固定订阅源码](https://github.com/ganlinte/GKD-subscription) [携程控件参考](https://github.com/AIsouler/GKD_subscription/blob/main/src/apps/ctrip.android.view.ts) [社区应用规则参考](https://github.com/kernelai/LiTiaotiao/blob/main/BasicRules.json)
+
+无障碍事件、排除项与关键词匹配思路参考用户提供的文章，净屏通过自己的窗口复查、唯一目标匹配及结果回读执行。[原理文章](https://www.cnblogs.com/Cl0ud/p/17684204.html)
 
 小米旧版系统菜单另参考厂商公开隐私说明，具体 URL 保存在相应 route.reference 与 [机型适配说明](docs/机型适配.md)；未复制网页全文。设备识别数据只用于展示名称，不冒充固件版本或实机认证。
 

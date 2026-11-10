@@ -1,0 +1,214 @@
+package app.clearscreen;
+
+import android.graphics.Rect;
+import android.view.accessibility.AccessibilityNodeInfo;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+import static org.junit.Assert.*;
+import static org.robolectric.Shadows.shadowOf;
+
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 28)
+public class SplashRulesCoverageTest {
+    private static final Rect SCREEN = new Rect(0, 0, 1080, 2400);
+    private static final Rect CORNER = new Rect(820, 90, 1000, 170);
+    private final SplashRules rules = new SplashRules(RuntimeEnvironment.getApplication());
+
+    @Test public void structuralRuleKeepsChildPositionsScopeAndTime() {
+        String pkg = "com.coolapk.market";
+        String activity = pkg + ".view.main.MainActivity";
+        AccessibilityNodeInfo root = frame(pkg, pkg + ":id/ad_container");
+        AccessibilityNodeInfo group = add(root, frame(pkg, null));
+        add(group, frame(pkg, null));
+        AccessibilityNodeInfo row = add(group, frame(pkg, null));
+        AccessibilityNodeInfo wrongSlot = add(row, button(pkg, "android.view.View", null));
+        AccessibilityNodeInfo skip = add(row, button(pkg, "android.view.View", null));
+
+        assertFalse(rules.matches(pkg, activity, wrongSlot));
+        assertTrue(rules.matches(pkg, activity, skip, 9999));
+        assertFalse(rules.matches(pkg, activity, skip, 10000));
+        assertFalse(rules.matches(pkg, pkg + ".view.feed.TestActivity", skip));
+        assertFalse(rules.matches(pkg, "", skip));
+        assertFalse(rules.matches("other.app", activity, skip));
+        root.setViewIdResourceName(pkg + ":id/normal_content");
+        assertFalse(rules.matches(pkg, activity, skip));
+    }
+
+    @Test public void markedMiddleNodeRequiresTheSiblingAndContainer() {
+        String pkg = "com.cyl.musiccy.ou";
+        AccessibilityNodeInfo root = frame(pkg, pkg + ":id/ksad_splash_root_container");
+        AccessibilityNodeInfo row = add(root, frame(pkg, null));
+        AccessibilityNodeInfo bar = add(row, node(pkg, "android.widget.TextView", null, false, CORNER));
+        AccessibilityNodeInfo skip = add(row, button(pkg, "android.widget.ImageView", null));
+        add(row, frame(pkg, null));
+        bar.setText("|");
+
+        assertTrue(rules.matches(pkg, "", skip));
+        assertFalse(rules.matches(pkg, "", bar));
+        bar.setText("ordinary content");
+        assertFalse(rules.matches(pkg, "", skip));
+        bar.setText("|");
+        add(row, frame(pkg, null));
+        assertFalse(rules.matches(pkg, "", skip));
+    }
+
+    @Test public void precedingSiblingAnchorSelectsTheImageOnly() {
+        String pkg = "com.qq.qcloud";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo marker = add(root, node(pkg, "android.widget.TextView", pkg + ":id/gdt_ad_text", false, CORNER));
+        AccessibilityNodeInfo skip = add(root, button(pkg, "android.widget.ImageView", null));
+
+        assertTrue(rules.matches(pkg, "", skip));
+        marker.setVisibleToUser(false);
+        assertFalse(rules.matches(pkg, "", skip));
+    }
+
+    @Test public void pagePrerequisiteMustBeVisibleAndSameTree() {
+        String pkg = "com.dubox.drive";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo skip = add(root, button(pkg, "android.widget.ImageView", pkg + ":id/ivClose"));
+        assertNull(SplashSkipper.match(root, rules, ""));
+        AccessibilityNodeInfo marker = add(root, node(pkg, "android.webkit.WebView", "inmobi-ad", false, SCREEN));
+        assertEquals(skip, SplashSkipper.match(root, rules, ""));
+        marker.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, ""));
+    }
+
+    @Test public void huaweiResourceSuffixMustBeExactAndNativelyClickable() {
+        String pkg = "com.huawei.browser";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo skip = add(root, button(pkg, "android.widget.TextView", "com.huawei.hms.ads.uiengine:id/not_hiad_skip_text"));
+        assertNull(SplashSkipper.match(root, rules, ""));
+        skip.setViewIdResourceName("com.huawei.hms.ads.uiengine:id/hiad_skip_text");
+        assertEquals(skip, SplashSkipper.match(root, rules, ""));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, "", skip, 0));
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, ""));
+    }
+
+    @Test public void huaweiSdkExactIdWorksInOtherwiseUnlistedApps() {
+        String pkg = "test.app";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo skip = add(root, button(pkg, "android.widget.TextView", pkg + ":id/hiad_skip_text"));
+        assertNull(SplashSkipper.match(root, rules, ""));
+        skip.setViewIdResourceName("com.huawei.hms.ads.uiengine:id/hiad_skip_text");
+        assertEquals(skip, SplashSkipper.match(root, rules, ""));
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, ""));
+    }
+
+    @Test public void kugouRequiresTheExactSdkDescription() {
+        String pkg = "com.kugou.android";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo skip = add(root, button(pkg, "android.view.View", null));
+        skip.setContentDescription("跳过");
+        assertNull(SplashSkipper.match(root, rules, ""));
+        skip.setContentDescription("GdtCountDownView");
+        assertEquals(skip, SplashSkipper.match(root, rules, ""));
+        assertFalse(rules.matches("other.app", "", skip));
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, ""));
+    }
+
+    @Test public void honorMarketNewCountdownKeepsActivityAndClickGuards() {
+        String pkg = "com.hihonor.appmarket";
+        String activity = pkg + ".module.main.MainActivity";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo skip = add(root, button(pkg, "android.widget.Button", pkg + ":id/btn_skip"));
+        skip.setText("跳过 5");
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".module.splash.Splash"));
+        assertFalse(rules.matches(pkg, activity, skip, 10_000));
+
+        skip.setText("继续");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setText("跳过 5");
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setClickable(true);
+        skip.setViewIdResourceName(pkg + ":id/btn_skip_quick_game_center");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setViewIdResourceName(pkg + ":id/btn_skip");
+        AccessibilityNodeInfo consent = add(root, button(pkg, "android.widget.Button", null));
+        consent.setText("同意");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void tencentVideoHomeRecognizesTouchOnlySkipWithNativeAdBadges() {
+        String pkg = "com.tencent.qqlive";
+        String activity = pkg + ".ona.activity.SplashHomeActivity";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo skip = add(root, node(pkg, "android.widget.TextView", null, false, CORNER));
+        skip.setText("跳过");
+        assertNull(SplashSkipper.match(root, rules, activity));
+
+        AccessibilityNodeInfo badge = add(root, node(pkg, "android.widget.TextView", null, false, CORNER));
+        assertNull(SplashSkipper.match(root));
+        for (String text : new String[]{"广告", "广告 | 已Wi-Fi预加载", "已Wi-Fi预加载"}) {
+            badge.setText(text);
+            assertEquals(skip, SplashSkipper.match(root, rules, activity));
+            assertEquals(SplashRules.Action.TAP, rules.action(pkg, activity, skip, 0));
+        }
+        assertNull(SplashSkipper.match(root, rules, pkg + ".ona.activity.VideoDetailActivity"));
+        assertFalse(rules.matches(pkg, activity, skip, 10_000));
+        badge.setPackageName("other.app");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setPackageName(pkg);
+        badge.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setVisibleToUser(true);
+        badge.setText("广告推荐");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void tencentVideoDedicatedSplashNeedsAnActualSkipControl() {
+        String pkg = "com.tencent.qqlive";
+        String activity = pkg + ".qadsplash.template.QAdHotSplashActivity";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo container = add(root, button(pkg, "android.widget.FrameLayout", null));
+        AccessibilityNodeInfo skip = add(container, button(pkg, "android.widget.TextView", null));
+        skip.setText("跳过");
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.TAP, rules.action(pkg, activity, skip, 0));
+        skip.setClickable(false);
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        skip.setViewIdResourceName(pkg + ":id/intro_skip");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setViewIdResourceName(null);
+        container.setContentDescription("立即购买");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        container.setContentDescription(null);
+        skip.setText("跳过片头");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    private static AccessibilityNodeInfo frame(String pkg, String id) {
+        return node(pkg, "android.widget.FrameLayout", id, false, SCREEN);
+    }
+
+    private static AccessibilityNodeInfo button(String pkg, String cls, String id) {
+        return node(pkg, cls, id, true, CORNER);
+    }
+
+    private static AccessibilityNodeInfo node(String pkg, String cls, String id, boolean clickable, Rect bounds) {
+        AccessibilityNodeInfo node = AccessibilityNodeInfo.obtain();
+        node.setPackageName(pkg);
+        node.setClassName(cls);
+        node.setViewIdResourceName(id);
+        node.setBoundsInScreen(bounds);
+        node.setEnabled(true);
+        node.setVisibleToUser(true);
+        node.setClickable(clickable);
+        return node;
+    }
+
+    private static AccessibilityNodeInfo add(AccessibilityNodeInfo parent, AccessibilityNodeInfo child) {
+        shadowOf(parent).addChild(child);
+        return child;
+    }
+}

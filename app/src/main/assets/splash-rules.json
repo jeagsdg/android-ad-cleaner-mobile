@@ -7,41 +7,724 @@
   "retrieved": "2026-11-03",
   "rules": [
     {
-      "class": "ImageView",
-      "id": "com.eco.global.app:id/adview_jump",
-      "package": "com.eco.global.app",
-      "name": "ECOVACS HOME",
-      "selector": "ImageView[id=\"com.eco.global.app:id/adview_jump\"]",
+      "package": "info.muge.appshare",
+      "name": "AppShare",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/13538616"
+      "ruleIndex": 2,
+      "selector": "@View <3 FrameLayout <2 FrameLayout < FrameLayout < [vid=\"rlAdView\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13842826"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "rlAdView"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              3
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.ksf.yyx:id/ksad_splash_circle_skip_view",
+      "package": "com.xiangzi.dislikecn",
+      "name": "Dislike",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@View <2 FrameLayout[childCount=3] <2 FrameLayout[childCount=2] < [vid=\"csj_ad_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/15196702"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "csj_ad_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.eco.global.app",
+      "name": "ECOVACS HOME",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "ImageView[id=\"com.eco.global.app:id/adview_jump\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13538616"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.eco.global.app:id/adview_jump"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.cyl.musiccy.ou",
+      "name": "OMOFUN",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "[id=\"com.cyl.musiccy.ou:id/ksad_splash_root_container\"] [childCount=3] > @ImageView[clickable=true] - [text=\"|\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12775919"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.cyl.musiccy.ou:id/ksad_splash_root_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "|"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            []
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "-",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 2
+      },
+      "matchTime": 10000
+    },
+    {
       "package": "com.ksf.yyx",
       "name": "OMOFUN",
-      "selector": "[id=\"com.ksf.yyx:id/ksad_splash_circle_skip_view\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/12775918",
+      "ruleIndex": 0,
+      "selector": "[id=\"com.ksf.yyx:id/ksad_splash_circle_skip_view\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12775918"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.ksf.yyx:id/ksad_splash_circle_skip_view"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
       "activityIds": [
         "com.ksf.yyx.MainActivity"
       ]
     },
     {
-      "class": "TextView",
-      "id": "com.dubox.drive:id/tv_skip",
-      "package": "com.dubox.drive",
-      "name": "TeraBox",
-      "selector": "TextView[id=\"com.dubox.drive:id/tv_skip\"]",
+      "package": "com.ksf.yyx",
+      "name": "OMOFUN",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/13200574"
+      "ruleIndex": 1,
+      "selector": "[id=\"com.ksf.yyx:id/ksad_splash_root_container\"] [childCount=3] > @ImageView[clickable=true] - [text=\"|\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12775919"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.ksf.yyx:id/ksad_splash_root_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "|"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            []
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "-",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 2
+      },
+      "activityIds": [
+        "com.ksf.yyx.MainActivity"
+      ]
     },
     {
-      "class": "View",
-      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "cn.soulapp.android",
+      "name": "Soul",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"cn.soulapp.android:id/c_ad_skip_view_btn\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12833280",
+        "https://i.gkd.li/import/12850094"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "cn.soulapp.android:id/c_ad_skip_view_btn"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "requireClickable": true
+    },
+    {
+      "package": "com.dubox.drive",
+      "name": "TeraBox",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "TextView[id=\"com.dubox.drive:id/tv_skip\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13200574"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.dubox.drive:id/tv_skip"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.dubox.drive",
+      "name": "TeraBox",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "[id=\"com.dubox.drive:id/ivClose\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13688384"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.dubox.drive:id/ivClose"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "required": [
+        {
+          "path": [
+            {
+              "class": "*",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "inmobi-ad"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "[id=\"inmobi-ad\"]"
+      ]
+    },
+    {
+      "package": "com.mfcloudcalculate.networkdisk",
+      "name": "123云盘",
+      "groupKey": 2,
+      "ruleIndex": 0,
+      "selector": "FrameLayout > FrameLayout[childCount>2] > @View[clickable=true] + TextView <<n [id=\"com.mfcloudcalculate.networkdisk:id/frame_ad_splash_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/14018247"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    ">",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.mfcloudcalculate.networkdisk:id/frame_ad_splash_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 2
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.mfcloudcalculate.networkdisk",
+      "name": "123云盘",
+      "groupKey": 2,
+      "ruleIndex": 1,
+      "selector": "[id=\"com.mfcloudcalculate.networkdisk:id/frame_ad_splash_container\"] >n [text^=\"跳过\"][text.length<=4]",
+      "snapshots": [
+        "https://i.gkd.li/import/12846434",
+        "https://i.gkd.li/import/13059834"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.mfcloudcalculate.networkdisk:id/frame_ad_splash_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text.length",
+                    "<=",
+                    4
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            []
+          ]
+        ],
+        "target": 1
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.shanghaionstar",
+      "name": "安吉星",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.shanghaionstar:id/jump_view\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13071523"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.shanghaionstar:id/jump_view"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
       "package": "com.baidu.tieba",
       "name": "百度贴吧",
-      "selector": "View[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
       "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "View[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
       "snapshots": [
         "https://i.gkd.li/import/12775906",
         "https://i.gkd.li/import/12566191",
@@ -50,134 +733,2365 @@
         "https://i.gkd.li/import/13168386",
         "https://i.gkd.li/import/13322227",
         "https://i.gkd.li/i/18730575"
-      ]
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.byted.pangle:id/tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.byted.pangle:id/tt_splash_skip_btn",
       "package": "com.byfen.market",
       "name": "百分网游戏盒子",
+      "groupKey": 0,
+      "ruleIndex": 0,
       "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
-      "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/13298944"
+      "snapshots": [
+        "https://i.gkd.li/import/13298944"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.byted.pangle:id/tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "class": "TextView",
-      "id": "tv.danmaku.bili:id/count_down",
-      "text": {
-        "op": "^=",
-        "value": "跳过"
+      "package": "com.byfen.market",
+      "name": "百分网游戏盒子",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "[id=\"com.byfen.market:id/ad_view\"] >3 View[clickable=true]",
+      "snapshots": [
+        "https://i.gkd.li/import/13800021"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.byfen.market:id/ad_view"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              3
+            ]
+          ]
+        ],
+        "target": 1
       },
+      "matchTime": 10000
+    },
+    {
       "package": "tv.danmaku.bili",
       "name": "哔哩哔哩",
+      "groupKey": 0,
+      "ruleIndex": 0,
       "selector": "TextView[id=\"tv.danmaku.bili:id/count_down\"][text^=\"跳过\"]",
-      "groupKey": 0,
       "snapshots": [
         "https://i.gkd.li/import/12705270",
         "https://i.gkd.li/i/19142386"
-      ]
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "tv.danmaku.bili:id/count_down"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "class": "TextView",
-      "id": "tv.danmaku.bili:id/skip",
-      "text": {
-        "op": "^=",
-        "value": "跳过"
-      },
       "package": "tv.danmaku.bili",
       "name": "哔哩哔哩",
-      "selector": "TextView[id=\"tv.danmaku.bili:id/skip\"][text^=\"跳过\"]",
       "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "TextView[id=\"tv.danmaku.bili:id/skip\"][text^=\"跳过\"]",
       "snapshots": [
         "https://i.gkd.li/import/12705270",
         "https://i.gkd.li/i/19142386"
-      ]
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "tv.danmaku.bili:id/skip"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "tv.danmaku.bilibilihd:id/count_down",
       "package": "tv.danmaku.bilibilihd",
       "name": "哔哩哔哩HD",
-      "selector": "[id=\"tv.danmaku.bilibilihd:id/count_down\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/13031261"
+      "ruleIndex": 0,
+      "selector": "[id=\"tv.danmaku.bilibilihd:id/count_down\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13031261"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "tv.danmaku.bilibilihd:id/count_down"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.huawei.appmarket:id/skip_textview",
+      "package": "cn.damai",
+      "name": "大麦",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"cn.damai:id/homepage_advert_pb\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12472623"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "cn.damai:id/homepage_advert_pb"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.delicloud.app.smartoffice",
+      "name": "得力e+",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "FrameLayout > FrameLayout[childCount>2] > @View[clickable=true] + TextView <<n [vid=\"splash_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13840775",
+        "https://i.gkd.li/import/13944086"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    ">",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "splash_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 2
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.didapinche.booking",
+      "name": "嘀嗒出行",
+      "groupKey": 1,
+      "ruleIndex": 0,
+      "selector": "@View[clickable=true] <n * <2 * < [vid=\"flCSJAdContainer\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13988957",
+        "https://i.gkd.li/import/13989178"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "flCSJAdContainer"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            []
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.diershoubing.erbing",
+      "name": "二柄",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@[id$=\"tt_splash_skip_btn\"] <<n [vid=\"containerV\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13378853",
+        "https://i.gkd.li/import/13546165"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "resourceName",
+                    "=",
+                    "tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "containerV"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.feeyo.vz.pro.cdm",
+      "name": "飞常准业内版",
+      "groupKey": 1,
+      "ruleIndex": 0,
+      "selector": "@View <3 FrameLayout[childCount=4] <2 FrameLayout[childCount=2] < FrameLayout < [vid=\"splashAdContainer\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13926823"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    4
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "splashAdContainer"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              3
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.xpx365.projphoto",
+      "name": "工程相机",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@View <2 FrameLayout <2 FrameLayout < [vid=\"splash_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13827755"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "splash_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.huawei.browser",
+      "name": "华为浏览器",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id$=\"/hiad_skip_text\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12681995",
+        "https://i.gkd.li/import/13403785"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "resourceName",
+                    "=",
+                    "hiad_skip_text"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "requireClickable": true
+    },
+    {
+      "package": "com.huawei.himovie",
+      "name": "华为视频",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.huawei.hms.ads.uiengine:id/hiad_skip_text\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12814007",
+        "https://i.gkd.li/import/12819351"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.huawei.hms.ads.uiengine:id/hiad_skip_text"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "requireClickable": true
+    },
+    {
+      "package": "com.huawei.android.totemweather",
+      "name": "华为天气",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[text.length<=4][text^=\"跳过\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12928975",
+        "https://i.gkd.li/import/13226636"
+      ],
+      "evidence": "page",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "text.length",
+                    "<=",
+                    4
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "required": [
+        {
+          "path": [
+            {
+              "class": "*",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "com.huawei.android.totemweather:id/rl_splash_container"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "[id=\"com.huawei.android.totemweather:id/rl_splash_container\"]"
+      ],
+      "requireClickable": true
+    },
+    {
+      "package": "com.huawei.music",
+      "name": "华为音乐",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.huawei.hms.ads.uiengine:id/hiad_skip_text\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12745222"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.huawei.hms.ads.uiengine:id/hiad_skip_text"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "activityIds": [
+        "com.android.mediacenter.PageActivity"
+      ],
+      "requireClickable": true
+    },
+    {
       "package": "com.huawei.appmarket",
       "name": "华为应用市场",
-      "selector": "[id=\"com.huawei.appmarket:id/skip_textview\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/16611800"
+      "ruleIndex": 0,
+      "selector": "[id=\"com.huawei.appmarket:id/skip_textview\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/16611800"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.huawei.appmarket:id/skip_textview"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.hihonor.appmarket:id/tv_operation_skip",
+      "package": "com.huawei.health",
+      "name": "华为运动健康",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id$=\"hiad_skip_text\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12667766",
+        "https://i.gkd.li/import/13215012",
+        "https://i.gkd.li/import/13228290"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "resourceName",
+                    "=",
+                    "hiad_skip_text"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "requireClickable": true
+    },
+    {
+      "package": "com.handsgo.jiakao.android",
+      "name": "驾考宝典",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=`com.handsgo.jiakao.android:id/closeLayout`]",
+      "snapshots": [],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.handsgo.jiakao.android:id/closeLayout"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.yek.android.kfc.activitys",
+      "name": "肯德基",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=`com.yek.android.kfc.activitys:id/splash_tv_3`]",
+      "snapshots": [],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.yek.android.kfc.activitys:id/splash_tv_3"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.coolapk.market",
+      "name": "酷安",
+      "groupKey": -1,
+      "ruleIndex": 2,
+      "selector": "@View[clickable=true] <(2,3) FrameLayout <2 FrameLayout <<n FrameLayout[id=\"com.coolapk.market:id/ad_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13826359",
+        "https://i.gkd.li/import/13827095"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.coolapk.market:id/ad_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2,
+              3
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 0
+      },
+      "excludeActivityIds": [
+        "com.coolapk.market.view.search.",
+        "com.coolapk.market.view.feed."
+      ],
+      "matchTime": 10000
+    },
+    {
+      "package": "com.kugou.android",
+      "name": "酷狗音乐",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[desc=\"GdtCountDownView\"][clickable=true]",
+      "snapshots": [
+        "https://i.gkd.li/import/12775410",
+        "https://i.gkd.li/import/13426030",
+        "https://i.gkd.li/import/13468987"
+      ],
+      "evidence": "label",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "desc",
+                    "=",
+                    "GdtCountDownView"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.kkeji.news.client",
+      "name": "快科技",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.kkeji.news.client:id/tv_counter\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13197536"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.kkeji.news.client:id/tv_counter"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.hxak.liangongbao",
+      "name": "链工宝",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=`com.hxak.liangongbao:id/time_down`]",
+      "snapshots": [],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.hxak.liangongbao:id/time_down"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.motoband",
+      "name": "摩托邦",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@View[clickable=true] <3 * <2 * < [vid=\"splash_container_half_size\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13849831"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "splash_container_half_size"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              3
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.nowcoder.app.florida",
+      "name": "牛客",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@View <2 FrameLayout[childCount=3] <2 FrameLayout[childCount=2] < FrameLayout[childCount=1] < [vid=\"fl_splash_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13855443"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    1
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "fl_splash_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.example.pptv",
+      "name": "人人视频",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "[id=\"com.example.pptv:id/view_count_shake\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13761160"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.example.pptv:id/view_count_shake"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
       "package": "com.hihonor.appmarket",
       "name": "荣耀应用市场",
-      "selector": "[id=\"com.hihonor.appmarket:id/tv_operation_skip\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/15087199",
+      "ruleIndex": 0,
+      "selector": "[id=\"com.hihonor.appmarket:id/tv_operation_skip\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/15087199"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.hihonor.appmarket:id/tv_operation_skip"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
       "activityIds": [
         "com.hihonor.appmarket.module.main.MainActivity"
-      ]
+      ],
+      "matchTime": 10000
     },
     {
-      "id": "com.byted.pangle:id/tt_splash_skip_btn",
+      "package": "cn.samsclub.app",
+      "name": "山姆会员商店",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@ImageView[clickable=true] <2 [id=\"cn.samsclub.app:id/advertising_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13609106"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "cn.samsclub.app:id/advertising_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.flyersoft.seekbooks",
+      "name": "搜书大师",
+      "groupKey": 1,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.flyersoft.seekbooks:id/splash_container1\"] >5 [text^=\"跳过\"][text.length<=3]",
+      "snapshots": [
+        "https://i.gkd.li/import/12857275"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.flyersoft.seekbooks:id/splash_container1"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text.length",
+                    "<=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              5
+            ]
+          ]
+        ],
+        "target": 1
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.qq.qcloud",
+      "name": "腾讯微云",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.qq.qcloud:id/gdt_ad_text\"] + ImageView",
+      "snapshots": [
+        "https://i.gkd.li/import/12755789"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.qq.qcloud:id/gdt_ad_text"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ImageView",
+            "tests": []
+          }
+        ],
+        "relations": [
+          [
+            "+",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 1
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.tencent.docs",
+      "name": "腾讯文档",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@LinearLayout > [id=\"com.tencent.docs:id/tv_gdt_ad_text\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13198082"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "LinearLayout",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.tencent.docs:id/tv_gdt_ad_text"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
       "package": "com.waimaiii.waimaiii",
       "name": "歪麦霸王餐",
-      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/13346451"
+      "ruleIndex": 1,
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13346451"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.byted.pangle:id/tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.byted.pangle:id/tt_splash_skip_btn",
       "package": "com.netease.mobimail",
       "name": "网易邮箱",
-      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/12686093"
+      "ruleIndex": 1,
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12686093"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.byted.pangle:id/tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.netease.mobimail:id/ad_skip",
-      "clickable": true,
       "package": "com.netease.mobimail",
       "name": "网易邮箱",
+      "groupKey": 0,
+      "ruleIndex": 2,
       "selector": "[id=\"com.netease.mobimail:id/ad_skip\"][clickable=true]",
-      "groupKey": 0,
       "snapshots": [
         "https://i.gkd.li/import/12667519",
         "https://i.gkd.li/import/13328425"
-      ]
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.netease.mobimail:id/ad_skip"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "class": "TextView",
-      "id": "com.hihonor.phoneservice:id/start_skip_count_down",
+      "package": "com.netease.mail",
+      "name": "网易邮箱大师",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@TextView[text*=\"跳过\"] -n FrameLayout[id=\"com.netease.mail:id/ad_placeholder\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12818335",
+        "https://i.gkd.li/import/12893573",
+        "https://i.gkd.li/import/12923776",
+        "https://i.gkd.li/import/13195662",
+        "https://i.gkd.li/import/14046124"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "*=",
+                    "跳过"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.netease.mail:id/ad_placeholder"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "-",
+            []
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.netease.mail",
+      "name": "网易邮箱大师",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@TextView[text*=\"跳过\"] <<n FrameLayout[id=\"com.netease.mail:id/ad_placeholder\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12818335",
+        "https://i.gkd.li/import/12893573",
+        "https://i.gkd.li/import/12923776",
+        "https://i.gkd.li/import/13195662",
+        "https://i.gkd.li/import/14046124"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "*=",
+                    "跳过"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.netease.mail:id/ad_placeholder"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.example.maintenancemaster",
+      "name": "维护大师",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.example.maintenancemaster:id/advertisement_countdown_ccd\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12903877"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.example.maintenancemaster:id/advertisement_countdown_ccd"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
       "package": "com.hihonor.phoneservice",
       "name": "我的荣耀",
-      "selector": "TextView[id=\"com.hihonor.phoneservice:id/start_skip_count_down\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/14896804",
+      "ruleIndex": 0,
+      "selector": "TextView[id=\"com.hihonor.phoneservice:id/start_skip_count_down\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/14896804"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.hihonor.phoneservice:id/start_skip_count_down"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
       "activityIds": [
         "com.hihonor.phoneservice.OpenScreenAdActivity"
-      ]
+      ],
+      "matchTime": 10000
     },
     {
-      "id": "com.xiaote:id/ad_close",
-      "text": {
-        "op": "*=",
-        "value": "关闭"
+      "package": "com.realtech.xiaocan",
+      "name": "小蚕霸王餐",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "@[id$=\"tt_splash_skip_btn\"] <<n [id=\"com.realtech.xiaocan:id/splash_ad_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12854728"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "resourceName",
+                    "=",
+                    "tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.realtech.xiaocan:id/splash_ad_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 0
       },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.realtech.xiaocan",
+      "name": "小蚕霸王餐",
+      "groupKey": 0,
+      "ruleIndex": 2,
+      "selector": "@View[visibleToUser=true][clickable=true] <n FrameLayout[childCount=4||childCount=3] <<n [id=\"com.realtech.xiaocan:id/splash_ad_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13694858",
+        "https://i.gkd.li/import/13794403"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": [
+              [
+                [
+                  [
+                    "visibleToUser",
+                    "=",
+                    true
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    4
+                  ]
+                ],
+                [
+                  [
+                    "childCount",
+                    "=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.realtech.xiaocan:id/splash_ad_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            []
+          ],
+          [
+            "<<",
+            []
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.xiaoenai.app",
+      "name": "小恩爱",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "@View <3 FrameLayout[childCount=4] <2 FrameLayout[childCount=2] < [vid=\"ad_view\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13867880"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    4
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "ad_view"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              3
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.ponyemu.main",
+      "name": "小马模拟器",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "TextView[text*=\"跳过\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/14892481"
+      ],
+      "evidence": "activity",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "*=",
+                    "跳过"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "activityIds": [
+        "com.ponyemu.main.activitys.AdLaunchActivity"
+      ],
+      "matchTime": 10000
+    },
+    {
       "package": "com.xiaote",
       "name": "小特",
-      "selector": "[id=\"com.xiaote:id/ad_close\"][text*=\"关闭\"]",
       "groupKey": 1,
-      "snapshots": "https://i.gkd.li/import/14035706"
+      "ruleIndex": 0,
+      "selector": "[id=\"com.xiaote:id/ad_close\"][text*=\"关闭\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/14035706"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.xiaote:id/ad_close"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "*=",
+                    "关闭"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "class": "TextView",
-      "id": "com.zhihu.android:id/btn_skip",
+      "package": "com.firebear.androil",
+      "name": "小熊油耗",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "@View <2 * <2 * < [id=\"com.firebear.androil:id/adContainerLay\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13088169",
+        "https://i.gkd.li/import/12855707",
+        "https://i.gkd.li/import/13927561"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": []
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.firebear.androil:id/adContainerLay"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "cn.wsds.gamemaster",
+      "name": "迅游手游加速器",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "@View <2 FrameLayout[childCount=3] <2 FrameLayout[childCount=2] < [vid=\"splash_container\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13930391"
+      ],
+      "evidence": "structure",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "View",
+            "tests": []
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    3
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "splash_container"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              2
+            ]
+          ],
+          [
+            "<",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.ky.medical.reference",
+      "name": "用药参考",
+      "groupKey": -1,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.ky.medical.reference:id/btn_go\"][text^=\"关闭\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/12918049"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.ky.medical.reference:id/btn_go"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "关闭"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.cmstop.shaoxing",
+      "name": "越牛新闻",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "[id=\"com.cmstop.shaoxing:id/roundProgressBar\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13611775"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.cmstop.shaoxing:id/roundProgressBar"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
       "package": "com.zhihu.android",
       "name": "知乎",
-      "selector": "TextView[id=\"com.zhihu.android:id/btn_skip\"]",
       "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "TextView[id=\"com.zhihu.android:id/btn_skip\"]",
       "snapshots": [
         "https://i.gkd.li/import/12707641",
         "https://i.gkd.li/import/12899263",
@@ -185,59 +3099,420 @@
         "https://i.gkd.li/import/12841423",
         "https://i.gkd.li/import/12883329",
         "https://i.gkd.li/import/12981146"
-      ]
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.zhihu.android:id/btn_skip"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "com.ct.client:id/btSkip",
       "package": "com.ct.client",
       "name": "中国电信",
-      "selector": "[id=\"com.ct.client:id/btSkip\"]",
       "groupKey": 0,
-      "snapshots": "https://i.gkd.li/i/17584648"
+      "ruleIndex": 0,
+      "selector": "[id=\"com.ct.client:id/btSkip\"]",
+      "snapshots": [
+        "https://i.gkd.li/i/17584648"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.ct.client:id/btSkip"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "cn.mil.junhao:id/splash_adv_ship",
       "package": "cn.mil.junhao",
       "name": "中国军号",
+      "groupKey": 0,
+      "ruleIndex": 0,
       "selector": "[id=\"cn.mil.junhao:id/splash_adv_ship\"]",
-      "groupKey": 0,
-      "snapshots": "https://i.gkd.li/import/13806892"
-    },
-    {
-      "id": "gov.pianzong.androidnga:id/ksad_splash_circle_skip_view",
-      "package": "gov.pianzong.androidnga",
-      "name": "NGA玩家社区",
-      "selector": "[id=\"gov.pianzong.androidnga:id/ksad_splash_circle_skip_view\"]",
-      "groupKey": 0,
       "snapshots": [
-        "https://i.gkd.li/import/12476484",
-        "https://i.gkd.li/import/12706127",
-        "https://i.gkd.li/import/12864707",
-        "https://i.gkd.li/import/12911882",
-        "https://i.gkd.li/import/13798686"
-      ]
+        "https://i.gkd.li/import/13806892"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "cn.mil.junhao:id/splash_adv_ship"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
     },
     {
-      "id": "gov.pianzong.androidnga:id/ksad_skip_view_skip",
       "package": "gov.pianzong.androidnga",
       "name": "NGA玩家社区",
+      "groupKey": 0,
+      "ruleIndex": 0,
       "selector": "[id=\"gov.pianzong.androidnga:id/ksad_skip_view_skip\"]",
-      "groupKey": 0,
       "snapshots": [
         "https://i.gkd.li/import/12476484",
         "https://i.gkd.li/import/12706127",
         "https://i.gkd.li/import/12864707",
         "https://i.gkd.li/import/12911882",
         "https://i.gkd.li/import/13798686"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "gov.pianzong.androidnga:id/ksad_skip_view_skip"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000,
+      "required": [
+        {
+          "path": [
+            {
+              "class": "*",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "gov.pianzong.androidnga:id/iv_tg_ad"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        },
+        {
+          "path": [
+            {
+              "class": "*",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "gov.pianzong.androidnga:id/ksad_splash_circle_skip_view"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "[id=\"gov.pianzong.androidnga:id/iv_tg_ad\"]",
+        "[id=\"gov.pianzong.androidnga:id/ksad_splash_circle_skip_view\"]"
       ]
     },
     {
-      "id": "com.byted.pangle:id/tt_splash_skip_btn",
       "package": "com.UCMobile",
       "name": "UC浏览器",
-      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
       "groupKey": -1,
-      "snapshots": "https://i.gkd.li/import/13188653"
+      "ruleIndex": 0,
+      "selector": "[id=\"com.byted.pangle:id/tt_splash_skip_btn\"]",
+      "snapshots": [
+        "https://i.gkd.li/import/13188653"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.byted.pangle:id/tt_splash_skip_btn"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "matchTime": 10000
+    },
+    {
+      "package": "com.hihonor.appmarket",
+      "name": "荣耀应用市场",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "[id=\"com.hihonor.appmarket:id/btn_skip\"][clickable=true]",
+      "evidence": "activity",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.hihonor.appmarket:id/btn_skip"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "activityIds": [
+        "com.hihonor.appmarket.module.main.MainActivity"
+      ],
+      "matchTime": 10000,
+      "reference": {
+        "versionName": "16.1.11.302",
+        "apkSha256": "7bba4ae416bb758286986b9e419661fc0bf3ea3666f84eaae93a04cb9dcc7dc2",
+        "layout": "layout_splash_level_top"
+      }
+    },
+    {
+      "package": "com.tencent.qqlive",
+      "name": "腾讯视频",
+      "groupKey": 0,
+      "ruleIndex": 0,
+      "selector": "TextView[text^=\"跳过\"][text.length<=10][id=null][childCount=0]",
+      "evidence": "page",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text.length",
+                    "<=",
+                    10
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "activityIds": [
+        "com.tencent.qqlive.ona.activity.SplashHomeActivity"
+      ],
+      "matchTime": 10000,
+      "tap": true,
+      "reference": {
+        "versionName": "8.10.80.26895",
+        "apkSha256": "8445fe47ca3b5c632cc9ccb0eaf21f3cde56eb865b8bc54f085cfb0d62126e30"
+      },
+      "required": [
+        {
+          "path": [
+            {
+              "class": "TextView",
+              "tests": [
+                [
+                  [
+                    [
+                      "text",
+                      "=",
+                      "广告"
+                    ]
+                  ],
+                  [
+                    [
+                      "text",
+                      "=",
+                      "广告 | 已Wi-Fi预加载"
+                    ]
+                  ],
+                  [
+                    [
+                      "text",
+                      "=",
+                      "已Wi-Fi预加载"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "TextView[text=\"广告\"||text=\"广告 | 已Wi-Fi预加载\"||text=\"已Wi-Fi预加载\"]"
+      ]
+    },
+    {
+      "package": "com.tencent.qqlive",
+      "name": "腾讯视频",
+      "groupKey": 0,
+      "ruleIndex": 1,
+      "selector": "TextView[text^=\"跳过\"][text.length<=10][id=null][childCount=0]",
+      "evidence": "activity",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "^=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text.length",
+                    "<=",
+                    10
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [],
+        "target": 0
+      },
+      "activityIds": [
+        "com.tencent.qqlive.qadsplash.template.QAdHotSplashActivity"
+      ],
+      "matchTime": 10000,
+      "tap": true,
+      "reference": {
+        "versionName": "8.10.80.26895",
+        "apkSha256": "8445fe47ca3b5c632cc9ccb0eaf21f3cde56eb865b8bc54f085cfb0d62126e30"
+      }
     }
   ],
   "sdkRules": [
@@ -259,7 +3534,22 @@
       "resourceName": "ksad_splash_circle_skip_view",
       "name": "广告 SDK 开屏跳过控件",
       "evidencePackage": "com.ksf.yyx",
-      "snapshots": "https://i.gkd.li/import/12775918"
+      "snapshots": [
+        "https://i.gkd.li/import/12775918"
+      ]
+    },
+    {
+      "clickableResourceId": "com.huawei.hms.ads.uiengine:id/hiad_skip_text",
+      "name": "华为广告 SDK 开屏跳过控件",
+      "evidencePackages": [
+        "com.huawei.himovie",
+        "com.huawei.music"
+      ],
+      "snapshots": [
+        "https://i.gkd.li/import/12814007",
+        "https://i.gkd.li/import/12819351",
+        "https://i.gkd.li/import/12745222"
+      ]
     }
   ]
 }

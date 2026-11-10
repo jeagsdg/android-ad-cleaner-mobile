@@ -28,6 +28,7 @@ public final class AdFilterService extends VpnService {
     private final AtomicInteger failures=new AtomicInteger();
     private final ThreadPoolExecutor workers=new ThreadPoolExecutor(4,4,20,TimeUnit.SECONDS,new ArrayBlockingQueue<>(128));
     private final ConcurrentHashMap<Network,NetworkCapabilities> networks=new ConcurrentHashMap<>();
+    private final Handler main=new Handler(Looper.getMainLooper());
     private volatile Network underlying;
     private ConnectivityManager connectivity;private FilterStore store;private Thread loop;private DomainRules rules;private DnsTcp tcp;
     private long savedAt;
@@ -39,11 +40,19 @@ public final class AdFilterService extends VpnService {
     static boolean running(){AdFilterService s=active;return s!=null&&s.tunnel!=null&&s.ready&&!s.stopping;}
     static String health(){AdFilterService s=active;return s==null?"no active service":"read="+s.packetsRead.get()+" accepted="+s.packetsAccepted.get()+" written="+s.packetsWritten.get()+" ready="+s.ready+" last="+s.lastPacket;}
     static long blocked(Context context){AdFilterService s=active;return s==null?new FilterStore(context).blocked():s.blocks.get();}
-    static void clearRecent(){AdFilterService s=active;if(s!=null)synchronized(s.historyLock){s.recent.clear();}}
+    static boolean clearRecent(){
+        AdFilterService service=active;
+        if(service==null)return false;
+        synchronized(service.historyLock){
+            service.recent.clear();
+            service.store.forgetRecent();
+        }
+        return true;
+    }
     @Override public void onCreate(){super.onCreate();store=new FilterStore(this);connectivity=getSystemService(ConnectivityManager.class);queries.set(store.queried());blocks.set(store.blocked());recent.addAll(store.recent());}
     @Override public int onStartCommand(Intent intent,int flags,int id){
         if(intent==null||STOP.equals(intent.getAction())){stop("网络过滤已关闭");return START_NOT_STICKY;}
-        if(loop!=null)return START_NOT_STICKY;
+        if(stopping||loop!=null)return START_NOT_STICKY;
         try{
             if(VpnService.prepare(this)!=null)throw new IOException("请先确认系统 VPN 授权");
             NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel("network-filter","网络过滤运行状态",NotificationManager.IMPORTANCE_LOW));
@@ -61,6 +70,7 @@ public final class AdFilterService extends VpnService {
         return START_NOT_STICKY; // A killed process releases its VPN; never leaves a pretend-enabled filter.
     }
     private synchronized void selectNetwork(){
+        if(stopping)return;
         Network selected=connectivity.getActiveNetwork();if(selected==null||!networks.containsKey(selected)){
             selected=null;for(Map.Entry<Network,NetworkCapabilities> entry:networks.entrySet())if(selected==null||entry.getValue().hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))selected=entry.getKey();
         }
@@ -69,34 +79,61 @@ public final class AdFilterService extends VpnService {
     private void run(){
         try{
             rules=new DomainRules(this);if(stopping)return;
-            if(underlying==null)throw new IOException("当前没有可用网络，请连接网络后再开启");
-            checkLegacyPrivateDns(underlying);
+            Network network=underlying;
+            if(network==null)throw new IOException("当前没有可用网络，请连接网络后再开启");
+            checkLegacyPrivateDns(network);
             Builder builder=new Builder().setSession("净屏 · DNS 广告过滤").setMtu(1500).addAddress("198.18.0.1",32).addRoute("198.18.0.2",32).addDnsServer("198.18.0.2")
-                    .allowFamily(OsConstants.AF_INET6).setBlocking(false).setUnderlyingNetworks(new Network[]{underlying});
+                    .allowFamily(OsConstants.AF_INET6).setBlocking(false).setUnderlyingNetworks(new Network[]{network});
+            DnsTcp endpoint=new DnsTcp(this::write,this::resolve,SystemClock::elapsedRealtime);
             // Keep Android's conservative metered default; do not mask mobile-data accounting.
             ParcelFileDescriptor created=builder.establish();if(created==null)throw new IOException("系统未建立 VPN，请重新授权");
-            synchronized(writeLock){if(stopping){created.close();return;}tunnel=created;}
-            tcp=new DnsTcp(this::write,this::resolve);store.message("等待系统网络路由就绪…");long establishedAt=SystemClock.elapsedRealtime();
+            synchronized(writeLock){
+                if(stopping){created.close();return;}
+                tunnel=created;
+                tcp=endpoint;
+                store.message("等待系统网络路由就绪…");
+            }
+            if(!network.equals(underlying))selectNetwork();
+            long establishedAt=SystemClock.elapsedRealtime();
             byte[] buffer=new byte[32767];StructPollfd poll=new StructPollfd();poll.fd=created.getFileDescriptor();poll.events=(short)OsConstants.POLLIN;long noNetworkSince=0;
             while(!stopping){
-                if(!ready){for(Network network:connectivity.getAllNetworks()){NetworkCapabilities caps=connectivity.getNetworkCapabilities(network);LinkProperties link=connectivity.getLinkProperties(network);if(caps!=null&&caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)&&link!=null&&link.getDnsServers().contains(InetAddress.getByName("198.18.0.2"))){ready=true;store.message("正在过滤已知广告域名；其他流量由原网络传输");break;}}
+                if(!ready){for(Network candidate:connectivity.getAllNetworks()){NetworkCapabilities caps=connectivity.getNetworkCapabilities(candidate);LinkProperties link=connectivity.getLinkProperties(candidate);if(caps!=null&&caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)&&link!=null&&link.getDnsServers().contains(InetAddress.getByName("198.18.0.2"))){
+                    synchronized(writeLock){
+                        if(stopping)return;
+                        ready=true;
+                        store.message("正在过滤已知广告域名；其他流量由原网络传输");
+                    }
+                    break;
+                }}
                     if(!ready&&SystemClock.elapsedRealtime()-establishedAt>8000)throw new IOException("系统未完成 VPN 路由配置");}
                 long now=SystemClock.elapsedRealtime();if(underlying==null){if(noNetworkSince==0)noNetworkSince=now;if(now-noNetworkSince>6000)throw new IOException("网络已断开，已退出过滤；联网后可重新开启");}else noNetworkSince=0;
-                int ready=Os.poll(new StructPollfd[]{poll},500);if(ready>0&&(poll.revents&OsConstants.POLLIN)!=0){
+                int events=Os.poll(new StructPollfd[]{poll},500);
+                if(events>0&&(poll.revents&(OsConstants.POLLERR|OsConstants.POLLHUP|OsConstants.POLLNVAL))!=0)throw new IOException("VPN 网络接口已断开");
+                if(events>0&&(poll.revents&OsConstants.POLLIN)!=0){
                     int n;try{n=Os.read(created.getFileDescriptor(),buffer,0,buffer.length);}catch(ErrnoException e){if(e.errno==OsConstants.EAGAIN)continue;throw e;}
+                    if(n==0)throw new IOException("VPN 网络接口已关闭");
                     packetsRead.incrementAndGet();lastPacket="bytes="+n;if(n>=28){int protocol=buffer[9]&255;lastPacket+=" versionHeader="+(buffer[0]&255)+" total="+DnsWire.u16(buffer,2)+" protocol="+protocol+" destinationMatch="+((int)DnsWire.u32(buffer,16)==DnsWire.SERVER)+" ipChecksum="+DnsWire.checksum(buffer,0,20,0)+" transportChecksum="+DnsWire.checksum(buffer,20,n-20,DnsWire.pseudo(buffer,protocol,n-20));}
-                    DnsWire.Packet packet=DnsWire.packet(buffer,n);if(packet!=null){packetsAccepted.incrementAndGet();if(packet.protocol==17)resolve(packet.data,answer->{DnsWire.Question question=DnsWire.question(packet.data);if(question!=null&&answer.length>question.udpSize)answer=DnsWire.error(packet.data,0,true);write(DnsWire.reply(packet,answer,0,0,0));});else tcp.accept(packet,now);}
+                    DnsWire.Packet packet=DnsWire.packet(buffer,n);if(packet!=null){packetsAccepted.incrementAndGet();if(packet.protocol==17)resolve(packet.data,answer->{DnsWire.Question question=DnsWire.question(packet.data);if(question!=null&&answer.length>question.udpSize)answer=DnsWire.error(packet.data,0,true);write(DnsWire.reply(packet,answer,0,0,0));});else endpoint.accept(packet);}
                 }
-                tcp.tick(now);if(now-savedAt>5000){persist();savedAt=now;}
+                endpoint.tick();if(now-savedAt>5000){persist();savedAt=now;}
             }
         }catch(Exception e){if(!stopping)stop("已停止过滤并交还系统网络："+readable(e));}
-        finally{if(!stopping)stop("网络过滤已结束");}
     }
     private void resolve(byte[] query,Consumer<byte[]> callback){
         if(stopping)return;DnsWire.Question question=DnsWire.question(query);
         if(question==null){callback.accept(DnsWire.error(query,1,false));return;}
-        queries.incrementAndGet();
-        if(rules.blocked(question.name,store.allowed())){blocks.incrementAndGet();synchronized(historyLock){recent.remove(question.name);recent.add(question.name);while(recent.size()>30)recent.remove(recent.iterator().next());}callback.accept(DnsWire.error(query,3,false));return;}
+        boolean blocked=rules.blocked(question.name,store.allowed());
+        synchronized(historyLock){
+            if(stopping)return;
+            queries.incrementAndGet();
+            if(blocked){
+                blocks.incrementAndGet();
+                recent.remove(question.name);
+                recent.add(question.name);
+                while(recent.size()>30)recent.remove(recent.iterator().next());
+            }
+        }
+        if(blocked){callback.accept(DnsWire.error(query,3,false));return;}
         try{workers.execute(()->{
             byte[] response;
             try{Network network=underlying;if(network==null)throw new IOException("网络暂时断开");response=upstream(network,query);if(!DnsWire.answerMatches(query,response))throw new IOException("DNS 响应不匹配");failures.set(0);}
@@ -136,15 +173,42 @@ public final class AdFilterService extends VpnService {
     private void write(byte[] bytes){
         boolean failed=false;
         synchronized(writeLock){ParcelFileDescriptor fd=tunnel;if(stopping||fd==null)return;
-            try{Os.write(fd.getFileDescriptor(),bytes,0,bytes.length);packetsWritten.incrementAndGet();}catch(Exception e){failed=!stopping;}}
+            try{
+                failed=Os.write(fd.getFileDescriptor(),bytes,0,bytes.length)!=bytes.length;
+                if(!failed)packetsWritten.incrementAndGet();
+            }catch(ErrnoException e){
+                // The TUN is non-blocking. A full queue can be retried by the DNS client or TCP endpoint.
+                failed=e.errno!=OsConstants.EAGAIN;
+            }catch(IOException e){failed=true;}}
         if(failed)stop("网络接口写入失败，已退出过滤");
     }
     private void persist(){if(store==null)return;synchronized(historyLock){store.counters(queries.get(),blocks.get(),recent);}}
     private static String readable(Exception e){String message=e.getMessage();return message==null?e.getClass().getSimpleName():message;}
     private void stop(String message){
-        stopping=true;if(store!=null){store.enabled(false);store.message(message);}closeTunnel();if(tcp!=null)tcp.close();workers.shutdownNow();persist();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();if(active==this)active=null;
+        if(Looper.myLooper()!=main.getLooper()){
+            main.post(()->stop(message));
+            return;
+        }
+        if(stopping)return;
+        release();
+        if(store!=null){store.enabled(false);store.message(message);}
+        stopForeground(STOP_FOREGROUND_REMOVE);
+        stopSelf();
+        if(active==this)active=null;
     }
-    private void closeTunnel(){synchronized(writeLock){ParcelFileDescriptor fd=tunnel;tunnel=null;if(fd!=null)try{fd.close();}catch(IOException ignored){}}}
-    @Override public void onRevoke(){stop("系统已撤销 VPN 授权或已切换到其他 VPN");super.onRevoke();}
-    @Override public void onDestroy(){stopping=true;closeTunnel();if(tcp!=null)tcp.close();workers.shutdownNow();persist();try{connectivity.unregisterNetworkCallback(networkCallback);}catch(Exception ignored){}if(active==this)active=null;super.onDestroy();}
+    private void release(){
+        synchronized(writeLock){
+            if(stopping)return;
+            stopping=true;
+            ready=false;
+            ParcelFileDescriptor fd=tunnel;
+            tunnel=null;
+            if(fd!=null)try{fd.close();}catch(IOException ignored){}
+        }
+        if(tcp!=null)tcp.close();
+        workers.shutdownNow();
+        persist();
+    }
+    @Override public void onRevoke(){stop("系统已撤销 VPN 授权或已切换到其他 VPN");}
+    @Override public void onDestroy(){release();try{connectivity.unregisterNetworkCallback(networkCallback);}catch(Exception ignored){}if(active==this)active=null;super.onDestroy();}
 }
