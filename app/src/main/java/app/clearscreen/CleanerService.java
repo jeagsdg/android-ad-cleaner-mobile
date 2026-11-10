@@ -17,17 +17,23 @@ public final class CleanerService extends AccessibilityService {
     public static CleanerService get(){return reference.get();}
     public volatile boolean busy;
     public volatile String progress="准备就绪";
-    private volatile boolean cancelled;private int resultTab=1;
+    private volatile String stopReason;private int resultTab=1;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout overlay;private TextView overlayText;
     private SplashSkipper skipper;
     @Override protected void onServiceConnected(){reference=new java.lang.ref.WeakReference<>(this);if(skipper!=null)skipper.close();skipper=new SplashSkipper(this);SkipKeepAliveService.sync(this);}
     @Override public void onAccessibilityEvent(AccessibilityEvent event){if(skipper!=null)skipper.event(event);}
-    @Override public void onInterrupt(){stop();}
-    @Override public boolean onUnbind(Intent intent){stop();if(skipper!=null)skipper.close();if(reference.get()==this)reference.clear();SkipKeepAliveService.sync(this);hideOverlay();return super.onUnbind(intent);}
-    @Override public void onDestroy(){stop();if(skipper!=null)skipper.close();worker.shutdownNow();if(reference.get()==this)reference.clear();SkipKeepAliveService.sync(this);hideOverlay();super.onDestroy();}
-    public void stop(){cancelled=true;if(busy)note("正在停止…");}
+    // This callback interrupts feedback while the accessibility connection remains active.
+    @Override public void onInterrupt(){if(skipper!=null)skipper.interruptFeedback();}
+    @Override public boolean onUnbind(Intent intent){stopFor("无障碍连接已断开，任务已停止");if(skipper!=null)skipper.close();if(reference.get()==this)reference.clear();SkipKeepAliveService.sync(this);hideOverlay();return super.onUnbind(intent);}
+    @Override public void onDestroy(){stopFor("无障碍服务已关闭，任务已停止");if(skipper!=null)skipper.close();worker.shutdownNow();if(reference.get()==this)reference.clear();SkipKeepAliveService.sync(this);hideOverlay();super.onDestroy();}
+    public void stop(){stopFor("已手动停止");}
+    private synchronized void stopFor(String reason){
+        if(stopReason!=null)return;
+        stopReason=reason;
+        if(busy)note("正在停止…");
+    }
     private void note(String s){progress=s;main.post(()->{if(overlayText!=null)overlayText.setText(s);});}
     /** One user-approved run: inspect each exact target, save original, change, and verify. */
     public synchronized void clean(List<Rule> rules){startClean(rules,false);}
@@ -58,28 +64,28 @@ public final class CleanerService extends AccessibilityService {
         store.save("scan",results);
         List<Rule> pending=rules;
         int retried=0;
-        for(int pass=1;pass<=2&&!cancelled&&!pending.isEmpty();pass++){
+        for(int pass=1;pass<=2&&stopReason==null&&!pending.isEmpty();pass++){
             int index=0;
             for(Rule rule:pending){
-                if(cancelled)break;
+                if(stopReason!=null)break;
                 note((pass==1?"清理 ":"自动补查 ")+(++index)+" / "+pending.size()+" · "+rule.title);
                 if(pass==2)retried+=rule.targets.size();
                 cleanRule(store,policy,rule,pass,results);
             }
-            if(pass==1&&!cancelled)pending=automaticRetry(rules,results);
+            if(pass==1&&stopReason==null)pending=automaticRetry(rules,results);
         }
-        if(cancelled){recordUnrun(rules,results);store.save("scan",results);}
-        store.setLastRun(cancelled?"已停止，已完成的改动已保存":retried>0?"本轮清理结束，已自动补查 "+retried+" 项":"本轮清理结束");
+        if(stopReason!=null){recordUnrun(rules,results);store.save("scan",results);}
+        store.setLastRun(stopReason!=null?stopReason+"。已完成的改动仍保存在记录中。":retried>0?"本轮清理结束，已自动补查 "+retried+" 项":"本轮清理结束");
         note(store.lastRun());
     }
     private void cleanRule(Store store,Policy policy,Rule rule,int pass,JSONArray results){
-        UiDriver ui=new UiDriver(this,()->cancelled,GROUP_CHECK_BUDGET_MS);
+        UiDriver ui=new UiDriver(this,()->stopReason,GROUP_CHECK_BUDGET_MS);
         try{
             if(rule.notification()&&(!policy.classify(rule.channelName,rule.channelId,rule.pkg,rule.channelApp).recommended()||policy.criticalNotification(rule.channelName)))
                 throw new UiDriver.Halt("通知渠道用途不明确或包含重要服务，未操作");
             ui.open(rule);
         }catch(UiDriver.Halt e){
-            if(e.terminal)cancelled=true;
+            if(e.terminal)stopFor(e.getMessage());
             for(String label:rule.targets){
                 JSONObject item=scanItem(rule,label);
                 put(item,"pass",pass);put(item,"status","skipped");put(item,"message",e.getMessage());
@@ -90,7 +96,7 @@ public final class CleanerService extends AccessibilityService {
             return;
         }
         for(String label:rule.targets){
-            if(cancelled)break;
+            if(stopReason!=null)break;
             JSONObject item=scanItem(rule,label);
             put(item,"pass",pass);put(item,"attempts",ui.attempts());
             inspectTarget(store,policy,ui,label,pass,item);
@@ -124,7 +130,7 @@ public final class CleanerService extends AccessibilityService {
             }
         }catch(UiDriver.Halt e){
             String record=item.optString("journalId");
-            if(e.terminal||!record.isEmpty())cancelled=true;
+            if(e.terminal||!record.isEmpty())stopFor(e.getMessage());
             if(!record.isEmpty())store.finish(record,"unknown",e.getMessage());
             put(item,"status","failed");put(item,"message",e.getMessage());
             put(item,"retryable",record.isEmpty()&&e.retryable);
@@ -218,7 +224,7 @@ public final class CleanerService extends AccessibilityService {
         }
     }
     private static void markUnrun(JSONObject item){
-        put(item,"status","skipped");
+        put(item,"status","queued");
         put(item,"message","任务停止前尚未执行，可在未完成列表中重试");
     }
     public synchronized void restore(JSONObject entry){restoreAll(Collections.singletonList(entry));}
@@ -235,15 +241,15 @@ public final class CleanerService extends AccessibilityService {
             if(requested.isEmpty()){note("所选改动已恢复或已有更新的记录");return;}
             int index=0;
             for(String id:requested){
-                if(cancelled)break;
+                if(stopReason!=null)break;
                 note("恢复 "+(++index)+" / "+requested.size());
                 restoreEntry(store,available.get(id));
             }
-            note(cancelled?"恢复已停止，请查看记录":"本轮恢复结束，请查看记录");
+            note(stopReason!=null?"恢复已停止，请查看记录":"本轮恢复结束，请查看记录");
         });
     }
     private void restoreEntry(Store store,JSONObject entry)throws JSONException{
-        String id=entry.getString("id");Rule r=new Rule(entry.getJSONObject("rule"));String label=entry.getString("label");UiDriver ui=new UiDriver(this,()->cancelled,GROUP_CHECK_BUDGET_MS);note("恢复 · "+label);
+        String id=entry.getString("id");Rule r=new Rule(entry.getJSONObject("rule"));String label=entry.getString("label");UiDriver ui=new UiDriver(this,()->stopReason,GROUP_CHECK_BUDGET_MS);note("恢复 · "+label);
         boolean attempted=false;
         try{if(!Build.FINGERPRINT.equals(entry.optString("build")))throw new UiDriver.Halt("系统版本已变化，请按原路径手动核对");
             if(entry.optLong("packageVersion",-1)>=0&&entry.optLong("packageVersion")!=store.packageVersion(r.pkg))throw new UiDriver.Halt("目标应用版本已变化，请按原路径手动核对");
@@ -265,13 +271,13 @@ public final class CleanerService extends AccessibilityService {
             attempted=true;
             if(!ui.set(f,before,()->store.finish(id,"restoring","恢复前已核对当前状态")))throw new UiDriver.Halt("恢复结果未能确认，请手动核对");
             store.finish(id,"restored","已恢复原值并回读确认");note("已恢复 · "+label);
-        }catch(UiDriver.Halt e){if(attempted||e.terminal)cancelled=true;store.finish(id,"restore_failed",e.getMessage());note("恢复未完成，请查看记录");}
+        }catch(UiDriver.Halt e){if(attempted||e.terminal)stopFor(e.getMessage());store.finish(id,"restore_failed",e.getMessage());note("恢复未完成，请查看记录");}
     }
     static void put(JSONObject j,String key,Object value){try{j.put(key,value);}catch(JSONException e){throw new IllegalStateException(e);}}
     private interface Work{void run()throws Exception;}
     private void start(Work work){
         busy=true;
-        cancelled=false;
+        stopReason=null;
         showOverlay();
         worker.execute(()->{
             try{work.run();}

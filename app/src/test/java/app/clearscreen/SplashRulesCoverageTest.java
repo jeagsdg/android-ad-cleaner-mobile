@@ -187,6 +187,83 @@ public class SplashRulesCoverageTest {
         assertNull(SplashSkipper.match(root, rules, activity));
     }
 
+    @Test public void neteaseSkipRequiresItsVisibleAdContainerAndBadge() {
+        String pkg = "com.netease.cloudmusic";
+        String activity = pkg + ".activity.MainActivity";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo container = add(root, node(pkg, "android.widget.RelativeLayout",
+                pkg + ":id/adContainer", false, SCREEN));
+        AccessibilityNodeInfo skip = add(container, button(pkg, "android.widget.TextView", pkg + ":id/skipBtn"));
+        skip.setText("跳过 5");
+        assertFalse(rules.matches(pkg, activity, skip));
+
+        AccessibilityNodeInfo badge = add(container, node(pkg, "android.widget.TextView",
+                pkg + ":id/adCompatTag", false, CORNER));
+        badge.setText("广告");
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertFalse(rules.matches(pkg, pkg + ".music.biz.setting.activity.SettingActivity", skip));
+        assertFalse(rules.matches(pkg, activity, skip, 10_000));
+        badge.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setVisibleToUser(true);
+        container.setViewIdResourceName(pkg + ":id/content");
+        assertFalse(rules.matches(pkg, activity, skip));
+    }
+
+    @Test public void iqiyiWrapperRequiresItsFullSplashShapeAndVisibleAdPrompt() {
+        String pkg = "com.qiyi.video";
+        String activity = "org.qiyi.android.video.MainActivity";
+        String anonymized = pkg + ":id/unused_res_a";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        add(root, node(pkg, "android.widget.ImageView", anonymized, false, SCREEN));
+        add(root, node(pkg, "android.widget.ImageView", anonymized, false, CORNER));
+        AccessibilityNodeInfo corner = add(root, frame(pkg, null));
+        AccessibilityNodeInfo close = add(corner, button(pkg, "android.widget.FrameLayout", anonymized));
+        AccessibilityNodeInfo row = add(close, node(pkg, "android.widget.LinearLayout", null, false, CORNER));
+        add(row, frame(pkg, anonymized));
+        AccessibilityNodeInfo label = add(row, node(pkg, "android.widget.TextView", anonymized, false, CORNER));
+        label.setText("关闭");
+        AccessibilityNodeInfo adPrompt = add(root, node(pkg, "android.widget.TextView", anonymized, false, SCREEN));
+        adPrompt.setText("点击跳转至视频播放页");
+
+        assertEquals(close, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, "org.iqiyi.video.activity.PlayerActivity"));
+        adPrompt.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        adPrompt.setVisibleToUser(true);
+        close.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        close.setClickable(true);
+        label.setText("继续");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void qunarCountdownCloseRequiresTheAdSiblingAndAValidCountdown() {
+        String pkg = "com.Qunar";
+        String activity = "com.mqunar.atom.alexhome.ui.activity.MainActivity";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo host = add(root, node(pkg, "android.widget.RelativeLayout", null, false, SCREEN));
+        AccessibilityNodeInfo ad = add(host, node(pkg, "android.widget.RelativeLayout", null, false, SCREEN));
+        add(ad, frame(pkg, null));
+        add(ad, frame(pkg, null));
+        add(ad, frame(pkg, null));
+        AccessibilityNodeInfo marker = add(ad, node(pkg, "android.widget.LinearLayout",
+                pkg + ":id/mery_splash_ad_resource", false, SCREEN));
+        AccessibilityNodeInfo label = add(marker, node(pkg, "android.widget.TextView", null, false, SCREEN));
+        label.setText("广告");
+        AccessibilityNodeInfo close = add(host, button(pkg, "android.widget.TextView", null));
+        close.setText("关闭 1");
+        assertEquals(close, SplashSkipper.match(root, rules, activity));
+
+        close.setText("关闭 123");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        close.setText("关闭 1");
+        marker.setViewIdResourceName(pkg + ":id/ordinary_panel");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        close.setText("关闭");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
     private static AccessibilityNodeInfo frame(String pkg, String id) {
         return node(pkg, "android.widget.FrameLayout", id, false, SCREEN);
     }

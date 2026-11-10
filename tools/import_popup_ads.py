@@ -11,25 +11,33 @@ from import_splash import (
 SOURCE = 'https://github.com/ganlinte/GKD-subscription'
 GROUP_FIELDS = {
     'key', 'name', 'desc', 'enable', 'rules', 'activityIds', 'excludeActivityIds', 'fastQuery',
-    'snapshotUrls', 'exampleUrls', 'order',
+    'snapshotUrls', 'exampleUrls', 'order', 'matchTime', 'actionMaximum', 'resetMatch',
 }
 RULE_FIELDS = {
     'key', 'name', 'desc', 'enable', 'matches', 'anyMatches', 'activityIds', 'excludeActivityIds',
-    'fastQuery', 'snapshotUrls', 'exampleUrls', 'action',
+    'fastQuery', 'snapshotUrls', 'exampleUrls', 'action', 'matchTime', 'actionMaximum', 'resetMatch',
 }
 SENSITIVE = re.compile(
     r'隐私|权限|授权|定位提醒|通知提示|请求通知|开启通知|订单|付款|支付|续费|收款|安装|登录|'
-    r'更新|升级|青少年|未成年|实名认证|评价弹窗|调查|反馈|激励|领奖|奖励|关注|评论|分享|退出|'
+    r'更新|升级|青少年|未成年|实名认证|评价|评分|好评|调查|反馈|激励|领奖|奖励|关注|分享|退出|'
     r'privacy|permission|login|checkout|reward', re.I,
 )
 PROTECTED_PACKAGE = re.compile(r'settings|systemui|securitycenter|systemmanager|wallet|banking', re.I)
 AD_WORDS = {'广告', '廣告', '推广', '推廣', 'ad', 'ads', 'advertisement', '腾讯广告', '优量汇广告'}
 AD_CLOSE_WORDS = {'关闭广告', '關閉廣告', '关闭此广告', '關閉此廣告', '跳过广告', '跳過廣告',
-                  '跳过此广告', '跳過此廣告', 'close ad', 'close advertisement', 'skip ad'}
+                  '跳过此广告', '跳過此廣告', 'close ad', 'close advertisement', 'skip ad',
+                  'skip ads', 'skip advertisement'}
 CLOSE_WORDS = AD_CLOSE_WORDS | {'关闭', '關閉', '关闭弹窗', '取消', '跳过', '跳過', '跳过视频',
-                              '不感兴趣', '不感興趣', 'close', 'dismiss', 'skip', 'not interested', '×'}
-AD_ACTIVITIES = re.compile(r'(?:ads?|advert|interstitial)(?:portrait|landscape|full)?(?:video)?activity$', re.I)
-AD_NAMES = {'ad', 'ads', 'advert', 'advertisement', 'interstitial', 'advertise'}
+                              '直接关闭', '关闭弹层', '不感兴趣', '不感興趣', 'close', 'dismiss', 'skip',
+                              'not interested', '×'}
+AD_ACTIVITIES = re.compile(
+    r'(?:Ads?|ADS?|Advert(?:ising)?|Interstitial)(?:(?i:portrait|landscape|full|video|dialog|popup|webview))*Activity$',
+)
+AD_NAMES = {'ad', 'ads', 'advert', 'advertisement', 'interstitial', 'advertise', 'advertising', 'adview'}
+AD_CONTEXT_IDS = {
+    'logo', 'mark', 'badge', 'container', 'frame', 'layout', 'tag', 'label',
+    'title', 'text', 'view', 'image', 'img', 'icon', 'flag', 'portrait', 'landscape',
+}
 DISMISS_NAMES = {'close', 'dismiss', 'skip', 'cancel'}
 
 # These exact source branches have a documented ad-only sibling or overlay anchor.
@@ -44,6 +52,96 @@ REVIEWED = {
     ('me.ele', 2, 1): '[desc$="今日红包"] +(n) [desc$="关闭"][clickable=true]',
     ('com.autonavi.minimap', 12, 0):
         '@ImageView < [desc="关闭"][clickable=true] - ViewGroup > ViewGroup > ViewGroup > View[text="立即领取"]',
+    ('com.qiyi.video', 2, 0):
+        '@[id="com.qiyi.video:id/unused_res_a"][clickable=true] > [id="com.qiyi.video:id/close"]',
+    ('com.netease.cloudmusic', 2, 0):
+        '[id="com.netease.cloudmusic:id/auto_scroll_switcher"] + [id="com.netease.cloudmusic:id/close_btn"]',
+    ('com.youku.phone', 3, 0): '[id="com.youku.phone:id/closeView"][desc="关闭弹层"]',
+    ('com.tencent.qqmusic', 2, 0): 'View[id="js_close_btn"][desc="关闭"]',
+    ('com.baidu.netdisk', 2, 0): '[id="com.baidu.netdisk:id/banner_item_close"]',
+    ('com.baidu.searchcraft', 1, 0): '[desc="ad-logo"] + [id="logo-close-btn"][clickable=true]',
+    # Paired promotion/layout and close controls in the snapshot's own activity.
+    ('com.lxt.cfmoto', 1, 0):
+        'RelativeLayout[childCount=2] > [id="com.lxt.cfmoto:id/image"] + [id="com.lxt.cfmoto:id/closeClick"]',
+    ('youqu.android.todesk', 1, 0):
+        '[id="youqu.android.todesk:id/sivDeviceBanner"] + [id="youqu.android.todesk:id/llClose"]',
+    ('cn.damai', 1, 0):
+        '[id="cn.damai:id/homepage_popup_window_image"] + [id="cn.damai:id/homepage_popup_window_close_btn"]',
+    ('com.maidu.gkld', 2, 0):
+        '[id="com.maidu.gkld:id/fl_float"] + [id="com.maidu.gkld:id/close_image_view"]',
+    ('com.jingyao.easybike', 12, 0):
+        '@[id="com.jingyao.easybike:id/closeFloatArea"] + [id="com.jingyao.easybike:id/floatADContainer"]',
+    ('com.huatu.handheld_huatu', 1, 0):
+        '[id="com.huatu.handheld_huatu:id/main_img_adv_bg"] + [id="com.huatu.handheld_huatu:id/main_img_close"]',
+    ('com.handsgo.jiakao.android', 2, 1):
+        '[id="com.handsgo.jiakao.android:id/adsdk__ids_cta_layout"] - * > [id="com.handsgo.jiakao.android:id/close"]',
+    ('com.copymanga.app', 2, 0):
+        '[id^="com.copymanga.app:id/ad_flag_source"] - * > [id="com.copymanga.app:id/close"]',
+    ('com.jisu.manhua', 1, 0):
+        '[id="com.jisu.manhua:id/iv_promotion"] + [id="com.jisu.manhua:id/iv_close"]',
+    ('com.hunantv.imgo.activity', 2, 0):
+        '[id="com.hunantv.imgo.activity:id/imgPromotion"] + [id="com.hunantv.imgo.activity:id/vClosePromotionView"]',
+    ('com.hunantv.imgo.activity', 2, 2):
+        '[id="com.hunantv.imgo.activity:id/ivPromotion"] + [id="com.hunantv.imgo.activity:id/btnClose"]',
+    ('com.cmcc.cmvideo', 5, 0):
+        '@[id="com.cmcc.cmvideo:id/iv_big_close"] + [id="com.cmcc.cmvideo:id/sdv_big_pic"]',
+    ('com.modian.app', 1, 0):
+        '[id="com.modian.app:id/banner_view"] + [id="com.modian.app:id/iv_close"]',
+    ('com.xinhang.mobileclient', 2, 0):
+        '@[id="com.xinhang.mobileclient:id/iv_close"] + [id="com.xinhang.mobileclient:id/iv_advert"]',
+    ('com.shinyv.cnr', 1, 0):
+        '[id="com.shinyv.cnr:id/iv_ad"] + [id="com.shinyv.cnr:id/iv_close"]',
+    ('com.zzw.october', 2, 0):
+        '[id="com.zzw.october:id/interact_ad_root"] >n ImageView[id="com.zzw.october:id/iv_close"]',
+    ('com.pcncn.jj', 6, 0):
+        '[id="com.pcncn.jj:id/interact_ad_root"] [id="com.pcncn.jj:id/iv_close"]',
+    ('cn.TuHu.android', 1, 0):
+        '@[id="cn.TuHu.android:id/imgClose"] - [id="cn.TuHu.android:id/rlContent"] > [id="cn.TuHu.android:id/img_jump"]',
+    ('com.moutai.mall', 1, 0):
+        '[id="com.moutai.mall:id/ivPic"] + ViewGroup + [id="com.moutai.mall:id/vClose"]',
+    # Ad-specific dismissal IDs and controls inside the source's ad activity.
+    ('com.ksf.yyx', 2, 0): '[id="com.ksf.yyx:id/ksad_container"] [text="跳过"]',
+    ('com.ksf.yyx', 2, 2): '[id="ad_area"] [id="close_btn"][clickable=true]',
+    ('com.picacomic.fregata', 3, 0): '[id="com.picacomic.fregata:id/imageButton_banner_close"]',
+    ('com.qcymall.earphonesetup', 1, 0): '[vid="close_img_banner"]',
+    ('com.zhizhou.days', 1, 0): '[desc^="webview-close"] > View[clickable=true]',
+    ('com.duokan.reader', 4, 0): '@ImageView < FrameLayout[id="com.duokan.reader:id/reading__app_ad_view__close"]',
+    ('tool.seagull.v', 2, 2): '[desc="Interstitial close button"]',
+    ('com.jd.app.reader', 3, 0): '[id$="ad_read_close"]',
+    ('com.maxhom.weibu', 3, 2): '[id="com.maxhom.weibu:id/anythink_myoffer_banner_close"]',
+    ('com.klcxkj.zqxy', 1, 0): '[id="com.klcxkj.zqxy:id/anythink_myoffer_btn_close_id"]',
+    ('io.iftech.android.box', 2, 2): '[id="io.iftech.android.box:id/anythink_myoffer_btn_close_id"]',
+    ('com.zhaopin.social', 2, 0): '[id="com.zhaopin.social:id/rl_banner_close"][clickable=true]',
+    ('com.xyhui', 1, 6): '[id="com.xyhui:id/ms_activity_sdk_interstitial_cacel"]',
+    ('com.nowcasting.activity', 3, 0): '[id="com.nowcasting.activity:id/jad_feed_close"]',
+    ('com.guodongbaohe.app', 6, 0): 'LinearLayout[id="com.guodongbaohe.app:id/close_dialog_lv"]',
+    ('com.hihonor.appmarket', 1, 0): '[id="com.hihonor.appmarket:id/iv_dialog_operation_close"]',
+}
+
+# Keep the market's original ad close control on the market page itself.
+REVIEWED_ACTIVITY_FILTERS = {
+    ('com.hihonor.appmarket', 1, 0): {'com.hihonor.appmarket.module.main.MainActivity'},
+}
+
+# Preserve the exact source pattern, then require the close itself to be a visible
+# clickable node. The ad label and the close are adjacent in a single overlay.
+REVIEWED_TARGETS = {
+    ('com.netease.cloudmusic', 4, 1): (
+        '[text="广告"] < ViewGroup + ImageView',
+        '[text="广告"] < ViewGroup + ImageView[clickable=true]',
+    ),
+    ('com.tencent.qqlive', 4, 0): (
+        '@[text$="跳过广告"][clickable=true] < LinearLayout > [text="VIP可关闭该广告"]',
+        '@[text$="跳过广告"][text.length<=10][clickable=true] < LinearLayout > [text="VIP可关闭该广告"]',
+    ),
+    ('com.tencent.qqlive', 4, 2): (
+        '@[text$="关闭广告"][clickable=true]',
+        '[text="关闭广告"][clickable=true]',
+    ),
+    ('com.baidu.tieba', 9, 1): (
+        '@TextView[clickable=true && text=null] - FrameLayout TextView[text="广告"]',
+        '@TextView[clickable=true][text=null][childCount=0] - FrameLayout TextView[text="广告"]',
+    ),
 }
 
 
@@ -66,13 +164,39 @@ def ad_close_resource(field, op, value):
 
 
 def close_resource(field, op, value):
-    return bool(id_tokens(field, op, value) & DISMISS_NAMES)
+    return bool(id_tokens(field, op, value) & (DISMISS_NAMES | {'dislike'}))
 
 
 def ad_marker(field, op, value):
     return text_test(AD_WORDS)(field, op, value) or bool(
-        id_tokens(field, op, value) & AD_NAMES and id_tokens(field, op, value) & {'logo', 'mark', 'badge', 'container'},
+        id_tokens(field, op, value) & AD_NAMES and id_tokens(field, op, value) & AD_CONTEXT_IDS,
     )
+
+
+def labeled_control(selector):
+    path, target = selector['path'], selector['target']
+    # When the source marks a wrapper as the click target, require a fixed ID and
+    # a direct child explicitly identifying the action as closing an advertisement.
+    if not guaranteed(path[target], lambda f, op, v: f in ('id', 'vid') and op == '='
+                      and isinstance(v, str) and bool(v)):
+        return False
+    neighbors = ((target + 1, target, '>'), (target - 1, target - 1, '<'))
+    return any(
+        0 <= neighbor < len(path)
+        and selector['relations'][index] == [operator, [1]]
+        and guaranteed(path[neighbor], text_test(AD_CLOSE_WORDS))
+        for neighbor, index, operator in neighbors
+    )
+
+
+def short_ad_close_label(node):
+    for field in ('text', 'desc'):
+        prefix = guaranteed(node, lambda f, op, v: f == field and op == '^=' and v in AD_CLOSE_WORDS)
+        bounded = guaranteed(node, lambda f, op, v: f == field + '.length'
+                             and op in ('<', '<=') and type(v) is int and v <= 12)
+        if prefix and bounded:
+            return True
+    return False
 
 
 def confidence(selector, activities):
@@ -82,6 +206,12 @@ def confidence(selector, activities):
     if guaranteed(path[target], ad_close_resource):
         return 'ad-close-resource'
     if guaranteed(path[target], text_test(AD_CLOSE_WORDS)):
+        return 'ad-close-label'
+    if activities and labeled_control(selector):
+        return 'ad-close-child'
+    # A countdown suffix is safe only for a scoped, short label with an explicit
+    # "skip ad" prefix, never a generic "skip" or "close".
+    if activities and short_ad_close_label(path[target]):
         return 'ad-close-label'
     if not guaranteed(path[target], lambda *term: text_test(CLOSE_WORDS)(*term) or close_resource(*term)):
         return None
@@ -101,6 +231,28 @@ def protected(package):
 def compile_popup_selector(value):
     # GKD accepts the parenthesized any-distance form as well as the shorthand n.
     return compile_selector(re.sub(r'(?<=\s)([<>+-])\(n\)(?=\s)', r'\1n', value.strip()))
+
+
+def constraints(props, alternatives):
+    """Keep upstream limits only when the on-device model can honor them."""
+    limits = {}
+    reset = props.get('resetMatch', 'activity')
+    if reset not in ('activity', 'app', 'match'):
+        return None
+    if 'matchTime' in props:
+        time = props['matchTime']
+        # The runtime's time window starts at the activity, never a later match
+        # or the app transition, so reject the other reset models here.
+        if type(time) is not int or time <= 0 or reset != 'activity':
+            return None
+        limits['matchTimeMs'] = time
+    if 'actionMaximum' in props:
+        maximum = props['actionMaximum']
+        if type(maximum) is not int or maximum <= 0 or len(alternatives) > 1:
+            return None
+        # Per-app visit budgets are at least as strict as per-activity budgets.
+        limits['maxPerVisit'] = min(maximum, 3)
+    return limits
 
 
 def import_popup_rules(source):
@@ -135,24 +287,43 @@ def import_popup_rules(source):
                 matches, alternatives = array(rule.get('matches')), array(rule.get('anyMatches'))
                 if matches and alternatives:
                     continue
+                limits = constraints(props, alternatives)
+                if limits is None:
+                    continue
                 requirements = [compile_popup_selector(value) for value in matches[:-1]]
                 if any(not value for value in requirements):
                     continue
                 for original in matches[-1:] or alternatives:
-                    selector = compile_popup_selector(original)
+                    accepted = original
+                    identity = (package, group['key'], index)
+                    reviewed_target = REVIEWED_TARGETS.get(identity)
+                    if reviewed_target and reviewed_target[0] == original and activities:
+                        accepted = reviewed_target[1]
+                    selector = compile_popup_selector(accepted)
                     if not selector:
                         continue
                     evidence = confidence(selector, activities)
-                    if REVIEWED.get((package, group['key'], index)) == original and activities:
+                    reviewed = REVIEWED.get(identity) == original or accepted != original
+                    entry_activities = activities
+                    if activities and reviewed:
                         evidence = 'reviewed-ad-path'
+                        if identity in REVIEWED_ACTIVITY_FILTERS:
+                            entry_activities = [activity for activity in activities
+                                                if activity in REVIEWED_ACTIVITY_FILTERS[identity]]
+                            if not entry_activities:
+                                continue
                     if not evidence:
                         continue
-                    entries.append(dict(
+                    entry = dict(
                         package=package, name=app['name'], group=group['name'], groupKey=group['key'], ruleIndex=index,
-                        selector=original, snapshots=snapshots, evidence=evidence, targetSelector=selector,
-                        activityIds=activities, excludeActivityIds=excludes,
+                        selector=accepted, snapshots=snapshots, evidence=evidence, targetSelector=selector,
+                        activityIds=entry_activities, excludeActivityIds=excludes,
                         required=requirements, requiredSelectors=matches[:-1],
-                    ))
+                        **limits,
+                    )
+                    if accepted != original:
+                        entry['upstreamSelector'] = original
+                    entries.append(entry)
     return entries
 
 

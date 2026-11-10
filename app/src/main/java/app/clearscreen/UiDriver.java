@@ -8,6 +8,7 @@ import android.provider.Settings;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import org.json.*;
 
 /** Accessibility adapter: exact matching, unique rows, no blind coordinates or global toggles. */
@@ -27,7 +28,7 @@ public final class UiDriver {
         Found(AccessibilityNodeInfo n,AccessibilityNodeInfo c,String text){node=n;click=c;checked=n.isChecked();label=text;}
     }
     private final AccessibilityService service;
-    private final BooleanSupplier cancelled;
+    private final Supplier<String> stopReason;
     private long deadlineNanos;
     private Rule rule;
     private Route route; private String expectedPackage;
@@ -37,12 +38,17 @@ public final class UiDriver {
     public Rule pinnedRule(){return rule.notification()?rule:rule.pin(route);}
     public UiDriver(AccessibilityService s,BooleanSupplier c){this(s,c,0);}
     UiDriver(AccessibilityService s,BooleanSupplier c,long budgetMillis){
-        service=s;cancelled=c;
+        this(s,()->c.getAsBoolean()?"已停止，已完成的改动仍保存在记录中":null,budgetMillis);
+    }
+    UiDriver(AccessibilityService s,Supplier<String> stopReason,long budgetMillis){
+        service=s;this.stopReason=stopReason;
         if(budgetMillis>0)deadlineNanos=System.nanoTime()+budgetMillis*1_000_000L;
     }
     private boolean expired(){return deadlineNanos!=0&&System.nanoTime()-deadlineNanos>=0;}
     public void check() throws Halt {
-        if(cancelled.getAsBoolean()||Thread.currentThread().isInterrupted())throw new Halt("已停止，已完成的改动仍保存在记录中",true);
+        String reason=stopReason.get();
+        if(reason!=null)throw new Halt(reason,true);
+        if(Thread.currentThread().isInterrupted())throw new Halt("清理任务被中断，已完成的改动仍保存在记录中",true);
         KeyguardManager k=(KeyguardManager)service.getSystemService(Context.KEYGUARD_SERVICE);
         if(k!=null&&k.isKeyguardLocked())throw new Halt("手机已锁屏，本次操作已停止",true);
         if(expired())throw new Halt("本组检查超时，可在清理结果中单独重试");

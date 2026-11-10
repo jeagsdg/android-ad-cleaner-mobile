@@ -8,6 +8,7 @@ import java.util.*;
 
 public final class Store {
     private static final Object JOURNAL_LOCK=new Object();
+    private static final Object SKIP_HISTORY_LOCK=new Object();
     private final Context context;
     private String cachedRulesJson;
     private List<CustomSkipRule> cachedRules = Collections.emptyList();
@@ -19,8 +20,37 @@ public final class Store {
     public void setSplashEnabled(boolean enabled){prefs().edit().putBoolean("splash-enabled",enabled).apply();}
     public boolean popupEnabled(){return prefs().getBoolean("popup-enabled",false);}
     public void setPopupEnabled(boolean enabled){prefs().edit().putBoolean("popup-enabled",enabled).apply();}
-    public boolean skipToastEnabled(){return prefs().getBoolean("skip-toast",false);}
+    public boolean skipToastEnabled(){return prefs().getBoolean("skip-toast",true);}
     public void setSkipToastEnabled(boolean enabled){prefs().edit().putBoolean("skip-toast",enabled).apply();}
+    boolean updateChecksEnabled(){return context.getResources().getBoolean(R.bool.network_filter_available)
+            &&prefs().getBoolean("update-checks",true);}
+    void setUpdateChecksEnabled(boolean enabled){prefs().edit().putBoolean("update-checks",enabled).apply();}
+    long lastUpdateCheck(){return prefs().getLong("last-update-check",0);}
+    void noteUpdateCheck(long now){prefs().edit().putLong("last-update-check",now).apply();}
+    ReleaseUpdates.Info cachedRelease(){
+        String saved=prefs().getString("public-release-info","");
+        if(saved.isEmpty())return null;
+        try{return ReleaseUpdates.parse(saved);}catch(java.io.IOException ignored){return null;}
+    }
+    void cacheRelease(ReleaseUpdates.Info release){
+        JSONObject info=new JSONObject();
+        CleanerService.put(info,"schema",1);
+        CleanerService.put(info,"versionCode",release.versionCode);
+        CleanerService.put(info,"versionName",release.versionName);
+        CleanerService.put(info,"notes",release.notes);
+        prefs().edit().putString("public-release-info",info.toString()).apply();
+    }
+    boolean keepsSkipDetails(){
+        SharedPreferences data=prefs();
+        return data.getBoolean("keep-skip-details",data.contains("splash-history")||data.contains("popup-history"));
+    }
+    void setKeepSkipDetails(boolean enabled){
+        synchronized(SKIP_HISTORY_LOCK){
+            SharedPreferences.Editor update=prefs().edit().putBoolean("keep-skip-details",enabled);
+            if(!enabled)update.remove("splash-history").remove("popup-history");
+            update.apply();
+        }
+    }
     public boolean skipKeepAliveEnabled(){return prefs().getBoolean("skip-keep-alive",false);}
     public void setSkipKeepAliveEnabled(boolean enabled){prefs().edit().putBoolean("skip-keep-alive",enabled).apply();}
     public Set<String> mediaAssistEnabled(){return new HashSet<>(prefs().getStringSet("media-assist-enabled",Collections.emptySet()));}
@@ -47,13 +77,20 @@ public final class Store {
     }
     synchronized void recordPopup(String pkg,boolean confirmed){recordSkip("popup",pkg,confirmed);}
     private void recordSkip(String kind,String pkg,boolean confirmed){
-        String history=kind+"-history",count=kind+"-confirmed";
-        JSONArray old=read(history),next=new JSONArray();JSONObject item=new JSONObject();
-        CleanerService.put(item,"package",pkg);CleanerService.put(item,"confirmed",confirmed);CleanerService.put(item,"time",System.currentTimeMillis());next.put(item);
-        for(int i=0;i<Math.min(19,old.length());i++)next.put(old.opt(i));
-        SharedPreferences.Editor update=prefs().edit().putString(history,next.toString());
-        if(confirmed)update.putLong(count,prefs().getLong(count,0)+1);
-        update.apply();
+        synchronized(SKIP_HISTORY_LOCK){
+            String history=kind+"-history",count=kind+"-confirmed";
+            SharedPreferences data=prefs();
+            SharedPreferences.Editor update=data.edit();
+            if(keepsSkipDetails()){
+                JSONArray old=read(history),next=new JSONArray();JSONObject item=new JSONObject();
+                CleanerService.put(item,"package",pkg);CleanerService.put(item,"confirmed",confirmed);
+                CleanerService.put(item,"time",System.currentTimeMillis());next.put(item);
+                for(int i=0;i<Math.min(19,old.length());i++)next.put(old.opt(i));
+                update.putString(history,next.toString());
+            }
+            if(confirmed)update.putLong(count,data.getLong(count,0)+1);
+            update.apply();
+        }
     }
     public long splashCount(){return prefs().getLong("splash-confirmed",0);}
     public long popupCount(){return prefs().getLong("popup-confirmed",0);}
@@ -104,6 +141,26 @@ public final class Store {
             throw new IllegalStateException("未找到原始改动记录，已停止操作");
         }
     }
-    public String export(){JSONObject root=new JSONObject();try{root.put("app","净屏 "+appVersion());root.put("device",deviceInfo());root.put("permissions",PermissionAccess.diagnostics(context));JSONObject network=new JSONObject();network.put("running",AdFilterService.running());network.put("status",new FilterStore(context).message());network.put("blockedDnsRequests",AdFilterService.blocked(context));root.put("networkFilter",network);root.put("splashEnabled",splashEnabled());root.put("splashConfirmed",splashCount());root.put("lastRun",lastRun());root.put("journal",read("journal"));root.put("scan",read("scan"));}catch(JSONException e){throw new IllegalStateException(e);}return root.toString();}
+    public String export(){
+        JSONObject root=new JSONObject();
+        try{
+            root.put("app","净屏 "+appVersion());
+            root.put("device",deviceInfo());
+            root.put("permissions",PermissionAccess.diagnostics(context));
+            if(context.getResources().getBoolean(R.bool.network_filter_available)){
+                JSONObject network=new JSONObject();
+                network.put("running",AdFilterService.running());
+                network.put("status",new FilterStore(context).message());
+                network.put("blockedDnsRequests",AdFilterService.blocked(context));
+                root.put("networkFilter",network);
+            }
+            root.put("splashEnabled",splashEnabled());
+            root.put("splashConfirmed",splashCount());
+            root.put("lastRun",lastRun());
+            root.put("journal",read("journal"));
+            root.put("scan",read("scan"));
+        }catch(JSONException e){throw new IllegalStateException(e);}
+        return root.toString();
+    }
     public String exportText(){try{return new JSONObject(export()).toString(2);}catch(JSONException e){throw new IllegalStateException(e);}}
 }

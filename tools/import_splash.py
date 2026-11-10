@@ -128,8 +128,6 @@ def compile_selector(selector):
             offset = relation.end()
         else:
             operator, slots = '>', 'n'
-        if operator == '<<' and slots != 'n':
-            return None
         positions = [] if slots == 'n' else [int(n) for n in (slots or '1').strip('()').split(',')]
         if offset == len(selector) or any(n > 12 for n in positions):
             return None
@@ -201,6 +199,8 @@ def import_rules(data):
             if isinstance(raw_rules, str) or (isinstance(raw_rules, list) and all(isinstance(r, str) for r in raw_rules)):
                 raw_rules = [{'matches': raw_rules}]
             for rule_index, rule in enumerate(array(raw_rules)):
+                if isinstance(rule, str):
+                    rule = {'matches': rule}
                 if not isinstance(rule, dict) or rule.get('enable') is False:
                     continue
                 constraints = group | rule
@@ -262,13 +262,61 @@ def import_rules(data):
     return entries
 
 
+def import_reviewed_samples(path):
+    """Compile narrow selectors from manually inspected, public startup snapshots."""
+    entries = []
+    for index, sample in enumerate(json.loads(path.read_text(encoding='utf-8'))):
+        selector = compile_selector(sample['selector'])
+        anchors = sample.get('requiredSelectors', [])
+        required = [compile_selector(anchor) for anchor in anchors]
+        if not selector or any(item is None or len(item['path']) != 1 for item in required):
+            raise ValueError(f'Unsupported reviewed selector in {sample["package"]}')
+        evidence = sample.get('evidence', 'structure')
+        target = selector['path'][selector['target']]
+        if evidence not in ('structure', 'resource', 'label') or (evidence == 'resource' and not guaranteed(
+            target, lambda field, op, value: field == 'id' and op == '=' and isinstance(value, str)
+                    and value.startswith(sample['package'] + ':id/')
+        )):
+            raise ValueError(f'Reviewed resource requires an exact app ID in {sample["package"]}')
+        if evidence == 'label' and (sample['activity'] != 'com.google.android.gms.ads.AdActivity'
+                or target['class'] != 'ImageButton' or not guaranteed(
+                    target, lambda field, op, value: (field, op, value) == ('desc', '=', 'Interstitial close button')
+                )):
+            raise ValueError(f'Reviewed label requires the exact interstitial close control in {sample["package"]}')
+        countdown_close = sample.get('adCountdownClose') is True
+        touch_only = sample.get('touchOnly') is True
+        if countdown_close and (evidence != 'structure' or not required):
+            raise ValueError(f'Countdown close needs a visible ad anchor in {sample["package"]}')
+        if touch_only and (sample.get('tap') is not True or not required or not guaranteed(
+            target, lambda field, op, value: (field, op, value) == ('childCount', '=', 0)
+        ) or not guaranteed(
+            target, lambda field, op, value: field in ('text', 'desc') and (
+                (op in ('=', '^=') and value == '跳过') or (op == '=' and value == '跳过广告')
+            )
+        )):
+            raise ValueError(f'Reviewed touch control needs a labelled leaf and visible ad anchor in {sample["package"]}')
+        entry = dict(
+            package=sample['package'], name=sample['name'], groupKey=-90, ruleIndex=index,
+            selector=sample['selector'], snapshots=[sample['snapshot']], evidence=evidence,
+            targetSelector=selector, activityIds=[sample['activity']], matchTime=10_000,
+            requireClickable=not touch_only, required=required, requiredSelectors=anchors,
+            reference=dict(versionName=sample['versionName'], snapshotSha256=sample['sha256']),
+        )
+        if sample.get('tap') is True:
+            entry['tap'] = True
+        if countdown_close:
+            entry['adCountdownClose'] = True
+        entries.append(entry)
+    return entries
+
+
 def main():
     source = Path(sys.argv[1]) if len(sys.argv) > 1 else VENDOR / 'ganlin_gkd.json5'
     raw = verified(source, SOURCE_SHA)
     license_path = source.parent / 'LICENSE'
     license_data = verified(license_path if license_path.exists() else VENDOR / 'LICENSE', LICENSE_SHA)
     data = json5.loads(raw.decode('utf-8'))
-    entries = import_rules(data)
+    entries = import_rules(data) + import_reviewed_samples(VENDOR / 'startup-samples.json')
     # App Market 16.1.11.302 replaced tv_operation_skip. Its ad-only layout
     # and AdSplashScreen both use btn_skip under the same MainActivity.
     honor_skip = '[id="com.hihonor.appmarket:id/btn_skip"][clickable=true]'

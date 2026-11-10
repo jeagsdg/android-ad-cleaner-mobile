@@ -114,6 +114,91 @@ public class PopupAdRulesTest {
         assertNull(rules.find(root, activity, SCREEN, 1_000));
     }
 
+    @Test public void iqiyiPlayerRequiresTheLabeledCloseControlInsideTheKnownWrapper() {
+        String pkg = "com.qiyi.video";
+        String activity = "org.iqiyi.video.activity.PlayerActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo close = add(root, node(pkg, "android.widget.RelativeLayout", "unused_res_a", true, BUTTON));
+        AccessibilityNodeInfo label = add(close, node(pkg, "android.widget.TextView", null, false, BUTTON));
+        label.setText("关闭广告");
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertNull(rules.find(root, "org.iqiyi.video.activity.VideoDetailActivity", SCREEN));
+
+        label.setText("关闭");
+        assertNull(rules.find(root, activity, SCREEN));
+        label.setText("关闭广告");
+        label.setVisibleToUser(false);
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void neteasePromoRequiresAnAdLabelAndAClickableAdjacentClose() {
+        String pkg = "com.netease.cloudmusic";
+        String activity = "com.netease.cloudmusic.activity.MainActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo promo = add(root, node(pkg, "android.view.ViewGroup", null, false, SCREEN));
+        AccessibilityNodeInfo label = add(promo, node(pkg, "android.widget.TextView", null, false, BUTTON));
+        label.setText("广告");
+        AccessibilityNodeInfo close = add(root, image(pkg, null, true));
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        label.setText("通知");
+        assertNull(rules.find(root, activity, SCREEN));
+        label.setText("广告");
+        close.setClickable(false);
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void neteasePlayerRequiresAnExplicitShortAdSkipLabel() {
+        String pkg = "com.netease.cloudmusic";
+        String activity = "com.netease.cloudmusic.activity.PlayerActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo button = add(root, node(pkg, "android.widget.TextView", null, true, BUTTON));
+        button.setText("跳过广告 5");
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(button, match.target);
+
+        button.setText("跳过");
+        assertNull(rules.find(root, activity, SCREEN));
+        button.setText("跳过广告说明，请点这里查看更多");
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void mangoTvRequiresThePromoAndCloseTogetherOnItsHomePage() {
+        String pkg = "com.hunantv.imgo.activity";
+        String activity = pkg + ".MainActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo promo = add(root, image(pkg, "imgPromotion", false));
+        AccessibilityNodeInfo close = add(root, image(pkg, "vClosePromotionView", true));
+
+        assertEquals(close, rules.find(root, activity, SCREEN).target);
+        assertNull(rules.find(root, pkg + ".PlayerActivity", SCREEN));
+        promo.setViewIdResourceName(pkg + ":id/general_image");
+        assertNull(rules.find(root, activity, SCREEN));
+        promo.setViewIdResourceName(pkg + ":id/imgPromotion");
+        close.setContentDescription("确认支付");
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void honorMarketAdRuleNeverRunsOnTheLauncher() {
+        String pkg = "com.hihonor.appmarket";
+        String activity = pkg + ".module.main.MainActivity";
+        String launcher = "com.hihonor.android.launcher.unihome.UniHomeLauncher";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo close = add(root, image(pkg, "iv_dialog_operation_close", true));
+
+        assertEquals(close, rules.find(root, activity, SCREEN).target);
+        assertFalse(rules.hasRules(pkg, launcher));
+        assertNull(rules.find(root, launcher, SCREEN));
+        close.setViewIdResourceName(pkg + ":id/close");
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
     private static AccessibilityNodeInfo frame(String pkg) {
         return node(pkg, "android.widget.FrameLayout", null, false, SCREEN);
     }

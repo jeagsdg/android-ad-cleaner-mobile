@@ -20,6 +20,7 @@ public final class MainActivity extends Activity {
     static final int START_FILTER_NOTIFICATIONS = 42, FILTER_NOTIFICATIONS = 43;
     static final int KEEP_ALIVE_NOTIFICATIONS = 44;
     static final int COLOROS_FILTER_NOTIFICATIONS = 45;
+    private static final long UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000L;
     Store store;
     LinearLayout shell, body;
     int tab = 0;
@@ -35,6 +36,7 @@ public final class MainActivity extends Activity {
     ScrollView pageScroll;
     int renderedTab=-1;
     boolean shownKeepAliveEnabled;
+    private boolean inForeground, checkingUpdates;
     final Runnable permissionRefresh = new Runnable() {
         @Override public void run() {
             PermissionAccess.State current = PermissionAccess.state(MainActivity.this);
@@ -64,13 +66,16 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume();
+        inForeground = true;
         lastPermissionState = PermissionAccess.state(this);
         if (store != null && store.skipKeepAliveEnabled()) SkipKeepAliveService.sync(this);
         if (store != null) render();
         permissionHandler.removeCallbacks(permissionRefresh);
         permissionHandler.postDelayed(permissionRefresh, 1000);
+        if (store != null && store.updateChecksEnabled()) checkForUpdates(false);
     }
     @Override protected void onPause() {
+        inForeground = false;
         permissionHandler.removeCallbacks(permissionRefresh);
         super.onPause();
     }
@@ -271,11 +276,21 @@ public final class MainActivity extends Activity {
         manage.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x28ffffff));
         splash.addView(manage, new LinearLayout.LayoutParams(-1, -2));
 
+        if (store.updateChecksEnabled()) {
+            ReleaseUpdates.Info available = newerRelease(store.cachedRelease());
+            if (available != null) {
+                LinearLayout update = card(body);
+                update.addView(bold("净屏 " + available.versionName + " 可更新", 17, INK));
+                linkAction(update, "查看版本说明", () -> showAvailableRelease(available));
+            }
+        }
+
         sectionTitle("广告与系统");
         LinearLayout features = card(body);
         features.setPadding(dp(8), dp(5), dp(8), dp(5));
         homePopupStatus = featureRow(features, R.drawable.ic_popup, "应用内弹窗", () -> showPage(POPUP_MANAGEMENT));
-        filterStatus = featureRow(features, R.drawable.ic_network, "网络广告过滤", () -> showPage(6));
+        if (networkFilterAvailable())
+            filterStatus = featureRow(features, R.drawable.ic_network, "网络广告过滤", () -> showPage(6));
         homeCleanStatus = featureRow(features, R.drawable.ic_settings, "系统广告设置", () -> {
             CleanerService service = CleanerService.get();
             if (service != null && service.busy) service.stop();
@@ -604,23 +619,98 @@ public final class MainActivity extends Activity {
                 catch (ActivityNotFoundException | SecurityException failure) { toast("此设备无法打开文件保存窗口，可以复制报告"); }
             }).setNegativeButton("取消", null).show();
     }
+    void launchDiagnostics() {
+        SkipDiagnostics session = SkipDiagnostics.LOCAL;
+        String report = session.summary(CleanerService.get() != null, store.splashEnabled());
+        if (report.isEmpty()) {
+            new AlertDialog.Builder(this).setTitle("开屏漏跳诊断")
+                    .setMessage("选择一个应用后，净屏会在内存保留 5 分钟的处理状态。摘要只含应用包名、版本、系统和失败原因。你可以回来预览，再决定是否复制。")
+                    .setPositiveButton("选择应用", (d, w) -> chooseDiagnosticApp())
+                    .setNegativeButton("取消", null).show();
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("预览开屏诊断").setMessage(report)
+                .setPositiveButton("复制摘要", (d, w) -> {
+                    if (!session.hasSession()) { toast("诊断已过期，请重新选择应用"); return; }
+                    ClipboardManager clipboard = getSystemService(ClipboardManager.class);
+                    if (clipboard == null) { toast("剪贴板暂不可用"); return; }
+                    ClipData clip = ClipData.newPlainText("净屏开屏诊断", report);
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        PersistableBundle extras = new PersistableBundle();
+                        extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+                        clip.getDescription().setExtras(extras);
+                    }
+                    clipboard.setPrimaryClip(clip);
+                    toast("已复制摘要");
+                }).setNeutralButton("重新选择应用", (d, w) -> chooseDiagnosticApp())
+                .setNegativeButton("结束并清除", (d, w) -> session.clear()).show();
+    }
+    private void chooseDiagnosticApp() {
+        chooseInstalledApp(pkg -> {
+            SkipDiagnostics.startLocal(pkg, store.packageVersion(pkg));
+            new AlertDialog.Builder(this).setTitle("诊断已开启")
+                    .setMessage("请打开选中的应用，等开屏结束后回到净屏，查看这次诊断。")
+                    .setPositiveButton("打开应用", (d, w) -> {
+                        Intent launch = getPackageManager().getLaunchIntentForPackage(pkg);
+                        try {
+                            if (launch != null) startActivity(launch);
+                            else toast("请从桌面打开应用");
+                        } catch (ActivityNotFoundException | SecurityException failure) {
+                            toast("请从桌面打开应用");
+                        }
+                    }).setNegativeButton("稍后打开", null).show();
+        }, "找不到可供诊断的应用");
+    }
+    private void historyToggle(LinearLayout card, String title, boolean enabled, java.util.function.Consumer<Boolean> save) {
+        Switch toggle = new Switch(this);
+        toggle.setText(title);
+        toggle.setTextColor(INK);
+        toggle.setTextSize(16);
+        toggle.setMinHeight(dp(48));
+        toggle.setChecked(enabled);
+        toggle.setOnCheckedChangeListener((button, checked) -> save.accept(checked));
+        card.addView(toggle, new LinearLayout.LayoutParams(-1, -2));
+    }
     void about() {
-        header("使用说明", "清理范围", "净屏 " + store.appVersion() + " · 本地预览版");
+        boolean network = networkFilterAvailable();
+        header("使用说明", "清理范围", "净屏 " + store.appVersion() + (network ? " · 完整版" : " · 纯离线版"));
         LinearLayout capability = card(body);
         capability.addView(bold("当前版本的能力", 18, INK));
         space(capability, 10);
-        paragraph(capability, "设置清理处理已匹配的推荐开关和营销通知渠道。开屏跳过识别广告控件，应用内弹窗按内置和自定义规则处理，网络过滤拦截本地规则中的广告域名。微信和 QQ 的原图辅助可在跳过管理中单独开启。视频内嵌、同域名、缓存或应用自带加密 DNS 的广告可能保留。");
+        paragraph(capability, "设置清理处理已匹配的推荐开关和营销通知渠道。开屏跳过识别广告控件，应用内弹窗按内置和自定义规则处理。微信和 QQ 的原图辅助可在跳过管理中单独开启。"
+                + (network ? "网络过滤拦截本地规则中的广告域名。视频内嵌、同域名、缓存或应用自带加密 DNS 的广告可能保留。" : ""));
         space(capability, 10);
         paragraph(capability, "关闭个性化推荐不等于清除全部广告。原生鸿蒙不支持安装此安卓应用。");
 
         LinearLayout privacy = card(body);
         privacy.addView(bold("数据留在你的手机", 18, INK));
         space(privacy, 10);
-        paragraph(privacy, "设置清理、开屏识别和弹窗匹配在本机执行。开屏跳过在应用进入前台的短时间内读取控件。开启弹窗处理后，会读取有内置或自定义弹窗规则的应用控件。跳过记录保留应用标识、时间和处理结果。通知检查仅保存应用和渠道标识。\n\n网络过滤使用本地 VPN，仅处理系统交给它的 DNS 请求；未拦截的查询交给当前网络的 DNS，不经过净屏服务器，不解密 HTTPS。只在本机保留最近 30 个被拦截域名和统计，可清除。诊断报告不包含这些域名。卸载会删除本地记录。");
+        paragraph(privacy, "开屏、弹窗和规则在本机运行。净屏没有账号、分析服务或自动上报。"
+                + (network ? "启用网络过滤后，未拦截的 DNS 查询交给当前网络的 DNS。" : "纯离线版没有 Android 联网权限。"));
+        paragraph(privacy, "拦截明细由你选择是否保留。关闭时清除已有明细，仍可看累计次数。系统设置的恢复记录留在本机，供你还原改动。");
+        historyToggle(privacy, "保留开屏与弹窗明细", store.keepsSkipDetails(), store::setKeepSkipDetails);
+        if (network) historyToggle(privacy, "保留最近拦截域名", new FilterStore(this).keepsDomainDetails(),
+                enabled -> AdFilterService.setKeepDomainDetails(this, enabled));
+        linkAction(privacy, "开屏漏跳诊断", this::launchDiagnostics);
         action(privacy, "清除通知渠道缓存", false, () -> new AlertDialog.Builder(this)
                 .setTitle("清除渠道缓存？").setMessage("不会改变任何通知设置。通知访问权限仍开启时，后续出现的渠道会重新记录。")
                 .setPositiveButton("清除", (d,w) -> { store.save("channels", new JSONArray()); toast("已清除渠道缓存"); })
                 .setNegativeButton("取消", null).show());
+
+        LinearLayout updates = card(body);
+        updates.addView(bold("应用更新", 18, INK));
+        if (network) {
+            paragraph(updates, "完整版默认在打开净屏时向 GitHub 查询公开版本，最多每天一次。有新版时首页会显示提示。查询不附带设备或使用记录。");
+            historyToggle(updates, "自动提示新版本", store.updateChecksEnabled(), enabled -> {
+                store.setUpdateChecksEnabled(enabled);
+                if (enabled) checkForUpdates(false);
+            });
+            linkAction(updates, "检查更新", () -> checkForUpdates(true));
+        } else {
+            paragraph(updates, "纯离线版可以在浏览器中查看新版本。");
+            linkAction(updates, "打开 GitHub 下载页", () -> openUpdateLink(android.net.Uri.parse(
+                    "https://github.com/jeagsdg/android-ad-cleaner-mobile")));
+        }
 
         LinearLayout local = card(body);
         local.addView(bold("本机适配", 18, INK));
@@ -722,7 +812,7 @@ public final class MainActivity extends Activity {
         LinearLayout missing = card(body);
         missing.addView(bold("没有解除入口", 18, INK));
         space(missing, 10);
-        if (PermissionAccess.showColorOsNotificationHelp()) {
+        if (networkFilterAvailable() && PermissionAccess.showColorOsNotificationHelp()) {
             paragraph(missing, "若「权限管理」灰显并写着「未请求任何权限」，可尝试允许净屏发送网络过滤状态通知，再回到应用详情检查权限管理。是否出现解除入口由系统决定，此步骤仍待 ColorOS 实机验证。若覆盖安装后仍被拦截，可跳过重复安装。");
             if (PermissionAccess.needsNotificationPermission(this)) {
                 action(missing, "申请过滤状态通知", false, () -> requestPermissions(
@@ -731,8 +821,10 @@ public final class MainActivity extends Activity {
                 action(missing, "重新检查权限管理", false, this::openOwnAppInfo);
             }
         }
-        paragraph(missing, "若系统始终没有提供解除入口，可以先使用独立的网络过滤。它拦截部分广告域名，开屏跳过和设置清理仍需要无障碍权限。");
-        action(missing,"使用网络过滤",true,()->{tab=6;render();});
+        if (networkFilterAvailable()) {
+            paragraph(missing, "若系统始终没有提供解除入口，可以先使用独立的网络过滤。它拦截部分广告域名，开屏跳过和设置清理仍需要无障碍权限。");
+            action(missing,"使用网络过滤",true,()->{tab=6;render();});
+        }
         action(missing, "保存当前安装包", false, this::saveInstalledApk);
         action(missing, "查看并复制诊断", false, this::diagnostics);
         LinearLayout disconnected = card(body);
@@ -780,6 +872,48 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("取消", null).show();
     }
     void toast(String value) { Toast.makeText(this, value, Toast.LENGTH_LONG).show(); }
+    boolean networkFilterAvailable() { return getResources().getBoolean(R.bool.network_filter_available); }
+    private ReleaseUpdates.Info newerRelease(ReleaseUpdates.Info release) {
+        long installed = store.packageVersion(getPackageName());
+        return release != null && installed >= 0 && release.versionCode > installed ? release : null;
+    }
+    private void checkForUpdates(boolean manual) {
+        if (!networkFilterAvailable() || (!manual && !store.updateChecksEnabled())) return;
+        if (checkingUpdates) { if (manual) toast("正在检查更新"); return; }
+        long now = System.currentTimeMillis(), last = store.lastUpdateCheck();
+        if (!manual && last <= now && now - last < UPDATE_INTERVAL_MS) return;
+        store.noteUpdateCheck(now);
+        checkingUpdates = true;
+        if (manual) toast("正在检查更新");
+        new Thread(() -> {
+            ReleaseUpdates.Info release = null;
+            try { release = ReleaseUpdates.fetch(); }
+            catch (java.io.IOException ignored) { }
+            ReleaseUpdates.Info result = release;
+            runOnUiThread(() -> {
+                checkingUpdates = false;
+                if (result != null) store.cacheRelease(result);
+                if (!inForeground || isFinishing() || isDestroyed()) return;
+                if (!manual && !store.updateChecksEnabled()) return;
+                ReleaseUpdates.Info newer = newerRelease(result);
+                if (manual) {
+                    if (result == null) toast("暂时无法读取 GitHub 版本，请稍后重试");
+                    else if (newer == null) toast("已是当前发布版本");
+                    else showAvailableRelease(newer);
+                } else if (newer != null && tab == 0) render();
+            });
+        }, "clearscreen-update").start();
+    }
+    private void showAvailableRelease(ReleaseUpdates.Info release) {
+        new AlertDialog.Builder(this).setTitle("净屏 " + release.versionName + " 可更新")
+                .setMessage(release.notes.isEmpty() ? "打开 GitHub 下载新的签名 APK。" : release.notes)
+                .setPositiveButton("去 GitHub 下载", (dialog, which) -> openUpdateLink(release.downloadUri()))
+                .setNegativeButton("稍后", null).show();
+    }
+    private void openUpdateLink(android.net.Uri uri) {
+        try { startActivity(new Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)); }
+        catch (ActivityNotFoundException | SecurityException failure) { toast("此设备无法打开浏览器"); }
+    }
     void refreshFilter(){
         if(filterStatus!=null)updateText(filterStatus,AdFilterService.running()?"运行中 · 本地 DNS 过滤":AdFilterService.active==null&&filterStore.enabled()?"服务已停止，请重新开启":filterStore.message());
         if(filterCounter!=null)updateText(filterCounter,getString(R.string.dns_counter,AdFilterService.blocked(this)));
@@ -787,6 +921,10 @@ public final class MainActivity extends Activity {
     }
     void updateText(TextView view,String value){if(!android.text.TextUtils.equals(view.getText(),value))view.setText(value);}
     void networkPage(){
+        if(!networkFilterAvailable()){
+            header("纯离线版", "网络过滤", "这个安装包没有 Android 联网权限。开屏和弹窗功能可在首页使用。");
+            return;
+        }
         header("本地 DNS", "网络广告过滤", "在广告域名解析时拦截。无需开启无障碍服务。");
         LinearLayout status=card(body);filterStatus=bold("",17,GREEN);status.addView(filterStatus);space(status,10);filterCounter=text("",14,MUTED);status.addView(filterCounter);
         filterButton=button("开启网络过滤",true,this::toggleFilter);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,-2);params.topMargin=dp(14);status.addView(filterButton,params);refreshFilter();
@@ -800,12 +938,14 @@ public final class MainActivity extends Activity {
         action(scope,"管理过滤通知",false,()->requestFilterNotifications(false));
     }
     void toggleFilter(){
+        if(!networkFilterAvailable())return;
         if(AdFilterService.active!=null){startService(new Intent(this,AdFilterService.class).setAction(AdFilterService.STOP));refreshFilter();}
         else new AlertDialog.Builder(this).setTitle("开启本地网络过滤")
                 .setMessage("系统会请求一次 VPN 授权，占用当前 VPN 位置，与其他 VPN 不能同时使用。仅 DNS 查询进入本地过滤，其他流量仍由原网络传输；未拦截的查询交给当前网络的 DNS，不解密 HTTPS。\n\n不能拦住全部广告。若应用加载异常，可停止过滤或放行被拦域名。运行时使用状态通知；不同系统仍可能限制后台运行。")
                 .setPositiveButton("继续",(d,w)->requestFilterNotifications(true)).setNegativeButton("取消",null).show();
     }
     void requestFilterNotifications(boolean startAfter) {
+        if(!networkFilterAvailable())return;
         if (PermissionAccess.needsNotificationPermission(this)) {
             requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
                     startAfter ? START_FILTER_NOTIFICATIONS : FILTER_NOTIFICATIONS);
@@ -838,11 +978,20 @@ public final class MainActivity extends Activity {
         }
     }
     void prepareFilter(){
+        if(!networkFilterAvailable())return;
         try{Intent intent=android.net.VpnService.prepare(this);if(intent==null)startFilter();else startActivityForResult(intent,41);}catch(Exception e){toast("此设备无法打开 VPN 授权，请检查系统或工作资料限制");}
     }
-    void startFilter(){try{startForegroundService(new Intent(this,AdFilterService.class).setAction("start"));}catch(Exception e){toast("系统未允许启动网络过滤，请保持净屏在前台重试");}refreshFilter();}
+    void startFilter(){if(!networkFilterAvailable())return;try{startForegroundService(new Intent(this,AdFilterService.class).setAction("start"));}catch(Exception e){toast("系统未允许启动网络过滤，请保持净屏在前台重试");}refreshFilter();}
     void blockedDomains(){
-        List<String> domains=new FilterStore(this).recent();Collections.reverse(domains);
+        FilterStore data=new FilterStore(this);
+        if(!data.keepsDomainDetails()){
+            new AlertDialog.Builder(this).setTitle("域名明细已关闭")
+                    .setMessage("开启后会在本机保留最近被拦截的域名，方便查看或放行。")
+                    .setPositiveButton("开启明细",(d,w)->AdFilterService.setKeepDomainDetails(this,true))
+                    .setNegativeButton("关闭",null).show();
+            return;
+        }
+        List<String> domains=data.recent();Collections.reverse(domains);
         if(domains.isEmpty()){toast("暂无拦截域名，运行记录约每 5 秒更新");return;}
         new AlertDialog.Builder(this).setTitle("最近拦截 · 点选可放行").setItems(domains.toArray(new String[0]),(d,w)->new AlertDialog.Builder(this).setTitle("放行此域名？").setMessage(domains.get(w)+"\n放行后广告也可能重新出现。应用的 DNS 缓存可能需要稍后重新打开应用才会更新。")
                 .setPositiveButton("放行",(x,y)->{new FilterStore(this).allow(domains.get(w),true);toast("已放行该域名");}).setNegativeButton("取消",null).show()).setNegativeButton("关闭",null).show();
@@ -870,18 +1019,19 @@ public final class MainActivity extends Activity {
         linkAction(options, "选择不处理的应用", () -> skipExclusions(null));
         linkAction(options, "分别排除开屏或弹窗", this::chooseExclusionMode);
         linkAction(options, "最近跳过记录", () -> skipHistory(false));
+        linkAction(options, "开屏漏跳诊断", this::launchDiagnostics);
         linkAction(options, "管理自定义规则", this::openCustomRules);
 
         LinearLayout feedback = card(body);
         Switch skipToast = new Switch(this);
-        skipToast.setText("确认处理时显示提示");
+        skipToast.setText("显示净屏标记");
         skipToast.setTextColor(INK);
         skipToast.setTextSize(16);
         skipToast.setMinHeight(dp(48));
         skipToast.setChecked(store.skipToastEnabled());
         skipToast.setOnCheckedChangeListener((button, checked) -> store.setSkipToastEnabled(checked));
         feedback.addView(skipToast, new LinearLayout.LayoutParams(-1, -2));
-        paragraph(feedback, "确认跳过开屏广告或关闭弹窗后，短暂显示提示。");
+        paragraph(feedback, "开屏或弹窗确认关闭后，短暂显示净屏勾标。");
         linkAction(feedback, "微信与 QQ 原图", this::mediaAssistSettings);
 
         LinearLayout keepAlive = card(body);
@@ -1030,6 +1180,7 @@ public final class MainActivity extends Activity {
         LinearLayout actions = card(body);
         actions.addView(bold("已保存 " + rules.size() + " / " + CustomSkipRule.MAX_RULES + " 条", 17, INK));
         action(actions, "添加规则", true, () -> editSkipRule(rules, -1));
+        linkAction(actions, "添加高级规则", () -> AdvancedRuleEditor.add(this, rules));
         linkAction(actions, "还原规则备份", this::importSkipRules);
         linkAction(actions, "导出规则", () -> exportSkipRules(rules));
 
@@ -1041,12 +1192,19 @@ public final class MainActivity extends Activity {
         for (int index = 0; index < rules.size(); index++) {
             final int position = index;
             CustomSkipRule rule = rules.get(index);
+            if (rule.sequenceIndex > 0) continue;
             String name = apps.getOrDefault(rule.pkg, rule.pkg);
             LinearLayout entry = card(body);
             entry.addView(bold(name, 17, INK));
             space(entry, 8);
             paragraph(entry, skipRuleDetails(rule));
-            if (rule.legacy || rule.gesture || rule.delayMs > 0 || rule.searches > 1) {
+            if (rule.sequenceIndex == 0) {
+                long stepCount = rules.stream().filter(step -> step.sequenceIndex >= 0 && step.pkg.equals(rule.pkg)).count();
+                paragraph(entry, "共 " + stepCount + " 步");
+                linkAction(entry, "编辑整组", () -> AdvancedRuleEditor.edit(this, rules, position));
+            } else if (rule.legacy) {
+                linkAction(entry, "编辑高级规则", () -> AdvancedRuleEditor.edit(this, rules, position));
+            } else if (rule.gesture || rule.delayMs > 0 || rule.searches > 1) {
                 linkAction(entry, rule.sequenceIndex >= 0 ? "删除整组规则" : "删除规则",
                         () -> confirmSkipRuleDelete(rules, position, null));
             }
@@ -1056,7 +1214,7 @@ public final class MainActivity extends Activity {
     String skipRuleDetails(CustomSkipRule rule) {
         StringBuilder detail = new StringBuilder(CustomSkipRule.POPUP.equals(rule.mode) ? "弹窗处理" : "开屏跳过");
         detail.append(" · ").append(rule.pkg);
-        if (rule.legacy) detail.append(" · 兼容规则");
+        if (rule.legacy) detail.append(" · 高级规则");
         if (!rule.context.isEmpty()) detail.append(rule.legacy ? "\n页面匹配条件  " : "\n弹窗提示  ").append(rule.context);
         if (!rule.label.isEmpty()) detail.append(rule.legacy ? "\n操作条件  " : "\n按钮文字或描述  ").append(rule.label);
         if (!rule.viewId.isEmpty()) detail.append("\n控件 ID  ").append(rule.viewId);
@@ -1193,12 +1351,16 @@ public final class MainActivity extends Activity {
         return true;
     }
     void chooseSkipRuleApp(EditText packageField) {
+        chooseInstalledApp(packageField::setText, "请选择手动输入应用包名");
+    }
+    private void chooseInstalledApp(java.util.function.Consumer<String> choice, String emptyMessage) {
         Map<String, String> apps = launcherApps();
         List<String> packages = new ArrayList<>(apps.keySet());
         packages.removeIf(CustomSkipRule::protectedPackage);
+        packages.remove(getPackageName());
         java.text.Collator collator = java.text.Collator.getInstance();
         packages.sort((first, second) -> collator.compare(apps.get(first), apps.get(second)));
-        if (packages.isEmpty()) { toast("请选择手动输入应用包名"); return; }
+        if (packages.isEmpty()) { toast(emptyMessage); return; }
         LinearLayout content = skipDialogContent();
         EditText search = new EditText(this);
         search.setHint("搜索应用名称或包名");
@@ -1225,8 +1387,9 @@ public final class MainActivity extends Activity {
         AlertDialog picker = new AlertDialog.Builder(this).setTitle("选择已安装应用").setView(content)
                 .setNegativeButton("取消", null).create();
         list.setOnItemClickListener((parent, row, position, id) -> {
-            packageField.setText(shown.get(position));
+            String pkg = shown.get(position);
             picker.dismiss();
+            choice.accept(pkg);
         });
         picker.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
                 | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -1362,6 +1525,13 @@ public final class MainActivity extends Activity {
     void skipHistory(boolean popup) {
         String key = popup ? "popup-history" : "splash-history";
         String title = popup ? "最近弹窗处理记录" : "最近跳过记录";
+        if (!store.keepsSkipDetails()) {
+            new AlertDialog.Builder(this).setTitle(title)
+                    .setMessage("处理明细已关闭。开启后只在本机保留应用、时间和处理结果。")
+                    .setPositiveButton("开启明细", (d, w) -> store.setKeepSkipDetails(true))
+                    .setNegativeButton("关闭", null).show();
+            return;
+        }
         JSONArray history;
         try { history = store.read(key); }
         catch (IllegalStateException failure) { toast(failure.getMessage()); return; }

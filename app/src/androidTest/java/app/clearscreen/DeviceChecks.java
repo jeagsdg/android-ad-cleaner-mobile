@@ -3,6 +3,7 @@ package app.clearscreen;
 import android.app.Instrumentation;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.UiAutomation;
 import android.content.*;
 import android.os.*;
 import android.service.notification.StatusBarNotification;
@@ -68,6 +69,20 @@ public class DeviceChecks extends Instrumentation {
             finish(RESULT_OK, result);
             return;
         }
+        if (suite.equals("feedback-privacy")) {
+            feedbackPrivacyChecks(automation, new Store(getTargetContext()), connectService());
+            result.putString("stream", "PASS: " + assertions + " feedback/privacy assertions on Android "
+                    + Build.VERSION.RELEASE + "; isolated fixture only\n");
+            finish(RESULT_OK, result);
+            return;
+        }
+        if (suite.equals("release-ui")) {
+            releaseUiChecks(connectService());
+            result.putString("stream", "PASS: " + assertions + " release UI assertions on Android "
+                    + Build.VERSION.RELEASE + "; synthetic release feed\n");
+            finish(RESULT_OK, result);
+            return;
+        }
         if (suite.equals("popup") || suite.equals("popup-legacy")) {
             popupChecks(new Store(getTargetContext()), connectService(), suite.equals("popup-legacy"));
             result.putString("stream", "PASS: " + assertions + " " + suite + " assertions on Android "
@@ -112,7 +127,7 @@ public class DeviceChecks extends Instrumentation {
         require(store.read("scan").getJSONObject(0).getJSONArray("attempts").length()==3,"diagnostic retains bounded route attempts");
         service.restoreAll(Arrays.asList(routed.getJSONObject(5),pinned));await(service);ui.open(alternate);require(ui.find("个性化广告推荐").checked,"batch restore original recommendation");require(!ui.find("限制广告跟踪").checked,"batch restore inverse original");require(ui.find("应用更新通知").checked,"batch restore preserves service notification");
         service.clean(Arrays.asList(alternate,rule));service.stop();await(service);require(store.read("journal").length()==6,"immediate stop performs no writes");
-        JSONArray stopped=store.read("scan");require(stopped.length()==5,"stopped run retains all untouched targets");boolean queued=false;for(int i=0;i<stopped.length();i++){JSONObject item=stopped.getJSONObject(i);if(item.getJSONObject("rule").optString("id").equals("test-only")&&item.optString("status").equals("skipped"))queued=true;}require(queued,"unvisited rule remains visible for retry");
+        JSONArray stopped=store.read("scan");require(stopped.length()==5,"stopped run retains all untouched targets");boolean queued=false;for(int i=0;i<stopped.length();i++){JSONObject item=stopped.getJSONObject(i);if(item.getJSONObject("rule").optString("id").equals("test-only")&&item.optString("status").equals("queued"))queued=true;}require(queued,"unvisited rule remains queued for retry");
         boolean halted=false;try{new UiDriver(service,()->true).current(rule);}catch(UiDriver.Halt expected){halted=true;}require(halted,"cancellation prevents access");
         getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(1000);
         halted=false;try{ui.current(rule);}catch(UiDriver.Halt expected){halted=true;}require(halted,"foreign foreground stops");
@@ -121,13 +136,14 @@ public class DeviceChecks extends Instrumentation {
         long began=SystemClock.elapsedRealtime();
         service.clean(Arrays.asList(consent,delayed));
         await(service);
-        require(SystemClock.elapsedRealtime()-began>=2300,"waited for delayed controls");
+        long elapsed = SystemClock.elapsedRealtime() - began;
         JSONArray batch=store.read("scan");
         require(batch.length()==2,"both groups retain visible results");
         require(batch.getJSONObject(0).optString("status").equals("skipped")
                 &&batch.getJSONObject(0).optString("message").contains("确认协议"),"consent was not accepted");
         require(batch.getJSONObject(1).optString("status").equals("changed"),
                 "later group cleaned after consent blocker: "+batch.getJSONObject(1).optString("message"));
+        require(elapsed >= 2300, "waited for delayed controls: " + elapsed + " ms");
         splashChecks(store,service);
         result.putString("stream","PASS: "+assertions+" real-device assertions; Android "+Build.VERSION.RELEASE+"; isolated fixture only\n");finish(RESULT_OK,result);
     }catch(Throwable e){result.putString("stream","FAIL after "+assertions+" assertions: "+android.util.Log.getStackTraceString(e));finish(0,result);}}
@@ -216,11 +232,13 @@ public class DeviceChecks extends Instrumentation {
     private void popupChecks(Store store, CleanerService service, boolean legacy) throws Exception {
         boolean wasSplashEnabled = store.splashEnabled();
         boolean wasPopupEnabled = store.popupEnabled();
+        boolean keptDetails = store.keepsSkipDetails();
         Set<String> originalExclusions = store.splashExcluded();
         List<CustomSkipRule> originalRules = store.customSkipRules();
         long popupCount = store.popupCount();
         long splashCount = store.splashCount();
         try {
+            store.setKeepSkipDetails(true);
             store.setSplashEnabled(false);
             store.setPopupEnabled(false);
             store.setSplashExcluded(Collections.emptySet());
@@ -257,6 +275,7 @@ public class DeviceChecks extends Instrumentation {
                     && FIXTURE_PACKAGE.equals(latest.optString("package")), "popup confirmation recorded for fixture");
             require(store.splashCount() == splashCount, "popup dismissal does not affect splash statistics");
         } finally {
+            store.setKeepSkipDetails(keptDetails);
             store.setPopupEnabled(false);
             store.saveCustomSkipRules(originalRules);
             store.setSplashExcluded(originalExclusions);
@@ -435,6 +454,183 @@ public class DeviceChecks extends Instrumentation {
             if (node.isVisibleToUser() && text.equals(UiDriver.text(node))) return true;
         }
         return false;
+    }
+
+    private void feedbackPrivacyChecks(UiAutomation automation, Store store, CleanerService service) throws Exception {
+        Context context = getTargetContext();
+        store.setSplashEnabled(true);
+        store.setSplashExcluded(Collections.emptySet());
+        store.setSkipExcluded(CustomSkipRule.SPLASH, Collections.emptySet());
+        store.setKeepSkipDetails(false);
+        store.setSkipToastEnabled(true);
+        long before = store.splashCount();
+        SkipDiagnostics.LOCAL.start(FIXTURE_PACKAGE, store.packageVersion(FIXTURE_PACKAGE));
+        launchSplashFixture(service, "plain");
+        require(waitForFixtureText(service, "跳过 5", 6_000), "ordinary skip control remains visible");
+        require(waitUntil(() -> SkipDiagnostics.LOCAL.summary(true, true).contains("未通过规则")), "miss reason observed");
+        require(!feedbackVisible(automation) && store.splashCount() == before, "no badge or count on miss");
+
+        launchSplashFixture(service, "ad");
+        require(waitForFixtureText(service, "已进入测试内容", 7_000), "ad visibly closes");
+        long until = SystemClock.uptimeMillis() + 3_000;
+        boolean seen = false;
+        while (!seen && SystemClock.uptimeMillis() < until) {
+            seen = feedbackVisible(automation);
+            if (!seen) Thread.sleep(50);
+        }
+        require(seen, "confirmation badge is visible");
+        android.graphics.Bitmap screen = feedbackScreenshot(automation);
+        if (screen != null) {
+            java.io.File file = new java.io.File(context.getExternalFilesDir(null), "v09-feedback.png");
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(file)) {
+                screen.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, out);
+            }
+            screen.recycle();
+        }
+        require(waitUntil(() -> store.splashCount() == before + 1), "cumulative count retained");
+        require(store.read("splash-history").length() == 0, "no detailed history without opt-in");
+        String report = SkipDiagnostics.LOCAL.summary(true, true);
+        require(report.contains("确认跳过控件消失") && !report.contains("已进入测试内容"), "sanitized confirmed outcome");
+        Thread.sleep(1_200);
+        require(!feedbackVisible(automation), "badge removes itself");
+
+        store.setSkipToastEnabled(false);
+        launchSplashFixture(service, "ad");
+        require(waitForFixtureText(service, "已进入测试内容", 7_000), "disabling feedback preserves skipping");
+        require(waitUntil(() -> store.splashCount() == before + 2), "second skip confirmed");
+        require(!feedbackVisible(automation), "user can disable the confirmation badge");
+        SkipDiagnostics.LOCAL.clear();
+        require(SkipDiagnostics.LOCAL.summary(true, true).isEmpty(), "diagnostic can be cleared");
+        store.setSplashEnabled(false);
+        store.setSkipToastEnabled(true);
+    }
+
+    private void launchSplashFixture(CleanerService service, String mode) throws Exception {
+        Context context = getTargetContext();
+        context.startActivity(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        require(waitUntil(() -> {
+            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            return root != null && context.getPackageName().equals(String.valueOf(root.getPackageName()));
+        }), "net screen active before launching fixture");
+        Thread.sleep(300);
+        context.startActivity(new Intent().setClassName(FIXTURE_PACKAGE, FIXTURE_PACKAGE + ".SplashActivity")
+                .putExtra("mode", mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    }
+
+    private boolean feedbackVisible(UiAutomation automation) throws Exception {
+        try (ParcelFileDescriptor.AutoCloseInputStream input =
+                     new ParcelFileDescriptor.AutoCloseInputStream(automation.executeShellCommand(
+                             "dumpsys window windows"))) {
+            java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+            byte[] chunk = new byte[4096];
+            for (int read; (read = input.read(chunk)) != -1;) bytes.write(chunk, 0, read);
+            return new String(bytes.toByteArray(), java.nio.charset.StandardCharsets.UTF_8).contains("ClearScreenSkipFeedback");
+        }
+    }
+
+    private android.graphics.Bitmap feedbackScreenshot(UiAutomation automation) {
+        long deadline = SystemClock.uptimeMillis() + 700;
+        while (SystemClock.uptimeMillis() < deadline) {
+            android.graphics.Bitmap screen = automation.takeScreenshot();
+            if (screen == null) break;
+            // The fixture is pale green here. The pill's dark fill must be composited near the bottom.
+            for (int y = screen.getHeight() * 84 / 100; y < screen.getHeight() * 97 / 100; y += 3) {
+                for (int x = screen.getWidth() * 40 / 100; x < screen.getWidth() * 60 / 100; x += 3) {
+                    int color = screen.getPixel(x, y);
+                    if (android.graphics.Color.red(color) < 56 && android.graphics.Color.green(color) > 35
+                            && android.graphics.Color.green(color) < 93 && android.graphics.Color.blue(color) < 75) {
+                        return screen;
+                    }
+                }
+            }
+            screen.recycle();
+        }
+        return null;
+    }
+
+    private void releaseUiChecks(CleanerService service) throws Exception {
+        Context context = getTargetContext();
+        Store store = new Store(context);
+        boolean full = context.getResources().getBoolean(R.bool.network_filter_available);
+        require((context.checkSelfPermission(android.Manifest.permission.INTERNET)
+                == android.content.pm.PackageManager.PERMISSION_GRANTED) == full, "installed variant network permission");
+        String packageName = context.getPackageName();
+        SharedPreferences preferences = context.getSharedPreferences("local-ledger", Context.MODE_PRIVATE);
+        String previous = preferences.getString("public-release-info", null);
+        boolean hadUpdateChoice = preferences.contains("update-checks");
+        boolean updateChoice = preferences.getBoolean("update-checks", false);
+        long previousCheck = store.lastUpdateCheck();
+        String testNotes = "只用于验证本地更新提示。";
+        ReleaseUpdates.Info release = ReleaseUpdates.parse(new JSONObject().put("schema", 1)
+                .put("versionCode", store.packageVersion(packageName) + 1)
+                .put("versionName", "9.9.9").put("notes", testNotes).toString());
+        try {
+            preferences.edit().remove("update-checks").apply();
+            require(store.updateChecksEnabled() == full, "automatic update default follows installed variant");
+            store.noteUpdateCheck(System.currentTimeMillis()); // Keep the synthetic feed isolated from GitHub.
+            store.cacheRelease(release);
+            context.startActivity(new Intent(context, MainActivity.class).putExtra("tab", 0)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "release home visible");
+            require((appNode(service, "净屏 9.9.9 可更新") != null) == full, "newer feed notice only on full variant");
+            if (full) {
+                AccessibilityNodeInfo link = appNode(service, "查看版本说明");
+                AccessibilityNodeInfo details = link == null ? null : SplashSkipper.clickable(link);
+                require(details != null && details.performAction(AccessibilityNodeInfo.ACTION_CLICK), "tap update notice");
+                require(waitUntil(() -> appNode(service, testNotes) != null), "version notes visible before download");
+                require(waitUntil(() -> appNode(service, "去 GitHub 下载") != null),
+                        "download needs a separate action");
+                AccessibilityNodeInfo later = appNode(service, "稍后");
+                require(later != null && later.performAction(AccessibilityNodeInfo.ACTION_CLICK), "dismiss version notes");
+                require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "returned to home");
+            }
+            AccessibilityNodeInfo networkRow = findAfterScroll(service, "网络广告过滤");
+            require((networkRow != null) == full, "network page only on full variant");
+            if (full) {
+                require(networkRow.performAction(AccessibilityNodeInfo.ACTION_CLICK), "open network feature");
+                require(waitUntil(() -> appNode(service, "开启网络过滤") != null), "network controls visible");
+            }
+        } finally {
+            SharedPreferences.Editor editor = preferences.edit().putLong("last-update-check", previousCheck);
+            if (previous == null) editor.remove("public-release-info");
+            else editor.putString("public-release-info", previous);
+            if (hadUpdateChoice) editor.putBoolean("update-checks", updateChoice);
+            else editor.remove("update-checks");
+            editor.apply();
+        }
+    }
+
+    private AccessibilityNodeInfo appNode(CleanerService service, String text) {
+        AccessibilityNodeInfo root = service.getRootInActiveWindow();
+        if (root == null || !getTargetContext().getPackageName().contentEquals(
+                root.getPackageName() == null ? "" : root.getPackageName())) return null;
+        for (AccessibilityNodeInfo node : UiDriver.walk(root)) {
+            if (!node.isVisibleToUser()) continue;
+            String label = UiDriver.text(node);
+            if (text.equalsIgnoreCase(label) || label.startsWith(text + "，")) return node;
+        }
+        return null;
+    }
+
+    private AccessibilityNodeInfo findAfterScroll(CleanerService service, String text) throws InterruptedException {
+        for (int page = 0; page < 6; page++) {
+            AccessibilityNodeInfo found = appNode(service, text);
+            if (found != null) return found;
+            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            if (root == null || !getTargetContext().getPackageName().equals(String.valueOf(root.getPackageName())))
+                return null;
+            boolean moved = false;
+            for (AccessibilityNodeInfo node : UiDriver.walk(root)) {
+                if (node.isVisibleToUser() && node.isScrollable()
+                        && node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                    moved = true;
+                    break;
+                }
+            }
+            if (!moved) break;
+            Thread.sleep(180);
+        }
+        return null;
     }
 
     void splashChecks(Store store,CleanerService service)throws Exception{

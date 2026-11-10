@@ -47,6 +47,8 @@ final class LegacySelector {
         return trimmed.replace(" ", "");
     }
 
+    boolean usesBounds() { return bounds != null; }
+
     boolean matches(AccessibilityNodeInfo node) {
         if (bounds != null) {
             Rect actual = new Rect();

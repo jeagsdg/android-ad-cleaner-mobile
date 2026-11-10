@@ -18,5 +18,9 @@ with zipfile.ZipFile(apk) as z:
     popup=json.loads(z.read('assets/popup-ad-rules.json'))
     assert popup['rules'] and popup['sourceSha256']==splash['sourceSha256']
     assert all(rule['package'] and rule['targetSelector'] for rule in popup['rules'])
+    splash_packages={rule['package'] for rule in splash['rules']}
+    popup_packages={rule['package'] for rule in popup['rules']}
     assert hashlib.sha256(z.read('assets/support-code.jpg')).hexdigest()=='a7821f2dc8ea85999ff1159a7e399a7de3d3981dfba55f6acbbc897d1aff4508'
 print(f'PASS: packaged rules, DNS source hash, {len(hosts)} hosts, protected connectivity host, licenses; APK SHA256 {hashlib.sha256(apk.read_bytes()).hexdigest()}')
+print(f'App-specific coverage: {len(splash_packages)} splash, {len(popup_packages)} popup, '
+      f'{len(splash_packages | popup_packages)} distinct packages')

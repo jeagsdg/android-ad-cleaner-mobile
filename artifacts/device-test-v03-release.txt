@@ -1,2 +1,0 @@
-PASS: 59 real-device assertions; Android 14; isolated fixture only
-

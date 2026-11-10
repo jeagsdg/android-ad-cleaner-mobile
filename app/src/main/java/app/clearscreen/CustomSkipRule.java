@@ -15,8 +15,9 @@ import org.json.JSONTokener;
 final class CustomSkipRule {
     static final int MAX_RULES = 100;
     static final int MAX_JSON_LENGTH = 100_000;
+    static final int MAX_SEQUENCE_STEPS = 10;
     static final String SPLASH = "splash", POPUP = "popup";
-    private static final String BACK = "GLOBAL_ACTION_BACK";
+    static final String BACK = "GLOBAL_ACTION_BACK";
     private static final Pattern PROTECTED_PACKAGE = Pattern.compile(
             ".*(settings|systemui|securitycenter|systemmanager|wallet|banking)(\\..*)?", Pattern.CASE_INSENSITIVE);
     private static final Pattern SENSITIVE_TEXT = Pattern.compile(
@@ -49,6 +50,55 @@ final class CustomSkipRule {
 
     static CustomSkipRule popupPreset(String pkg, String activity, String target, String prompt) {
         return new CustomSkipRule(pkg, activity, POPUP, "", target, prompt, true, false, 0, false, 1, 1, -1);
+    }
+
+    static CustomSkipRule advanced(String pkg, String activity, String mode, String target, String prompt,
+                                   boolean replaceDefaults, int delayMs, boolean gesture, int searches,
+                                   int times, int sequenceIndex, CustomSkipRule previous) {
+        boolean popup = POPUP.equals(mode);
+        String promptSelector = popup ? editorSelector(prompt, previous == null ? "" : previous.context) : "";
+        String targetSelector = editorSelector(target, previous == null ? "" : previous.label);
+        if (targetSelector.isEmpty() && times == 0) targetSelector = promptSelector;
+        if (!BACK.equals(targetSelector) && times > 0) {
+            for (String term : targetSelector.split("&", -1)) {
+                String label = term.replaceFirst("^[=+-]", "");
+                if (unsafeButton(label) || sensitiveText(label)) {
+                    throw new IllegalArgumentException("此目标可能执行敏感操作");
+                }
+            }
+        }
+        CustomSkipRule rule = new CustomSkipRule(pkg, activity, mode, "", targetSelector, promptSelector,
+                true, replaceDefaults, delayMs, gesture, searches, times, sequenceIndex);
+        if (rule.activity.isEmpty() && ((rule.legacyTarget != null && rule.legacyTarget.usesBounds())
+                || (rule.legacyPrompt != null && rule.legacyPrompt.usesBounds()))) {
+            throw new IllegalArgumentException("按控件范围匹配时须填写完整页面类名");
+        }
+        return rule;
+    }
+
+    private static String editorSelector(String input, String previous) {
+        String value = field(input, 250);
+        if (value.isEmpty() || value.equals(previous) || BACK.equals(value)) return value;
+        if (value.matches("(?i)x\\s*:\\s*-?[0-9]+\\s*y\\s*:\\s*-?[0-9]+")) {
+            throw new IllegalArgumentException("请填写可见控件的文字、ID 或实际范围");
+        }
+        value = LegacySelector.forImport(value);
+        if (new LegacySelector(value).usesBounds() || value.matches("[A-Za-z][A-Za-z0-9_.]*:id/[A-Za-z0-9_]+")) {
+            return value;
+        }
+        if (value.indexOf('&') < 0 && "=+-~".indexOf(value.charAt(0)) < 0) return "=" + value;
+        String[] terms = value.split("&", -1);
+        for (int i = 0; i < terms.length; i++) {
+            terms[i] = terms[i].trim();
+            if (terms[i].startsWith("~")) {
+                String contains = terms[i].substring(1);
+                if (contains.isEmpty() || "=+-".indexOf(contains.charAt(0)) >= 0) {
+                    throw new IllegalArgumentException("包含匹配须填写要查找的文字");
+                }
+                terms[i] = contains;
+            }
+        }
+        return String.join("&", terms);
     }
 
     private CustomSkipRule(String pkg, String activity, String mode, String viewId, String label, String context,
@@ -92,7 +142,7 @@ final class CustomSkipRule {
         if (delayMs < 0 || delayMs > 5000 || searches < 1 || searches > 10) {
             throw new IllegalArgumentException("延迟需在 0 到 5000 毫秒内，搜索次数为 1 到 10");
         }
-        if (times < 0 || times > 4 || sequenceIndex < -1 || sequenceIndex > 9
+        if (times < 0 || times > 4 || sequenceIndex < -1 || sequenceIndex >= MAX_SEQUENCE_STEPS
                 || (times == 0 && (sequenceIndex < 0 || backsOut()))
                 || ((!legacy || !POPUP.equals(mode)) && (times != 1 || sequenceIndex != -1))) {
             throw new IllegalArgumentException("联合步骤和点击次数超出支持范围");

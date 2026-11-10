@@ -1,1 +1,0 @@
-PASS: packaged rules, DNS source hash, 235866 hosts, protected connectivity host, licenses; APK SHA256 939d9be2b3f695ed6fcc41a74f2c703df83e698c76c7b3d2695280174bf00258

@@ -2,10 +2,26 @@ plugins { id 'com.android.application' }
 def releaseProperties = new Properties()
 def releasePropertiesFile = rootProject.file('.local/signing.properties')
 if (releasePropertiesFile.exists()) releasePropertiesFile.withInputStream { releaseProperties.load(it) }
+def offlineOnly = providers.gradleProperty('offlineOnly').map { it.toBoolean() }.getOrElse(false)
 android {
     namespace 'app.clearscreen'
     compileSdk 35
-    defaultConfig { applicationId 'app.clearscreen'; minSdk 26; targetSdk 35; versionCode 10; versionName '0.8.1-preview'; testInstrumentationRunner 'app.clearscreen.DeviceChecks' }
+    defaultConfig {
+        applicationId 'app.clearscreen'
+        minSdk 26
+        targetSdk 35
+        versionCode 11
+        versionName '0.9.0'
+        testInstrumentationRunner 'app.clearscreen.DeviceChecks'
+        resValue 'bool', 'network_filter_available', offlineOnly ? 'false' : 'true'
+    }
+    sourceSets {
+        main.java.srcDir(offlineOnly ? 'src/offline/java' : 'src/network/java')
+        if (!offlineOnly) {
+            debug.manifest.srcFile 'src/network/AndroidManifest.xml'
+            release.manifest.srcFile 'src/network/AndroidManifest.xml'
+        }
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     testOptions { unitTests.includeAndroidResources = true }
     signingConfigs {

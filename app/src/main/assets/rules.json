@@ -150,22 +150,27 @@
         "package": "com.xiaomi.market",
         "path": [
           [
-            "我的"
-          ],
-          [
-            "设置"
-          ],
-          [
-            "隐私设置",
-            "隐私"
+            "隐私设置"
           ],
           [
             "个性化服务"
           ]
         ],
-        "activity": "",
-        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
-        "name": "应用菜单入口"
+        "activity": ".ui.MarketPreferenceActivity",
+        "source": "recipes/redmi-23117RK66C/recipe.py",
+        "name": "设置直达入口"
+      },
+      {
+        "package": "com.xiaomi.market",
+        "path": [
+          [
+            "隐私设置",
+            "隐私"
+          ]
+        ],
+        "activity": ".ui.MarketPreferenceActivity",
+        "source": "recipes/redmi-23049RAD8C/recipe.py",
+        "name": "设置直达入口"
       },
       {
         "package": "com.xiaomi.market",
@@ -183,6 +188,27 @@
         ],
         "activity": "",
         "source": "recipes/redmi-23113RKC6C/recipe.py",
+        "name": "应用菜单入口"
+      },
+      {
+        "package": "com.xiaomi.market",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私设置",
+            "隐私"
+          ],
+          [
+            "个性化服务"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
         "name": "应用菜单入口"
       }
     ]
@@ -430,9 +456,9 @@
             "隐私设置"
           ]
         ],
-        "activity": "",
-        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
-        "name": "应用菜单入口"
+        "activity": ".ThemeResourceProxyTabActivity",
+        "source": "recipes/redmi-23117RK66C/recipe.py",
+        "name": "设置直达入口"
       },
       {
         "package": "com.miui.themestore",
@@ -451,6 +477,23 @@
         "source": "recipes/redmi-23113RKC6C/recipe.py",
         "name": "应用菜单入口",
         "foreground": "com.android.thememanager"
+      },
+      {
+        "package": "com.android.thememanager",
+        "path": [
+          [
+            "我的"
+          ],
+          [
+            "设置"
+          ],
+          [
+            "隐私设置"
+          ]
+        ],
+        "activity": "",
+        "source": "recipes/xiaomi-2304FPN6DC/recipe.py",
+        "name": "应用菜单入口"
       }
     ]
   },

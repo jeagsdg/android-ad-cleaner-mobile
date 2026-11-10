@@ -1,4 +1,4 @@
-param([switch]$Offline, [switch]$UseExistingCache, [switch]$Release, [string]$JavaHome)
+param([switch]$Offline, [switch]$UseExistingCache, [switch]$Release, [string]$JavaHome, [switch]$OfflineOnly)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if ($JavaHome) { $env:JAVA_HOME = $JavaHome }
@@ -25,6 +25,7 @@ try {
     $assemble = if ($Release) { ':app:assembleRelease' } else { ':app:assembleDebug' }
     $buildArgs = @('--no-daemon',':app:testDebugUnitTest',':app:lintDebug',$assemble,'--console=plain')
     if ($Offline) { $buildArgs += '--offline' }
+    $buildArgs += if ($OfflineOnly) { '-PofflineOnly=true' } else { '-PofflineOnly=false' }
     & .\gradlew.bat @buildArgs
     if ($LASTEXITCODE) { throw '构建或检查失败；未更新交付 APK。' }
     python tools/verify_apk.py ('app/build/outputs/apk/'+$variant+'/app-'+$variant+'.apk')
@@ -33,7 +34,9 @@ try {
     $versionMatch = [regex]::Match((Get-Content -LiteralPath (Join-Path $projectRoot 'app/build.gradle') -Raw), "versionName '([^']+)'")
     if (-not $versionMatch.Success) { throw '无法读取应用版本；未更新交付 APK。' }
     $versionName = $versionMatch.Groups[1].Value
-    $name = if ($Release) { 'ClearScreen-' + $versionName + '.apk' } else { 'ClearScreen-' + $versionName + '-debug.apk' }
+    $flavorSuffix = if ($OfflineOnly) { '-offline' } else { '' }
+    $variantSuffix = if ($Release) { '' } else { '-debug' }
+    $name = 'ClearScreen-' + $versionName + $flavorSuffix + $variantSuffix + '.apk'
     $apk = Join-Path $projectRoot ('dist/' + $name)
     Copy-Item -LiteralPath ('app/build/outputs/apk/'+$variant+'/app-'+$variant+'.apk') -Destination $apk -Force
     Get-FileHash -LiteralPath $apk -Algorithm SHA256

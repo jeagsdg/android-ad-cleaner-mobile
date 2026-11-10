@@ -13,8 +13,19 @@ final class FilterStore {
     void message(String value){prefs.edit().putString("message",value).apply();}
     long blocked(){return prefs.getLong("blocked",0);}
     long queried(){return prefs.getLong("queried",0);}
-    void counters(long queried,long blocked,Collection<String> recent){prefs.edit().putLong("queried",queried).putLong("blocked",blocked).putString("recent",String.join("\n",recent)).apply();}
-    List<String> recent(){String s=prefs.getString("recent","");return s.isEmpty()?new ArrayList<>():new ArrayList<>(Arrays.asList(s.split("\n")));}
+    boolean keepsDomainDetails(){return prefs.getBoolean("keep-domain-details",!prefs.getString("recent","").isEmpty());}
+    void setKeepDomainDetails(boolean enabled){
+        SharedPreferences.Editor update=prefs.edit().putBoolean("keep-domain-details",enabled);
+        if(!enabled)update.remove("recent");
+        update.apply();
+    }
+    void counters(long queried,long blocked,Collection<String> recent){
+        SharedPreferences.Editor update=prefs.edit().putLong("queried",queried).putLong("blocked",blocked);
+        if(keepsDomainDetails())update.putString("recent",String.join("\n",recent));
+        else update.remove("recent");
+        update.apply();
+    }
+    List<String> recent(){String s=keepsDomainDetails()?prefs.getString("recent",""):"";return s.isEmpty()?new ArrayList<>():new ArrayList<>(Arrays.asList(s.split("\n")));}
     Set<String> allowed(){return new HashSet<>(prefs.getStringSet("allowed",Collections.emptySet()));}
     void allow(String host,boolean value){Set<String> set=allowed();if(value)set.add(host);else set.remove(host);prefs.edit().putStringSet("allowed",set).apply();}
     void clearHistory(){if(!AdFilterService.clearRecent())forgetRecent();}

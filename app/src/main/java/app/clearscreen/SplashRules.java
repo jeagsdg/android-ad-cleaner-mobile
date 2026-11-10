@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Evaluates the fixed predicates compiled from the pinned MIT splash groups. */
 final class SplashRules {
@@ -21,6 +22,7 @@ final class SplashRules {
     static final SplashRules EMPTY = new SplashRules(new JSONObject());
     private static final int MAX_DISTANCE = 12;
     private static final int MAX_VISITS = 96;
+    private static final Pattern CLOSE_COUNTDOWN = Pattern.compile("(?:关闭|關閉)[\\s\\p{Zs}]*[0-9]{1,2}(?:秒|s)?");
     private final Map<String, List<JSONObject>> byPackage = new HashMap<>();
     private final Set<String> sdkResources = new HashSet<>();
     private final Set<String> clickableSdkIds = new HashSet<>();
@@ -84,8 +86,11 @@ final class SplashRules {
                 boolean skipLabel = SplashSkipper.skipLabel(label);
                 if (evidence.equals("structure")) {
                     // Anonymous structural controls must themselves be clickable.
+                    boolean countdownClose = rule.optBoolean("adCountdownClose")
+                            && CLOSE_COUNTDOWN.matcher(label).matches();
                     if (!skipLabel && (!node.isClickable()
-                            || (!label.isEmpty() && !label.matches("关闭|關閉|关闭广告|關閉廣告|[xX×]")))) continue;
+                            || (!label.isEmpty() && !countdownClose
+                            && !label.matches("关闭|關閉|关闭广告|關閉廣告|[xX×]")))) continue;
                 } else if (!skipLabel) continue;
             }
             if (targetMatches(pkg, node, rule.optJSONObject("targetSelector"))

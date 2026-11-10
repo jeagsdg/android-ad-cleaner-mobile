@@ -18,6 +18,8 @@ HO = ['honor']
 mi = 'recipes/xiaomi-2304FPN6DC/recipe.py'
 mi15 = 'recipes/xiaomi-24129PN74C/recipe.py'
 redmi = 'recipes/redmi-23113RKC6C/recipe.py'
+k70pro = 'recipes/redmi-23117RK66C/recipe.py'
+redmi_pad = 'recipes/redmi-23049RAD8C/recipe.py'
 op = 'recipes/oppo-PLG110/recipe.py'
 op17 = 'recipes/oppo-PKT110/recipe.py'
 ho = 'recipes/honor-WKL-AN20/recipe.py'
@@ -64,12 +66,17 @@ variants('mi-system', route('com.android.settings', activity='.ad.AdServiceSetti
          route('com.android.settings', steps('安全', ['更多设置', '更多安全设置'], '广告服务'), source=mi, reference='https://privacy.mi.com/support/faq?locale=zh-cn'),
          route('com.android.settings', steps('隐私与安全', ['更多安全设置', '更多设置'], '广告服务'), source=mi), first=True)
 by_id['mi-system']['routes'][-1]['path'][2] = ['更多安全设置', '更多设置']
-variants('mi-store', route('com.xiaomi.market', steps('我的', '设置', ['隐私设置', '隐私']), source=redmi))
+variants('mi-store',
+         route('com.xiaomi.market', steps('隐私设置', '个性化服务'), '.ui.MarketPreferenceActivity', k70pro),
+         route('com.xiaomi.market', steps(['隐私设置', '隐私']), '.ui.MarketPreferenceActivity', redmi_pad),
+         route('com.xiaomi.market', steps('我的', '设置', ['隐私设置', '隐私']), source=redmi), first=True)
 for id in ['mi-cleaner', 'mi-manager-privacy']:
     r = by_id[id]
     variants(id, route(r['package'], steps('设置') + r['path'], source=mi15))
 variants('mi-download', route('com.android.providers.downloads.ui', steps('更多', '设置', '信息流设置'), source=mi15), first=True)
-variants('mi-theme', route('com.miui.themestore', by_id['mi-theme']['path'], source=redmi, foreground='com.android.thememanager'))
+variants('mi-theme', route('com.android.thememanager', by_id['mi-theme']['path'], '.ThemeResourceProxyTabActivity', k70pro),
+         route('com.miui.themestore', by_id['mi-theme']['path'], source=redmi, foreground='com.android.thememanager'),
+         first=True)
 browser_entry = steps(['菜单', '我的'], '设置')
 for id, page in [('mi-browser', '隐私和安全'), ('mi-browser-grid', '主页设置'), ('mi-browser-search', '搜索设置')]:
     variants(id, route('com.android.browser', browser_entry + steps(page), source=mi15))

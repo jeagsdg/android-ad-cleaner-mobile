@@ -37,6 +37,7 @@ public class CustomSkipTest {
         first.saveCustomSkipRules(List.of(POPUP));
         assertThrows(IllegalArgumentException.class, () -> first.saveCustomSkipRules(List.of(POPUP, POPUP)));
         assertEquals(1, second.customSkipRules().size());
+        first.setKeepSkipDetails(true);
         first.recordPopup(PKG, true);
         assertEquals(1L, second.popupCount());
         assertEquals(0L, second.splashCount());
@@ -68,6 +69,60 @@ public class CustomSkipTest {
         assertEquals(button, PopupMatch.find(root, SCREEN, List.of(POPUP)).target);
         add(panel, node("以后再说", true, new Rect(710, 1320, 950, 1440)));
         assertNull(PopupMatch.find(root, SCREEN, List.of(POPUP)));
+    }
+
+    @Test public void advancedSequencePersistsObservationAndBoundedCloseTogether() {
+        String page = PKG + ".MainActivity";
+        CustomSkipRule wait = CustomSkipRule.advanced(PKG, page, CustomSkipRule.POPUP, "", "~检查版本",
+                false, 0, false, 5, 0, 0, null);
+        CustomSkipRule close = CustomSkipRule.advanced(PKG, page, CustomSkipRule.POPUP, "关闭广告",
+                PKG + ":id/ad_title", false, 120, true, 3, 2, 1, null);
+        List<CustomSkipRule> saved = CustomSkipRule.parse(CustomSkipRule.export(List.of(wait, close)));
+        assertThrows(IllegalArgumentException.class, () -> CustomSkipRule.parse(CustomSkipRule.export(List.of(wait))));
+        assertEquals(0, saved.get(0).times);
+        assertEquals(5, saved.get(0).searches);
+        assertEquals(120, saved.get(1).delayMs);
+        assertEquals(2, saved.get(1).times);
+        assertTrue(saved.get(1).gesture);
+
+        AccessibilityNodeInfo root = node("", false, SCREEN);
+        AccessibilityNodeInfo panel = node("", false, new Rect(80, 860, 1000, 1510));
+        add(root, panel);
+        add(panel, node("正在检查版本", false, new Rect(80, 920, 1000, 1040)));
+        PopupMatch observed = PopupMatch.find(root, SCREEN, List.of(saved.get(0)));
+        assertNotNull(observed);
+        assertNull(observed.target);
+
+        AccessibilityNodeInfo title = node("今日广告", false, new Rect(80, 1100, 1000, 1230));
+        title.setViewIdResourceName(PKG + ":id/ad_title");
+        add(panel, title);
+        AccessibilityNodeInfo button = node("关闭广告并购买", true, new Rect(430, 1320, 680, 1440));
+        add(panel, button);
+        assertNull(PopupMatch.find(root, SCREEN, List.of(saved.get(1))));
+        button.setText("关闭广告");
+        assertEquals(button, PopupMatch.find(root, SCREEN, List.of(saved.get(1))).target);
+    }
+
+    @Test public void advancedEditingRequiresPageForBoundsAndRejectsSensitiveTargets() {
+        assertThrows(IllegalArgumentException.class, () -> CustomSkipRule.advanced(PKG, "", CustomSkipRule.SPLASH,
+                "825,145,1010,210", "", false, 0, true, 1, 1, -1, null));
+        assertThrows(IllegalArgumentException.class, () -> CustomSkipRule.advanced(PKG, "", CustomSkipRule.POPUP,
+                "+立即购买", "今日活动", false, 0, false, 1, 1, -1, null));
+        assertThrows(IllegalArgumentException.class, () -> CustomSkipRule.advanced(PKG, "", CustomSkipRule.SPLASH,
+                "x:900y:170", "", false, 0, true, 1, 1, -1, null));
+        assertThrows(IllegalArgumentException.class, () -> CustomSkipRule.advanced(PKG, "", CustomSkipRule.SPLASH,
+                "关闭广告", "", false, 6000, true, 1, 1, -1, null));
+
+        String page = PKG + ".Start";
+        CustomSkipRule scoped = CustomSkipRule.advanced(PKG, page, CustomSkipRule.SPLASH, "825, 145, 1010, 210",
+                "", false, 0, true, 1, 1, -1, null);
+        AccessibilityNodeInfo root = node("", false, SCREEN);
+        AccessibilityNodeInfo button = node("跳过", true, new Rect(825, 145, 1011, 210));
+        add(root, button);
+        assertNull(SplashSkipper.match(root, SplashRules.EMPTY, page, List.of(scoped)));
+        button.setBoundsInScreen(new Rect(825, 145, 1010, 210));
+        assertNull(SplashSkipper.match(root, SplashRules.EMPTY, PKG + ".Other", List.of(scoped)));
+        assertEquals(button, SplashSkipper.match(root, SplashRules.EMPTY, page, List.of(scoped)));
     }
 
     @Test public void popupPanelWithSensitiveContentStaysVisible() {
