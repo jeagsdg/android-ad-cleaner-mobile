@@ -281,19 +281,28 @@ public class SplashRulesCoverageTest {
     }
 
     @Test public void railwaySplashClosesTheUnlabeledSkipOnlyInItsAdContainer() {
+        // Public snapshot 17656103, SHA-256 98e3559b281c628ee5d368451a75ae4cb51dde730551cd471f02cac3fbc75a60.
         String pkg = "com.MobileTicket";
         String activity = pkg + ".ui.activity.MainActivity";
-        AccessibilityNodeInfo root = frame(pkg, null);
+        Rect screen = new Rect(0, 0, 1080, 2340);
+        Rect adBounds = new Rect(0, 0, 1080, 2040);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
         AccessibilityNodeInfo container = add(root, node(pkg, "android.widget.LinearLayout",
-                pkg + ":id/ll_splash_ad_container", false, SCREEN));
-        AccessibilityNodeInfo content = add(container, frame(pkg, pkg + ":id/fl_adContent_container"));
+                pkg + ":id/ll_splash_ad_container", false, screen));
+        AccessibilityNodeInfo content = add(container, node(pkg, "android.widget.FrameLayout",
+                pkg + ":id/fl_adContent_container", false, adBounds));
         AccessibilityNodeInfo ad = add(content, node(pkg, "android.widget.ImageView", pkg + ":id/img_adContent",
-                true, SCREEN));
+                true, adBounds));
         ad.setContentDescription("广告");
-        AccessibilityNodeInfo wrapper = add(content, frame(pkg, pkg + ":id/fl_skip_wrong"));
-        AccessibilityNodeInfo skip = add(wrapper, button(pkg, "android.widget.TextView", pkg + ":id/tv_skip"));
+        AccessibilityNodeInfo wrapper = add(content, node(pkg, "android.widget.FrameLayout", pkg + ":id/fl_skip_wrong",
+                true, new Rect(750, 0, 1080, 358)));
+        AccessibilityNodeInfo skip = add(wrapper, node(pkg, "android.widget.TextView", pkg + ":id/tv_skip",
+                true, new Rect(882, 138, 1014, 207)));
 
         assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertFalse(rules.matches(pkg, activity, wrapper));
+        assertFalse(rules.matches(pkg, activity, ad));
+        assertNull(SplashSkipper.match(root));
         assertNull(SplashSkipper.match(root, rules, pkg + ".ui.activity.OtherActivity"));
         skip.setClickable(false);
         assertNull(SplashSkipper.match(root, rules, activity));
@@ -302,6 +311,22 @@ public class SplashRulesCoverageTest {
         assertNull(SplashSkipper.match(root, rules, activity));
         ad.setContentDescription("广告");
         container.setViewIdResourceName(pkg + ":id/ordinary_container");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void railwaySplashStillRecognizesTheEarlierTemplate() {
+        // Public snapshot 17580273, SHA-256 cd85606f19536ae7137ff5f9e6a64bb5c69002e704761233153930e68d1f4141.
+        String pkg = "com.MobileTicket";
+        String activity = pkg + ".ui.activity.MainActivity";
+        Rect screen = new Rect(0, 0, 1220, 2712);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo ad = add(root, node(pkg, "android.view.ViewGroup",
+                pkg + ":id/cl_image_splash", false, screen));
+        AccessibilityNodeInfo skip = add(ad, node(pkg, "android.widget.TextView", pkg + ":id/tv_main_splash_skip",
+                true, new Rect(1016, 150, 1160, 225)));
+
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        ad.setViewIdResourceName(pkg + ":id/ordinary_container");
         assertNull(SplashSkipper.match(root, rules, activity));
     }
 
@@ -329,6 +354,47 @@ public class SplashRulesCoverageTest {
         assertNull(SplashSkipper.match(root, rules, activity));
         label.setText("跳过");
         badge.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void yuandaoRecognizesTheClickableSiblingOfItsLeftSkipLabel() {
+        // Public snapshot 20896758 contains the Kwai splash and its native skip control.
+        String pkg = "com.ydtx.camera";
+        String activity = pkg + ".activity.SplashActivitynew";
+        Rect screen = new Rect(0, 0, 1280, 2772);
+        Rect skipBounds = new Rect(52, 186, 169, 303);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo sdk = add(root, frame(pkg, "com.kwad.dy.sdk:id/ksad_splash_root_container"));
+        AccessibilityNodeInfo playCard = add(sdk, frame(pkg, "com.kwad.dy.sdk:id/splash_full_tk_play_card_view"));
+        AccessibilityNodeInfo content = playCard;
+        for (int depth = 0; depth < 4; depth++) content = add(content, frame(pkg, null));
+        AccessibilityNodeInfo row = add(content, node(pkg, "android.view.ViewGroup", null, false, skipBounds));
+        AccessibilityNodeInfo skip = add(row, node(pkg, "android.widget.ImageView", null, true, skipBounds));
+        skip.setContentDescription("skip_button");
+        AccessibilityNodeInfo labelGroup = add(row, node(pkg, "android.view.ViewGroup", null, false, skipBounds));
+        AccessibilityNodeInfo label = add(labelGroup, node(pkg, "android.widget.TextView", null, false, skipBounds));
+        label.setText("跳过");
+        AccessibilityNodeInfo badge = add(content, node(pkg, "android.widget.TextView", null, false,
+                new Rect(1154, 2672, 1218, 2715)));
+        badge.setText("广告");
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, skip, 9999));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".activity.MainActivity"));
+        assertFalse(rules.matches("other.app", activity, skip));
+
+        skip.setContentDescription("red_packet");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setContentDescription("skip_button");
+        label.setText("继续");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        label.setText("跳过");
+        badge.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setVisibleToUser(true);
+        playCard.setViewIdResourceName(null);
         assertNull(SplashSkipper.match(root, rules, activity));
     }
 

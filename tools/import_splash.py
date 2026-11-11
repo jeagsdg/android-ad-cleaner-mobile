@@ -279,11 +279,29 @@ def import_reviewed_samples(path):
                     and value.startswith(sample['package'] + ':id/')
         )):
             raise ValueError(f'Reviewed resource requires an exact app ID in {sample["package"]}')
-        if evidence == 'label' and (sample['activity'] != 'com.google.android.gms.ads.AdActivity'
-                or target['class'] != 'ImageButton' or not guaranteed(
-                    target, lambda field, op, value: (field, op, value) == ('desc', '=', 'Interstitial close button')
-                )):
-            raise ValueError(f'Reviewed label requires the exact interstitial close control in {sample["package"]}')
+        if evidence == 'label':
+            def exact(node, field, value):
+                return guaranteed(node, lambda f, op, v: (f, op, v) == (field, '=', value))
+
+            interstitial_close = (sample['activity'] == 'com.google.android.gms.ads.AdActivity'
+                                  and target['class'] == 'ImageButton'
+                                  and exact(target, 'desc', 'Interstitial close button'))
+            camera_skip = (
+                (sample['package'], sample['activity'], target['class'])
+                == ('com.ydtx.camera', 'com.ydtx.camera.activity.SplashActivitynew', 'ImageView')
+                and sample.get('tap') is not True
+                and all(exact(target, field, value) for field, value in (
+                    ('id', None), ('desc', 'skip_button'), ('childCount', 0), ('clickable', True)
+                ))
+                and all(any(exact(node, 'id', container) for node in selector['path']) for container in (
+                    'com.kwad.dy.sdk:id/ksad_splash_root_container',
+                    'com.kwad.dy.sdk:id/splash_full_tk_play_card_view',
+                ))
+                and any(node['class'] == 'TextView' and exact(node, 'text', '跳过') for node in selector['path'])
+                and any(exact(anchor['path'][0], 'text', '广告') for anchor in required)
+            )
+            if not (interstitial_close or camera_skip):
+                raise ValueError(f'Reviewed label requires a verified ad control in {sample["package"]}')
         countdown_close = sample.get('adCountdownClose') is True
         touch_only = sample.get('touchOnly') is True
         if countdown_close and (evidence != 'structure' or not required):

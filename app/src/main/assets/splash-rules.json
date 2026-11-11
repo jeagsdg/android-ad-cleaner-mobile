@@ -12275,6 +12275,244 @@
       }
     },
     {
+      "package": "com.ydtx.camera",
+      "name": "元道经纬相机",
+      "groupKey": -90,
+      "ruleIndex": 72,
+      "selector": "FrameLayout[id=\"com.kwad.dy.sdk:id/ksad_splash_root_container\"] > FrameLayout[id=\"com.kwad.dy.sdk:id/splash_full_tk_play_card_view\"] >5 ViewGroup[childCount=2] > @ImageView[id=null][desc=\"skip_button\"][clickable=true][childCount=0] + ViewGroup[childCount=1] > TextView[text=\"跳过\"][clickable=false][childCount=0]",
+      "snapshots": [
+        "https://i.gkd.li/i/20896758"
+      ],
+      "evidence": "label",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.kwad.dy.sdk:id/ksad_splash_root_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.kwad.dy.sdk:id/splash_full_tk_play_card_view"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ViewGroup",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    2
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "desc",
+                    "=",
+                    "skip_button"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ViewGroup",
+            "tests": [
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    1
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    false
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              5
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 3
+      },
+      "activityIds": [
+        "com.ydtx.camera.activity.SplashActivitynew"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [
+        {
+          "path": [
+            {
+              "class": "TextView",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      null
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "text",
+                      "=",
+                      "广告"
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "clickable",
+                      "=",
+                      false
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "childCount",
+                      "=",
+                      0
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "TextView[id=null][text=\"广告\"][clickable=false][childCount=0]"
+      ],
+      "reference": {
+        "versionName": "6.4.5",
+        "snapshotSha256": "1d2448dedf81217afc315018bef39ff8941a8a83d6ab94bc1915bb3dbf0b9348"
+      }
+    },
+    {
       "package": "com.hihonor.appmarket",
       "name": "荣耀应用市场",
       "groupKey": 0,

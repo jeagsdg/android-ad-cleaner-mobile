@@ -24,6 +24,7 @@ final class SplashSkipper {
     private static final long PREVIEW_INTERVAL_MS=250;
     private static final long POPUP_PROBE_INTERVAL_MS=240;
     private static final long POPUP_COOLDOWN_MS=750;
+    private static final int GENERIC_POPUP_LIMIT_PER_VISIT=5;
     private static final long MEDIA_COOLDOWN_MS=1500;
     private static final Pattern SPACE=Pattern.compile("\\s+");
     private static final Pattern CONSENT=Pattern.compile(
@@ -77,7 +78,8 @@ final class SplashSkipper {
     private long nextMediaProbe;
     private final Set<CustomSkipRule> attemptedPopups=new HashSet<>();
     private final Map<CustomSkipRule,Integer> confirmedPopups=new HashMap<>();
-    private final Set<Integer> genericPopupWindows=new HashSet<>();
+    private int genericPopupAttempts;
+    private final Set<Integer> genericUnconfirmedWindows=new HashSet<>();
     private final Map<PopupAdRules.Rule,Integer> catalogAttempts=new HashMap<>();
     private final Set<PopupAdRules.Rule> catalogUnconfirmed=new HashSet<>();
     private List<CustomSkipRule> popupRuleSnapshot=Collections.emptyList();
@@ -264,6 +266,8 @@ final class SplashSkipper {
             foregroundVisit++;
             stopCurrentInput();
             resetPopupProgress();
+            genericPopupAttempts=0;
+            genericUnconfirmedWindows.clear();
             nextSplashProbe=0;
             lastSplashProbe=0;
             nextPopupClick=0;
@@ -359,7 +363,8 @@ final class SplashSkipper {
         return result;
     }
     private boolean genericPopupAllowed(){
-        return genericPopupWindows.size()<5&&!genericPopupWindows.contains(activeWindow)&&defaultPopupAllowed();
+        return genericPopupAttempts<GENERIC_POPUP_LIMIT_PER_VISIT
+                &&!genericUnconfirmedWindows.contains(activeWindow)&&defaultPopupAllowed();
     }
     private boolean catalogPopupAllowed(){
         return defaultPopupAllowed()&&popupAds.hasRules(foreground,activity,activityAge(),this::catalogRuleAvailable);
@@ -375,7 +380,7 @@ final class SplashSkipper {
         return true;
     }
     private void resetPopupProgress(){
-        attemptedPopups.clear();confirmedPopups.clear();genericPopupWindows.clear();popupStep=0;
+        attemptedPopups.clear();confirmedPopups.clear();popupStep=0;
         catalogAttempts.clear();
         catalogUnconfirmed.clear();
     }
@@ -536,14 +541,8 @@ final class SplashSkipper {
     private void finishDelayedSplash(long visit,long interaction,SplashHit expected){
         splashWaiting=false;
         delayedSplash=null;
-        if(!scanSplash()||!ready(visit)||interaction!=userInteraction||excluded(foreground)){schedule();return;}
-        AccessibilityNodeInfo root=service.getRootInActiveWindow();
-        if(!matchesWindow(root,foreground,expected.target.getWindowId())){note(SkipDiagnostics.Phase.TARGET_CHANGED);schedule();return;}
-        List<CustomSkipRule> custom=customRules();
-        SplashHit current=splashHit(root,rules,splashActivity(root),custom,launchAge());
-        if(current!=null&&current.rule==expected.rule&&current.target.equals(expected.target)){
-            clickSplash(current);
-        }else{note(SkipDiagnostics.Phase.TARGET_CHANGED);schedule();}
+        if(visit!=foregroundVisit||interaction!=userInteraction){schedule();return;}
+        clickSplash(expected);
     }
     private void cancelDelayedSplash(){
         if(delayedSplash!=null)main.removeCallbacks(delayedSplash);
@@ -551,19 +550,20 @@ final class SplashSkipper {
         splashWaiting=false;
     }
     private long launchAge(){return Math.max(0,WINDOW_MS-(deadline-SystemClock.elapsedRealtime()));}
-    private void clickSplash(SplashHit hit){
+    private void clickSplash(SplashHit expected){
+        if(!scanSplash()||!ready(foregroundVisit)){schedule();return;}
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
-        if(!ready(foregroundVisit)||!matchesWindow(root,foreground,hit.target.getWindowId())){
+        SplashHit hit=matchesWindow(root,foreground,expected.target.getWindowId())
+                ?splashHit(root,rules,splashActivity(root),customRules(),launchAge()):null;
+        if(hit==null||hit.rule!=expected.rule||hit.usesGesture()!=expected.usesGesture()
+                ||!hit.target.equals(expected.target)){
             note(SkipDiagnostics.Phase.TARGET_CHANGED);schedule();return;
         }
         GestureDescription gesture=null;
         if(hit.usesGesture()){
-            SplashHit current=scanSplash()&&pendingWindow==null&&activeWindow>=0
-                    &&hit.target.getWindowId()==activeWindow?splashHit(root,rules,splashActivity(root),customRules(),launchAge()):null;
-            if(current==null||!current.usesGesture()||current.rule!=hit.rule||!current.target.equals(hit.target)){
+            if(activeWindow<0||hit.target.getWindowId()!=activeWindow){
                 note(SkipDiagnostics.Phase.TARGET_CHANGED);schedule();return;
             }
-            hit=current;
             gesture=tapGesture(hit.target);
             if(gesture==null){note(SkipDiagnostics.Phase.TOUCH_UNAVAILABLE);schedule();return;}
         }
@@ -604,7 +604,7 @@ final class SplashSkipper {
                 return true;
             }
         }
-        if(hit==null&&genericPopupAllowed()&&!genericPopupWindows.contains(root.getWindowId())){
+        if(hit==null&&genericPopupAllowed()){
             long now=SystemClock.elapsedRealtime();
             if(now<nextGenericProbe){
                 popupPending=true;
@@ -671,12 +671,8 @@ final class SplashSkipper {
     private void finishDelayedPopup(long visit,long interaction,int window,PopupMatch expected){
         if(visit!=foregroundVisit)return;
         popupVerifying=false;
-        if(!store.popupEnabled()||!ready(visit)||interaction!=userInteraction){schedule();return;}
-        AccessibilityNodeInfo root=service.getRootInActiveWindow();
-        if(!matchesWindow(root,foreground,window)){schedule();return;}
-        PopupMatch current=PopupMatch.find(root,screen(root),popupRules());
-        if(current!=null&&current.rule==expected.rule&&Objects.equals(current.target,expected.target))clickPopup(current,window);
-        else schedule();
+        if(interaction!=userInteraction){schedule();return;}
+        clickPopup(expected,window);
     }
     private boolean ready(long visit){
         return !closed&&!service.busy&&pendingWindow==null&&!excluded(foreground)
@@ -702,22 +698,23 @@ final class SplashSkipper {
     private static boolean canReturnFrom(AccessibilityNodeInfo root,String pkg,int window){
         return window>=0&&matchesWindow(root,pkg,window)&&displayId(root)==Display.DEFAULT_DISPLAY;
     }
-    private void clickPopup(PopupMatch hit,int window){
+    private void clickPopup(PopupMatch expected,int window){
         long visit=foregroundVisit;
-        if(!ready(visit)||!matchesWindow(service.getRootInActiveWindow(),foreground,window)){schedule();return;}
+        if(!store.popupEnabled()||!ready(visit)){schedule();return;}
+        AccessibilityNodeInfo root=service.getRootInActiveWindow();
+        if(!matchesWindow(root,foreground,window)){schedule();return;}
+        PopupMatch hit=PopupMatch.find(root,screen(root),popupRules());
+        if(hit==null||hit.rule!=expected.rule||!Objects.equals(hit.target,expected.target)){schedule();return;}
         attemptedPopups.add(hit.rule);
         nextPopupClick=SystemClock.elapsedRealtime()+POPUP_COOLDOWN_MS;
         String pkg=foreground;
         long interaction=userInteraction;
         boolean sent;
         if(hit.rule.backsOut()){
-            AccessibilityNodeInfo root=service.getRootInActiveWindow();
             sent=canReturnFrom(root,pkg,window)
                     &&service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
         }else if(hit.rule.gesture){
-            AccessibilityNodeInfo root=service.getRootInActiveWindow();
-            GestureDescription gesture=ready(visit)&&matchesWindow(root,pkg,window)
-                    &&hit.target.getWindowId()==window?tapGesture(hit.target):null;
+            GestureDescription gesture=hit.target.getWindowId()==window?tapGesture(hit.target):null;
             sent=gesture!=null&&sendGesture(gesture,()->main.postDelayed(()->verifyPopup(pkg,visit,interaction,hit,false),350),()->{
                 if(visit==foregroundVisit&&pkg.equals(foreground))finishPopupVerification();
                 recordPopup(pkg,false);
@@ -731,8 +728,10 @@ final class SplashSkipper {
     }
     private void clickObservedPopup(AccessibilityNodeInfo target,PopupAdRules.Rule rule){
         if(!ready(foregroundVisit)||!matchesWindow(service.getRootInActiveWindow(),foreground,target.getWindowId())){schedule();return;}
-        if(rule==null)genericPopupWindows.add(target.getWindowId());
-        else {
+        if(rule==null){
+            genericPopupAttempts++;
+            genericUnconfirmedWindows.add(target.getWindowId());
+        }else {
             catalogAttempts.merge(rule, 1, Integer::sum);
             catalogUnconfirmed.add(rule);
         }
@@ -762,7 +761,10 @@ final class SplashSkipper {
             return;
         }
         if(sameVisit){
-            if(confirmed&&rule!=null)catalogUnconfirmed.remove(rule);
+            if(confirmed){
+                if(rule==null)genericUnconfirmedWindows.remove(target.getWindowId());
+                else catalogUnconfirmed.remove(rule);
+            }
             finishPopupVerification();
         }
         recordPopup(pkg,confirmed);

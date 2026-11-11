@@ -789,5 +789,18 @@
     "requiredSelectors": [
       "TextView[id=\"com.chunqiu.ah:id/ksad_logo_text\"][text=\"广告\"]"
     ]
+  },
+  {
+    "package": "com.ydtx.camera",
+    "name": "元道经纬相机",
+    "activity": "com.ydtx.camera.activity.SplashActivitynew",
+    "versionName": "6.4.5",
+    "snapshot": "https://i.gkd.li/i/20896758",
+    "sha256": "1d2448dedf81217afc315018bef39ff8941a8a83d6ab94bc1915bb3dbf0b9348",
+    "selector": "FrameLayout[id=\"com.kwad.dy.sdk:id/ksad_splash_root_container\"] > FrameLayout[id=\"com.kwad.dy.sdk:id/splash_full_tk_play_card_view\"] >5 ViewGroup[childCount=2] > @ImageView[id=null][desc=\"skip_button\"][clickable=true][childCount=0] + ViewGroup[childCount=1] > TextView[text=\"跳过\"][clickable=false][childCount=0]",
+    "evidence": "label",
+    "requiredSelectors": [
+      "TextView[id=null][text=\"广告\"][clickable=false][childCount=0]"
+    ]
   }
 ]

@@ -138,6 +138,42 @@ public class SplashSkipperTest {
         }
     }
 
+    @Test public void splashRevalidatesNativeClickWhenTheSameNodeChangesPurpose() {
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        ActiveRootService shadowService = Shadow.extract(service);
+        Store store = new Store(service);
+        store.setSplashEnabled(true);
+        Point display = new Point();
+        service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(display);
+        AccessibilityNodeInfo root = node("", new Rect(0, 0, display.x, display.y));
+        AccessibilityNodeInfo button = node("跳过 5", new Rect(display.x * 3 / 4, display.y / 20,
+                display.x * 19 / 20, display.y / 10));
+        button.setClickable(true);
+        shadowOf(button).setOnPerformActionListener((action, args) -> false);
+        shadowOf(root).addChild(button);
+        shadowOf(root).addChild(node("广告", new Rect(0, display.y * 3 / 4, display.x / 12, display.y * 4 / 5)));
+        SplashSkipper skipper = new SplashSkipper(service);
+        try {
+            shadowService.activeRoot = () -> root;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+            AtomicInteger reads = new AtomicInteger();
+            shadowService.activeRoot = () -> {
+                if (reads.incrementAndGet() == 2) button.setText("查看详情");
+                return root;
+            };
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+            assertTrue(reads.get() >= 2);
+            assertTrue(shadowOf(button).getPerformedActions().isEmpty());
+
+            button.setText("跳过 5");
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(350));
+            assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), shadowOf(button).getPerformedActions());
+        } finally {
+            skipper.close();
+        }
+    }
+
     @Test public void splashPreviewMatchesWithoutClickingAndReopeningAfterClearSkips() {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         ActiveRootService shadowService = Shadow.extract(service);
@@ -424,6 +460,135 @@ public class SplashSkipperTest {
             first.close();
             diagnostics.clear();
         }
+    }
+
+    @Test public void confirmedGenericPopupsCanContinueInTheSameWindowUpToTheVisitLimit() {
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        ActiveRootService shadowService = Shadow.extract(service);
+        Store store = new Store(service);
+        store.setPopupEnabled(true);
+        store.setSkipToastEnabled(false);
+        long before = store.popupCount();
+        Point display = new Point();
+        service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(display);
+        AccessibilityWindowInfo window = AccessibilityWindowInfo.obtain();
+        shadowOf(window).setId(42);
+        Rect screen = new Rect(0, 0, display.x, display.y);
+        AccessibilityNodeInfo content = windowNode("普通内容", screen, window);
+        SplashSkipper skipper = new SplashSkipper(service);
+        try {
+            for (int index = 0; index < 6; index++) {
+                AccessibilityNodeInfo root = windowNode("", screen, window);
+                AccessibilityNodeInfo button = addGenericPopup(root, display, window);
+                shadowOf(button).setOnPerformActionListener((action, args) -> {
+                    shadowService.activeRoot = () -> content;
+                    return true;
+                });
+                shadowService.activeRoot = () -> root;
+                sendWindowEvent(skipper, index == 0 ? AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+                        : AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, PKG, window.getId());
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+
+                assertEquals("popup " + index, index < 5 ? List.of(AccessibilityNodeInfo.ACTION_CLICK) : List.of(),
+                        shadowOf(button).getPerformedActions());
+                assertEquals(before + Math.min(index + 1, 5), store.popupCount());
+            }
+        } finally {
+            skipper.close();
+        }
+    }
+
+    @Test public void unconfirmedGenericPopupKeepsItsWindowLocked() {
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        ActiveRootService shadowService = Shadow.extract(service);
+        Store store = new Store(service);
+        store.setPopupEnabled(true);
+        long before = store.popupCount();
+        Point display = new Point();
+        service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(display);
+        AccessibilityWindowInfo window = AccessibilityWindowInfo.obtain();
+        shadowOf(window).setId(42);
+        Rect screen = new Rect(0, 0, display.x, display.y);
+        AccessibilityNodeInfo stuck = windowNode("", screen, window);
+        AccessibilityNodeInfo button = addGenericPopup(stuck, display, window);
+        shadowOf(button).setOnPerformActionListener((action, args) -> true);
+        SplashSkipper skipper = new SplashSkipper(service);
+        try {
+            shadowService.activeRoot = () -> stuck;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, PKG, window.getId());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+            assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), shadowOf(button).getPerformedActions());
+            assertEquals(before, store.popupCount());
+
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, PKG, window.getId());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+            assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), shadowOf(button).getPerformedActions());
+
+            AccessibilityNodeInfo replacement = windowNode("", screen, window);
+            AccessibilityNodeInfo replacementButton = addGenericPopup(replacement, display, window);
+            shadowService.activeRoot = () -> replacement;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, PKG, window.getId());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+            assertTrue(shadowOf(replacementButton).getPerformedActions().isEmpty());
+            assertEquals(before, store.popupCount());
+        } finally {
+            skipper.close();
+        }
+    }
+
+    @Test public void customPopupRevalidatesNativeClickWhenTheSameNodeChangesPurpose() {
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        ActiveRootService shadowService = Shadow.extract(service);
+        Store store = new Store(service);
+        store.setPopupEnabled(true);
+        store.saveCustomSkipRules(List.of(new CustomSkipRule(PKG, "", CustomSkipRule.POPUP, "", "关闭广告", "广告")));
+        Point display = new Point();
+        service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(display);
+        AccessibilityWindowInfo window = AccessibilityWindowInfo.obtain();
+        shadowOf(window).setId(42);
+        AccessibilityNodeInfo root = windowNode("", new Rect(0, 0, display.x, display.y), window);
+        AccessibilityNodeInfo button = addGenericPopup(root, display, window);
+        shadowOf(button).setOnPerformActionListener((action, args) -> false);
+        SplashSkipper skipper = new SplashSkipper(service);
+        try {
+            shadowService.activeRoot = () -> root;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, PKG, window.getId());
+            AtomicInteger reads = new AtomicInteger();
+            shadowService.activeRoot = () -> {
+                if (reads.incrementAndGet() == 2) button.setText("查看详情");
+                return root;
+            };
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+            assertTrue(reads.get() >= 2);
+            assertTrue(shadowOf(button).getPerformedActions().isEmpty());
+
+            button.setText("关闭广告");
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, PKG, window.getId());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(350));
+            assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), shadowOf(button).getPerformedActions());
+        } finally {
+            skipper.close();
+        }
+    }
+
+    private static AccessibilityNodeInfo addGenericPopup(
+            AccessibilityNodeInfo root, Point display, AccessibilityWindowInfo window) {
+        AccessibilityNodeInfo panel = windowNode("", new Rect(display.x / 5, display.y / 3,
+                display.x * 4 / 5, display.y * 2 / 3), window);
+        AccessibilityNodeInfo button = windowNode("关闭广告", new Rect(display.x / 3, display.y / 2,
+                display.x * 2 / 3, display.y * 3 / 5), window);
+        button.setClickable(true);
+        shadowOf(root).addChild(panel);
+        shadowOf(panel).addChild(button);
+        shadowOf(panel).addChild(windowNode("广告", new Rect(display.x / 4, display.y * 2 / 5,
+                display.x * 3 / 4, display.y / 2), window));
+        return button;
+    }
+
+    private static AccessibilityNodeInfo windowNode(String text, Rect bounds, AccessibilityWindowInfo window) {
+        AccessibilityNodeInfo node = node(text, bounds);
+        shadowOf(node).setAccessibilityWindowInfo(window);
+        return node;
     }
 
     private static AccessibilityNodeInfo node(String text, Rect bounds) {
