@@ -1,14 +1,27 @@
 package app.clearscreen;
 
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.res.Configuration;
 import android.graphics.*;
+import android.os.Bundle;
+import android.os.Looper;
 import android.view.*;
 import android.widget.*;
+import org.json.JSONArray;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.robolectric.*;
 import org.robolectric.annotation.*;
+import org.robolectric.android.controller.ActivityController;
+import org.robolectric.shadows.ShadowAlertDialog;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import static org.junit.Assert.*;
+import static org.robolectric.Shadows.shadowOf;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk=28, qualifiers="zh-rCN-w411dp-h891dp-xhdpi")
@@ -109,6 +122,181 @@ public class ScreenTest {
         assertNotNull(find(activity.getWindow().getDecorView(), "打开手机设置"));
         activity.onBackPressed();
         assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
+    }
+    @Test public void historyShowsAnUnsentChangeWithoutARecoveryAction() {
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            Rule rule = activity.store.allRules().get(0);
+            String id = activity.store.prepare(rule, "个性化广告推荐", true, false);
+            activity.store.finish(id, Store.NOT_APPLIED, "保存原值后目标开关发生变化，未点击");
+            clickFeature(activity, "改动记录与恢复");
+            View history = activity.getWindow().getDecorView();
+            assertNotNull(find(history, "原值：开 · 未执行改动"));
+            assertNull(find(history, "恢复原始状态"));
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test public void appAdManagementReturnsToItsOriginAfterRecreation() {
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            clickFeature(activity, "管理开屏跳过");
+            assertEquals(MainActivity.SKIP_MANAGEMENT, activity.tab);
+            clickFeature(activity, "管理应用与排除项");
+            assertEquals(MainActivity.APP_ADS, activity.tab);
+
+            controller.recreate();
+            MainActivity recreated = controller.get();
+            assertEquals(MainActivity.APP_ADS, recreated.tab);
+            assertNotNull(find(recreated.getWindow().getDecorView(), "返回开屏管理"));
+            recreated.onBackPressed();
+            assertEquals(MainActivity.SKIP_MANAGEMENT, recreated.tab);
+
+            recreated.onBackPressed();
+            clickFeature(recreated, "应用广告管理");
+            assertEquals(MainActivity.APP_ADS, recreated.tab);
+            clickFeature(recreated, "返回首页");
+            assertEquals(0, recreated.tab);
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    @Test public void appCatalogKeepsExpandedScrollPositionAfterRecreation() throws Exception {
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            clickFeature(activity, "应用广告管理");
+            int entries = new JSONArray(activity.store.asset("app-ad-coverage.json")).length();
+            String catalogTitle = activity.getString(R.string.app_coverage_show_catalog, entries);
+            Switch catalog = (Switch) find(activity.getWindow().getDecorView(), catalogTitle);
+            assertNotNull(catalog);
+            catalog.performClick();
+            assertTrue(catalog.isChecked());
+            layoutAppList(activity.pageScroll);
+            int firstPageBottom = activity.body.getHeight() - activity.pageScroll.getHeight();
+            clickFeature(activity, "查看更多");
+            layoutAppList(activity.pageScroll);
+            activity.pageScroll.scrollTo(0, firstPageBottom + 100);
+            int position = activity.pageScroll.getScrollY();
+            assertTrue(position > firstPageBottom);
+
+            controller.recreate();
+            MainActivity recreated = controller.get();
+            assertEquals(MainActivity.APP_ADS, recreated.tab);
+            Switch restoredCatalog = (Switch) find(recreated.getWindow().getDecorView(), catalogTitle);
+            assertNotNull(restoredCatalog);
+            assertTrue(restoredCatalog.isChecked());
+            layoutAppList(recreated.pageScroll);
+            assertEquals(position, recreated.pageScroll.getScrollY());
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    @Test public void appDetailOnlyShowsItsOwnDiagnosticAndCloseKeepsIt() {
+        PackageInfo installed = new PackageInfo();
+        installed.packageName = "tv.danmaku.bili";
+        shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).installPackage(installed);
+        Bundle state = new Bundle();
+        state.putInt("tab", MainActivity.APP_AD_DETAIL);
+        state.putString("appAdSelected", installed.packageName);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup(state);
+        String other = "com.example.other";
+        SkipDiagnostics.startLocal(other, 42);
+        try {
+            MainActivity activity = controller.get();
+            clickFeature(activity, "开屏漏跳诊断");
+            AlertDialog start = ShadowAlertDialog.getLatestAlertDialog();
+            assertEquals("开始并打开", start.getButton(AlertDialog.BUTTON_POSITIVE).getText().toString());
+            start.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            assertTrue(SkipDiagnostics.LOCAL.targets(other));
+
+            clickFeature(activity, "开屏漏跳诊断");
+            ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            assertTrue(SkipDiagnostics.LOCAL.targets(installed.packageName));
+
+            clickFeature(activity, "开屏漏跳诊断");
+            AlertDialog result = ShadowAlertDialog.getLatestAlertDialog();
+            TextView message = result.findViewById(android.R.id.message);
+            assertTrue(message.getText().toString().contains(installed.packageName));
+            assertFalse(message.getText().toString().contains(other));
+            assertEquals("关闭", result.getButton(AlertDialog.BUTTON_NEGATIVE).getText().toString());
+            result.getButton(AlertDialog.BUTTON_NEGATIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            assertTrue(SkipDiagnostics.LOCAL.targets(installed.packageName));
+            assertEquals(MainActivity.APP_AD_DETAIL, activity.tab);
+        } finally {
+            SkipDiagnostics.LOCAL.clear();
+            controller.pause().stop().destroy();
+        }
+    }
+    @Test @Config(qualifiers="zh-rCN-w360dp-h780dp-xhdpi")
+    public void sameNameUpdateOffersAnInAppDownloadAndOptionalStar() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        File artifacts = new File(System.getProperty("clearscreen.artifacts"));
+        String feed = new String(Files.readAllBytes(new File(artifacts.getParentFile(), "update.json").toPath()),
+                StandardCharsets.UTF_8);
+        ReleaseUpdates.Info release = ReleaseUpdates.parse(feed);
+        PackageInfo installed = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+        installed.versionName = release.versionName;
+        installed.setLongVersionCode(release.versionCode - 1);
+        shadowOf(context.getPackageManager()).installPackage(installed);
+        Store store = new Store(context);
+        store.cacheRelease(release);
+        store.noteUpdateCheck(System.currentTimeMillis());
+
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            assertEquals(release.versionCode - 1, store.packageVersion(context.getPackageName()));
+            View page = activity.getWindow().getDecorView();
+            String updateTitle = "净屏 " + release.versionName + " 可更新";
+            if (!activity.networkFilterAvailable()) {
+                assertNull(find(page, updateTitle));
+                return;
+            }
+            assertNotNull(find(page, updateTitle));
+            capture(activity, "v10-update-home.png", 720, 1560);
+            clickFeature(activity, "查看更新");
+            assertEquals(MainActivity.UPDATE_PAGE, activity.tab);
+            View details = activity.getWindow().getDecorView();
+            assertNotNull(find(details, release.notes));
+            assertTrue(find(details, "下载更新").isEnabled());
+            assertNull(shadowOf(activity).getNextStartedActivity());
+            capture(activity, "v10-update-page.png", 720, 1560);
+            clickFeature(activity, "在 GitHub 给净屏点 Star");
+            Intent project = shadowOf(activity).getNextStartedActivity();
+            assertEquals(Intent.ACTION_VIEW, project.getAction());
+            assertEquals(ReleaseUpdates.repositoryUri(), project.getData());
+            assertEquals(MainActivity.UPDATE_PAGE, activity.tab);
+            assertTrue(find(details, "下载更新").isEnabled());
+
+            Configuration larger = new Configuration(activity.getResources().getConfiguration());
+            larger.screenWidthDp = 320;
+            larger.fontScale = 1.3f;
+            controller.configurationChange(larger);
+            MainActivity reopened = controller.get();
+            assertEquals(MainActivity.UPDATE_PAGE, reopened.tab);
+            capture(reopened, "v10-update-page-320dp-font130.png", 640, 1440);
+            TextView primary = (TextView) find(reopened.getWindow().getDecorView(), "下载更新");
+            assertTrue(primary.getHeight() >= reopened.dp(48));
+            assertEquals(0, primary.getLayout().getEllipsisCount(0));
+            clickFeature(reopened, "返回首页");
+            assertEquals(0, reopened.tab);
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    private static void layoutAppList(ScrollView list) {
+        int width = 822;
+        int height = 1500;
+        list.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+        list.layout(0, 0, width, height);
     }
     static void clickFeature(MainActivity activity, String title) {
         View row = find(activity.getWindow().getDecorView(), title);

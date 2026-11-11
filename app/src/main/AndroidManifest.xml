@@ -59,6 +59,6 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="User-enabled foreground support for active accessibility-based ad skipping, with a visible notification and stop control"/>
         </service>
-        <service android:name=".ChannelObserver" android:label="净屏 · 营销渠道检查" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:exported="true"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service>
+        <service android:name=".ChannelObserver" android:label="净屏 · 营销渠道检查" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:enabled="@bool/notification_channels_available" android:exported="true"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service>
     </application>
 </manifest>

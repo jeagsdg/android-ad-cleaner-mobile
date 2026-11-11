@@ -766,5 +766,28 @@
     "snapshot": "https://i.gkd.li/i/13214974",
     "sha256": "42400c7632b779e78b5490270dbf1cbbaed03777bac0212ba0cd355c3d1c12",
     "selector": "LinearLayout[id=\"com.manmanbuy.bijia:id/action_bar_root\"] >11 ViewGroup[childCount=2] > ViewGroup[clickable=true][childCount=1] + @ViewGroup[id=null][clickable=true][childCount=1] > TextView[id=null][text^=\"关闭 \"][text.length=4][childCount=0]"
+  },
+  {
+    "package": "com.MobileTicket",
+    "name": "铁路12306",
+    "activity": "com.MobileTicket.ui.activity.MainActivity",
+    "versionName": "5.8.2.13",
+    "snapshot": "https://i.gkd.li/i/17656103",
+    "sha256": "98e3559b281c628ee5d368451a75ae4cb51dde730551cd471f02cac3fbc75a60",
+    "selector": "LinearLayout[id=\"com.MobileTicket:id/ll_splash_ad_container\"] > FrameLayout[id=\"com.MobileTicket:id/fl_adContent_container\"] > ImageView[id=\"com.MobileTicket:id/img_adContent\"][desc=\"广告\"] + FrameLayout[id=\"com.MobileTicket:id/fl_skip_wrong\"] > @TextView[id=\"com.MobileTicket:id/tv_skip\"][text=null][desc=null][clickable=true][childCount=0]",
+    "evidence": "resource"
+  },
+  {
+    "package": "com.chunqiu.ah",
+    "name": "AH视频",
+    "activity": "com.androlua.LuaActivity",
+    "versionName": "3.2.0",
+    "snapshot": "https://i.gkd.li/i/13264381",
+    "sha256": "750b9aa7b9d0f8a72f4daf0a69424ae85ca879aa5bbe04f36c7ffbfade71cf99",
+    "selector": "LinearLayout[id=\"com.chunqiu.ah:id/ksad_splash_left_top_root\"] > LinearLayout[id=\"com.chunqiu.ah:id/ksad_preload_left_container\"] > @FrameLayout[id=\"com.chunqiu.ah:id/ksad_splash_circle_skip_left_view\"][clickable=true][childCount=1] > TextView[text=\"跳过\"][childCount=0]",
+    "evidence": "resource",
+    "requiredSelectors": [
+      "TextView[id=\"com.chunqiu.ah:id/ksad_logo_text\"][text=\"广告\"]"
+    ]
   }
 ]

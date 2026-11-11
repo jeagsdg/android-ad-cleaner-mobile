@@ -185,6 +185,111 @@ public class PopupAdRulesTest {
         assertNull(rules.find(root, activity, SCREEN));
     }
 
+    @Test public void busAdRequiresTheVisibleAdMarkerAndCloseGlyph() {
+        String pkg = "com.mygolbs.mybus";
+        String activity = pkg + ".NewHomePageActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo adBranch = add(root, node(pkg, "android.view.View", null, false, SCREEN));
+        add(adBranch, frame(pkg));
+        add(adBranch, frame(pkg));
+        AccessibilityNodeInfo adLabel = add(adBranch, node(pkg, "android.widget.TextView", null, false, BUTTON));
+        adLabel.setText("广告");
+        AccessibilityNodeInfo close = add(root, node(pkg, "android.view.View", null, true, BUTTON));
+        AccessibilityNodeInfo glyph = add(add(close, frame(pkg)),
+                node(pkg, "android.widget.TextView", null, false, BUTTON));
+        glyph.setText("×");
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertNull(rules.find(root, pkg + ".OtherActivity", SCREEN));
+        adLabel.setText("路线提示");
+        assertNull(rules.find(root, activity, SCREEN));
+        adLabel.setText("广告");
+        glyph.setVisibleToUser(false);
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void youtubeClosesOnlyTheExplicitAdPanelOnThePlayer() {
+        String pkg = "com.google.android.youtube";
+        String activity = "com.google.android.apps.youtube.app.watchwhile.WatchWhileActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo options = add(root, image(pkg, null, false));
+        options.setContentDescription("更多选项");
+        AccessibilityNodeInfo close = add(root, image(pkg, null, true));
+        close.setContentDescription("关闭广告面板");
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertNull(rules.find(root, pkg + ".OtherActivity", SCREEN));
+        options.setVisibleToUser(false);
+        assertNull(rules.find(root, activity, SCREEN));
+        options.setVisibleToUser(true);
+        options.setContentDescription("More options");
+        close.setContentDescription("Close panel");
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void wallstreetNewsRequiresAnAdLabelBesideItsOwnCloseButton() {
+        String pkg = "com.wallstreetcn.news";
+        String activity = pkg + ".ProxyMainActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo label = add(root, node(pkg, "android.widget.TextView", null, false, BUTTON));
+        label.setText("广告");
+        AccessibilityNodeInfo close = add(root, image(pkg, "close", true));
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertNull(rules.find(root, pkg + ".OtherActivity", SCREEN));
+        label.setText("活动");
+        assertNull(rules.find(root, activity, SCREEN));
+        label.setText("广告");
+        close.setClickable(false);
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void weiboDetailAdRequiresItsAdjacentTitleAndExactCloseId() {
+        String pkg = "com.sina.weibo";
+        String activity = pkg + ".feed.DetailWeiboActivity";
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo title = add(root, node(pkg, "android.widget.TextView",
+                "tvTrendsTitle", false, BUTTON));
+        AccessibilityNodeInfo close = add(root, image(pkg, "iv_ad_x", true));
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertNull(rules.find(root, pkg + ".MainTabActivity", SCREEN));
+        title.setViewIdResourceName(pkg + ":id/ordinary_title");
+        assertNull(rules.find(root, activity, SCREEN));
+        title.setViewIdResourceName(pkg + ":id/tvTrendsTitle");
+        close.setViewIdResourceName(pkg + ":id/iv_close");
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
+    @Test public void idlefishNightMarketUsesTheFourthPreorderDescendant() {
+        String pkg = "com.taobao.idlefish";
+        String activity = "com.idlefish.flutterbridge.flutterboost.boost.FishFlutterBoostActivity";
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", "fish_layer_container_id", false, SCREEN);
+        add(root, frame(pkg)).setVisibleToUser(false);
+        add(root, frame(pkg));
+        add(root, frame(pkg));
+        AccessibilityNodeInfo close = idlefishNightMarketClose(root, pkg);
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertNull(rules.find(root, "com.taobao.idlefish.OtherActivity", SCREEN));
+
+        AccessibilityNodeInfo wrongRoot = node(pkg, "android.widget.FrameLayout", "fish_layer_container_id", false, SCREEN);
+        add(wrongRoot, frame(pkg));
+        AccessibilityNodeInfo deeper = wrongRoot;
+        for (int depth = 0; depth < 3; depth++) deeper = add(deeper, frame(pkg));
+        idlefishNightMarketClose(deeper, pkg);
+        assertNull(rules.find(wrongRoot, activity, SCREEN));
+    }
+
     @Test public void honorMarketAdRuleNeverRunsOnTheLauncher() {
         String pkg = "com.hihonor.appmarket";
         String activity = pkg + ".module.main.MainActivity";
@@ -201,6 +306,19 @@ public class PopupAdRulesTest {
 
     private static AccessibilityNodeInfo frame(String pkg) {
         return node(pkg, "android.widget.FrameLayout", null, false, SCREEN);
+    }
+
+    private static AccessibilityNodeInfo idlefishNightMarketClose(AccessibilityNodeInfo parent, String pkg) {
+        AccessibilityNodeInfo web = add(parent, node(pkg, "android.webkit.WebView", null, false, SCREEN));
+        web.setText("夜市氛围弹框");
+        AccessibilityNodeInfo content = add(web, node(pkg, "android.view.View", null, false, SCREEN));
+        content.setViewIdResourceName("root");
+        add(content, frame(pkg));
+        AccessibilityNodeInfo row = add(content, node(pkg, "android.view.View", null, false, SCREEN));
+        AccessibilityNodeInfo wrapper = add(row, node(pkg, "android.view.View", null, false, SCREEN));
+        AccessibilityNodeInfo close = add(wrapper, node(pkg, "android.widget.TextView", null, true, BUTTON));
+        close.setText("");
+        return close;
     }
 
     private static AccessibilityNodeInfo image(String pkg, String id, boolean clickable) {

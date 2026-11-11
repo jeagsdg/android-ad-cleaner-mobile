@@ -3,8 +3,10 @@ package app.clearscreen;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ final class AppAdManagement {
     private boolean showCatalog;
     private int limit = PAGE_SIZE;
     private int listScroll;
+    private boolean restoreListOnResume;
     private String query = "", selected = "";
 
     AppAdManagement(MainActivity screen, Bundle saved) {
@@ -37,9 +40,13 @@ final class AppAdManagement {
         selected = saved.getString("appAdSelected", "");
         limit = Math.max(PAGE_SIZE, saved.getInt("appAdLimit"));
         listScroll = saved.getInt("appAdScroll");
+        restoreListOnResume = saved.getInt("tab") == MainActivity.APP_ADS;
     }
 
     void save(Bundle state) {
+        if (screen.tab == MainActivity.APP_ADS && screen.pageScroll.isLaidOut()) {
+            listScroll = screen.pageScroll.getScrollY();
+        }
         state.putBoolean("appAdCatalog", showCatalog);
         state.putString("appAdQuery", query);
         state.putString("appAdSelected", selected);
@@ -124,9 +131,27 @@ final class AppAdManagement {
             renderResults(coverage, installed, results, summary);
         });
     }
+    void restoreSavedListPosition() {
+        if (!restoreListOnResume) return;
+        restoreListOnResume = false;
+        if (screen.tab == MainActivity.APP_ADS) restoreListPosition();
+    }
+
     void restoreListPosition() {
-        android.widget.ScrollView scroll = screen.pageScroll;
-        if (listScroll > 0) scroll.post(() -> scroll.scrollTo(0, listScroll));
+        int position = listScroll;
+        if (position <= 0) return;
+        ScrollView scroll = screen.pageScroll;
+        if (scroll.isLaidOut()) {
+            scroll.scrollTo(0, position);
+        } else {
+            scroll.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override public void onLayoutChange(View view, int left, int top, int right, int bottom,
+                                                     int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    view.removeOnLayoutChangeListener(this);
+                    scroll.scrollTo(0, position);
+                }
+            });
+        }
     }
 
     private Drawable icon(String pkg, boolean installed) {
@@ -148,7 +173,8 @@ final class AppAdManagement {
         boolean launchable = installed.containsKey(selected);
         boolean knownInstalled = launchable || screen.store.packageVersion(selected) >= 0;
         Coverage entry = coverage.get(selected);
-        screen.header("应用广告管理", label(coverage, installed, selected), selected);
+        String appName = label(coverage, installed, selected);
+        screen.header("应用广告管理", appName, selected);
 
         LinearLayout builtIn = screen.card(screen.body);
         builtIn.addView(screen.bold("内置规则", 18, MainActivity.INK));
@@ -198,8 +224,7 @@ final class AppAdManagement {
 
         LinearLayout tools = screen.card(screen.body);
         tools.addView(screen.bold("诊断与规则", 18, MainActivity.INK));
-        screen.linkAction(tools, "诊断此应用的开屏广告", () -> screen.startAppDiagnostic(selected));
-        screen.linkAction(tools, "查看诊断摘要", screen::launchDiagnostics);
+        screen.linkAction(tools, "开屏漏跳诊断", () -> screen.launchDiagnostics(selected, appName));
         screen.linkAction(tools, "为此应用添加规则", () -> screen.addRuleForApp(selected));
         screen.linkAction(tools, "管理自定义规则", screen::openCustomRules);
         if (launchable) screen.linkAction(tools, "打开应用", () -> screen.openInstalledApp(selected));

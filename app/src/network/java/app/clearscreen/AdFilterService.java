@@ -25,17 +25,28 @@ public final class AdFilterService extends VpnService {
     private final Object writeLock=new Object(),historyLock=new Object();
     private final LinkedHashSet<String> recent=new LinkedHashSet<>();
     private final AtomicLong queries=new AtomicLong(),blocks=new AtomicLong();
-    private final AtomicInteger failures=new AtomicInteger();
+    private final DnsNetworkState networkState=new DnsNetworkState();
     private final ThreadPoolExecutor workers=new ThreadPoolExecutor(4,4,20,TimeUnit.SECONDS,new ArrayBlockingQueue<>(128));
     private final ConcurrentHashMap<Network,NetworkCapabilities> networks=new ConcurrentHashMap<>();
     private final Handler main=new Handler(Looper.getMainLooper());
-    private volatile Network underlying;
+    private volatile Network bestPhysicalNetwork;
     private ConnectivityManager connectivity;private FilterStore store;private Thread loop;private DomainRules rules;private DnsTcp tcp;
     private long savedAt;
     private final ConnectivityManager.NetworkCallback networkCallback=new ConnectivityManager.NetworkCallback(){
         @Override public void onCapabilitiesChanged(Network n,NetworkCapabilities c){networks.put(n,c);selectNetwork();}
         @Override public void onLost(Network n){networks.remove(n);selectNetwork();}
         @Override public void onLinkPropertiesChanged(Network n,LinkProperties p){selectNetwork();}
+    };
+    private final ConnectivityManager.NetworkCallback bestNetworkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override public void onAvailable(Network network) {
+            bestPhysicalNetwork = network;
+            selectNetwork();
+        }
+
+        @Override public void onLost(Network network) {
+            if (network.equals(bestPhysicalNetwork)) bestPhysicalNetwork = null;
+            selectNetwork();
+        }
     };
     static boolean running(){AdFilterService s=active;return s!=null&&s.tunnel!=null&&s.ready&&!s.stopping;}
     static String health(){AdFilterService s=active;return s==null?"no active service":"read="+s.packetsRead.get()+" accepted="+s.packetsAccepted.get()+" written="+s.packetsWritten.get()+" ready="+s.ready+" last="+s.lastPacket;}
@@ -63,15 +74,19 @@ public final class AdFilterService extends VpnService {
         if(stopping||loop!=null)return START_NOT_STICKY;
         try{
             if(VpnService.prepare(this)!=null)throw new IOException("请先确认系统 VPN 授权");
-            NotificationManager manager=getSystemService(NotificationManager.class);manager.createNotificationChannel(new NotificationChannel("network-filter","网络过滤运行状态",NotificationManager.IMPORTANCE_LOW));
             PendingIntent open=PendingIntent.getActivity(this,31,new Intent(this,MainActivity.class).putExtra("tab",6),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
             PendingIntent stop=PendingIntent.getService(this,32,new Intent(this,AdFilterService.class).setAction(STOP),PendingIntent.FLAG_UPDATE_CURRENT|PendingIntent.FLAG_IMMUTABLE);
-            Notification notification=new Notification.Builder(this,"network-filter").setSmallIcon(app.clearscreen.R.drawable.ic_app).setContentTitle("净屏 · 网络过滤")
+            Notification notification=ForegroundServices.lowPriorityNotification(this,"network-filter","网络过滤运行状态")
+                    .setSmallIcon(app.clearscreen.R.drawable.ic_app).setContentTitle("净屏 · 网络过滤")
                     .setContentText("过滤已知广告域名 · 点此管理").setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"停止过滤",stop).build()).build();
             if(Build.VERSION.SDK_INT>=34)startForeground(30,notification,ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED);else startForeground(30,notification);
             active=this;store.enabled(true);store.message("正在准备本地规则与网络…");
             NetworkRequest request=new NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET).addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build();
             connectivity.registerNetworkCallback(request,networkCallback);
+            if (Build.VERSION.SDK_INT >= 31) {
+                try { connectivity.registerBestMatchingNetworkCallback(request, bestNetworkCallback, main); }
+                catch (RuntimeException ignored) { /* The existing all-networks callback remains available. */ }
+            }
             for(Network n:connectivity.getAllNetworks()){NetworkCapabilities c=connectivity.getNetworkCapabilities(n);if(c!=null&&c.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)&&c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET))networks.put(n,c);}
             selectNetwork();loop=new Thread(this::run,"clearscreen-dns");loop.start();
         }catch(Exception e){stop("无法启动网络过滤："+readable(e));}
@@ -79,15 +94,16 @@ public final class AdFilterService extends VpnService {
     }
     private synchronized void selectNetwork(){
         if(stopping)return;
-        Network selected=connectivity.getActiveNetwork();if(selected==null||!networks.containsKey(selected)){
-            selected=null;for(Map.Entry<Network,NetworkCapabilities> entry:networks.entrySet())if(selected==null||entry.getValue().hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))selected=entry.getKey();
-        }
-        underlying=selected;if(tunnel!=null)setUnderlyingNetworks(selected==null?null:new Network[]{selected});
+        Network preferred = bestPhysicalNetwork;
+        if (preferred == null || !networks.containsKey(preferred)) preferred = connectivity.getActiveNetwork();
+        Network selected = DnsNetworkState.select(preferred, networkState.network(), networks);
+        networkState.update(selected);
+        if(tunnel!=null)setUnderlyingNetworks(selected==null?null:new Network[]{selected});
     }
     private void run(){
         try{
             rules=new DomainRules(this);if(stopping)return;
-            Network network=underlying;
+            Network network=networkState.network();
             if(network==null)throw new IOException("当前没有可用网络，请连接网络后再开启");
             checkLegacyPrivateDns(network);
             Builder builder=new Builder().setSession("净屏 · DNS 广告过滤").setMtu(1500).addAddress("198.18.0.1",32).addRoute("198.18.0.2",32).addDnsServer("198.18.0.2")
@@ -105,7 +121,7 @@ public final class AdFilterService extends VpnService {
                 tcp=endpoint;
                 store.message("等待系统网络路由就绪…");
             }
-            if(!network.equals(underlying))selectNetwork();
+            if(!network.equals(networkState.network()))selectNetwork();
             long establishedAt=SystemClock.elapsedRealtime();
             byte[] buffer=new byte[32767];StructPollfd poll=new StructPollfd();poll.fd=created.getFileDescriptor();poll.events=(short)OsConstants.POLLIN;long noNetworkSince=0;
             while(!stopping){
@@ -118,7 +134,7 @@ public final class AdFilterService extends VpnService {
                     break;
                 }}
                     if(!ready&&SystemClock.elapsedRealtime()-establishedAt>8000)throw new IOException("系统未完成 VPN 路由配置");}
-                long now=SystemClock.elapsedRealtime();if(underlying==null){if(noNetworkSince==0)noNetworkSince=now;if(now-noNetworkSince>6000)throw new IOException("网络已断开，已退出过滤；联网后可重新开启");}else noNetworkSince=0;
+                long now=SystemClock.elapsedRealtime();if(networkState.network()==null){if(noNetworkSince==0)noNetworkSince=now;if(now-noNetworkSince>6000)throw new IOException("网络已断开，已退出过滤；联网后可重新开启");}else noNetworkSince=0;
                 int events=Os.poll(new StructPollfd[]{poll},500);
                 if(events>0&&(poll.revents&(OsConstants.POLLERR|OsConstants.POLLHUP|OsConstants.POLLNVAL))!=0)throw new IOException("VPN 网络接口已断开");
                 if(events>0&&(poll.revents&OsConstants.POLLIN)!=0){
@@ -150,11 +166,14 @@ public final class AdFilterService extends VpnService {
         }
         if(blocked){callback.accept(DnsWire.error(query,3,false));return;}
         try{workers.execute(()->{
-            byte[] response;
-            try{Network network=underlying;if(network==null)throw new IOException("网络暂时断开");response=upstream(network,query);if(!DnsWire.answerMatches(query,response))throw new IOException("DNS 响应不匹配");failures.set(0);}
-            catch(Exception e){response=DnsWire.error(query,2,false);if(failures.incrementAndGet()>=8&&!stopping)stop("DNS 连续请求失败，已退出过滤以恢复系统网络");}
+            if(stopping)return;
+            byte[] response = networkState.resolve(query, this::upstream,
+                    link -> main.post(() -> stopAfterDnsFailures(link)));
             if(!stopping)callback.accept(response);
         });}catch(RejectedExecutionException e){if(!stopping)callback.accept(DnsWire.error(query,2,false));}
+    }
+    private synchronized void stopAfterDnsFailures(DnsNetworkState.Link link) {
+        if (!stopping && networkState.shouldStop(link)) stop("DNS 连续请求失败，已退出过滤以恢复系统网络");
     }
     private void checkLegacyPrivateDns(Network network)throws IOException{
         if(Build.VERSION.SDK_INT==28){LinkProperties p=connectivity.getLinkProperties(network);if(p!=null&&p.isPrivateDnsActive())throw new IOException("Android 9 的加密 DNS 暂不支持叠加本过滤，已保留原网络设置");}
@@ -225,5 +244,17 @@ public final class AdFilterService extends VpnService {
         persist();
     }
     @Override public void onRevoke(){stop("系统已撤销 VPN 授权或已切换到其他 VPN");}
-    @Override public void onDestroy(){release();try{connectivity.unregisterNetworkCallback(networkCallback);}catch(Exception ignored){}if(active==this)active=null;super.onDestroy();}
+    @Override public void onDestroy(){
+        release();
+        unregisterNetworkCallback(networkCallback);
+        if(Build.VERSION.SDK_INT>=31)unregisterNetworkCallback(bestNetworkCallback);
+        if(active==this)active=null;
+        super.onDestroy();
+    }
+
+    private void unregisterNetworkCallback(ConnectivityManager.NetworkCallback callback){
+        if(connectivity==null)return;
+        try{connectivity.unregisterNetworkCallback(callback);}
+        catch(RuntimeException ignored){/* Registration may not have completed. */}
+    }
 }

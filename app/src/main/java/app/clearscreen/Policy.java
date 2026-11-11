@@ -23,7 +23,7 @@ public final class Policy {
         boolean protectedValue=protectedTitle(name+" "+id);
         boolean candidate=ad||hit("KW",name+" "+id);
         boolean excluded=hit("SKIP",name)&&!vivo&&!ad;
-        boolean uncertain=hit("SERVICE_TERMS",String.join(" ",pkg,id,name,app))||"其他".equals(app.isEmpty()?name:app)||(pkg.toLowerCase(Locale.ROOT).endsWith("youtube")&&id.equals("2"));
+        boolean uncertain=hit("SERVICE_TERMS",pkg+" "+id+" "+name+" "+app)||"其他".equals(app.isEmpty()?name:app)||(pkg.toLowerCase(Locale.ROOT).endsWith("youtube")&&id.equals("2"));
         return new Decision(candidate,excluded,uncertain,protectedValue);
     }
     public static final class Decision {

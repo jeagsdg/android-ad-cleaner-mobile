@@ -16,6 +16,23 @@ public class SplashTest {
     @Before public void setup(){root=node("",false,new Rect(0,0,1080,2400));skip=node("跳过 5",true,new Rect(810,120,1030,220));shadowOf(root).addChild(skip);}
     void ad(){shadowOf(root).addChild(node("广告",false,new Rect(10,1800,80,1850)));}
     @Test public void genericSkipRequiresAdMarker(){assertNull(SplashSkipper.match(root));ad();assertEquals(skip,SplashSkipper.match(root));}
+    @Test public void genericSplashRecognizesVerifiedAdBadgesWithoutAppSpecificRules(){
+        AccessibilityNodeInfo marker=node("",false,new Rect(10,1800,80,1850));
+        shadowOf(root).addChild(marker);
+        for(String text:new String[]{"广告 | 已Wi-Fi预加载","广告 | 已 WiFi 预加载","广告 ｜ 已 Ｗｉ－Ｆｉ 预加载","品牌广告"}){
+            marker.setText(text);
+            assertEquals(text,skip,SplashSkipper.match(root));
+        }
+        marker.setText("");
+        marker.setContentDescription("启动图广告");
+        assertEquals(skip,SplashSkipper.match(root));
+
+        marker.setContentDescription("");
+        for(String text:new String[]{"广告设置","免广告","已Wi-Fi预加载","品牌广告设置","启动图广告示例"}){
+            marker.setText(text);
+            assertNull(text,SplashSkipper.match(root));
+        }
+    }
     @Test public void tapToSkipPhraseStillRequiresAdContext(){
         skip.setText("点击跳过");
         assertNull(SplashSkipper.match(root));

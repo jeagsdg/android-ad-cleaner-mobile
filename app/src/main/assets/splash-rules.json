@@ -11945,6 +11945,336 @@
       }
     },
     {
+      "package": "com.MobileTicket",
+      "name": "铁路12306",
+      "groupKey": -90,
+      "ruleIndex": 70,
+      "selector": "LinearLayout[id=\"com.MobileTicket:id/ll_splash_ad_container\"] > FrameLayout[id=\"com.MobileTicket:id/fl_adContent_container\"] > ImageView[id=\"com.MobileTicket:id/img_adContent\"][desc=\"广告\"] + FrameLayout[id=\"com.MobileTicket:id/fl_skip_wrong\"] > @TextView[id=\"com.MobileTicket:id/tv_skip\"][text=null][desc=null][clickable=true][childCount=0]",
+      "snapshots": [
+        "https://i.gkd.li/i/17656103"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "LinearLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.MobileTicket:id/ll_splash_ad_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.MobileTicket:id/fl_adContent_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.MobileTicket:id/img_adContent"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "desc",
+                    "=",
+                    "广告"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.MobileTicket:id/fl_skip_wrong"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.MobileTicket:id/tv_skip"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "desc",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 4
+      },
+      "activityIds": [
+        "com.MobileTicket.ui.activity.MainActivity"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [],
+      "requiredSelectors": [],
+      "reference": {
+        "versionName": "5.8.2.13",
+        "snapshotSha256": "98e3559b281c628ee5d368451a75ae4cb51dde730551cd471f02cac3fbc75a60"
+      }
+    },
+    {
+      "package": "com.chunqiu.ah",
+      "name": "AH视频",
+      "groupKey": -90,
+      "ruleIndex": 71,
+      "selector": "LinearLayout[id=\"com.chunqiu.ah:id/ksad_splash_left_top_root\"] > LinearLayout[id=\"com.chunqiu.ah:id/ksad_preload_left_container\"] > @FrameLayout[id=\"com.chunqiu.ah:id/ksad_splash_circle_skip_left_view\"][clickable=true][childCount=1] > TextView[text=\"跳过\"][childCount=0]",
+      "snapshots": [
+        "https://i.gkd.li/i/13264381"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "LinearLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.chunqiu.ah:id/ksad_splash_left_top_root"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "LinearLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.chunqiu.ah:id/ksad_preload_left_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.chunqiu.ah:id/ksad_splash_circle_skip_left_view"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    1
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 2
+      },
+      "activityIds": [
+        "com.androlua.LuaActivity"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [
+        {
+          "path": [
+            {
+              "class": "TextView",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "com.chunqiu.ah:id/ksad_logo_text"
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "text",
+                      "=",
+                      "广告"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "TextView[id=\"com.chunqiu.ah:id/ksad_logo_text\"][text=\"广告\"]"
+      ],
+      "reference": {
+        "versionName": "3.2.0",
+        "snapshotSha256": "750b9aa7b9d0f8a72f4daf0a69424ae85ca879aa5bbe04f36c7ffbfade71cf99"
+      }
+    },
+    {
       "package": "com.hihonor.appmarket",
       "name": "荣耀应用市场",
       "groupKey": 0,

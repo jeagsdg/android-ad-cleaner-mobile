@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /** Evaluates the fixed predicates compiled from the pinned MIT splash groups. */
@@ -234,6 +235,11 @@ final class SplashRules {
                     return direction < 0 ? ancestors(node, slots, next, direction)
                             : descendants(node, slots, next, direction, 1);
                 case "<<":
+                    if (slots.length() != 0) {
+                        return direction > 0 ? indexedAncestors(node, slots, next, direction)
+                                : new IndexedDescendants(slots, child -> nodeMatches(pkg, child,
+                                        path.optJSONObject(next), exactPackage) && check(child, next, direction)).find(node);
+                    }
                     return direction > 0 ? ancestors(node, slots, next, direction)
                             : descendants(node, slots, next, direction, 1);
                 case "<":
@@ -262,6 +268,48 @@ final class SplashRules {
                 if (accepts(slots, distance) && consider(node, next, direction)) return true;
             }
             return false;
+        }
+
+        private boolean indexedAncestors(AccessibilityNodeInfo node, JSONArray slots, int next, int direction) {
+            AccessibilityNodeInfo parent = node;
+            for (int depth = 1; depth <= lastSlot(slots) && remaining > 0; depth++) {
+                parent = parent.getParent();
+                if (parent == null) return false;
+                remaining--;
+                if (nodeMatches(pkg, parent, path.optJSONObject(next), exactPackage)
+                        && new IndexedDescendants(slots, node::equals).find(parent)
+                        && check(parent, next, direction)) return true;
+            }
+            return false;
+        }
+
+        // Indexed << uses the descendant's one-based preorder position.
+        private final class IndexedDescendants {
+            private final JSONArray slots;
+            private final int limit;
+            private final Predicate<AccessibilityNodeInfo> match;
+            private int position;
+
+            IndexedDescendants(JSONArray slots, Predicate<AccessibilityNodeInfo> match) {
+                this.slots = slots;
+                this.limit = lastSlot(slots);
+                this.match = match;
+            }
+
+            boolean find(AccessibilityNodeInfo parent) {
+                for (int i = 0; i < parent.getChildCount() && position < limit && remaining > 0; i++) {
+                    remaining--;
+                    AccessibilityNodeInfo child = parent.getChild(i);
+                    if (child == null) {
+                        // An unreadable child makes later positions indeterminate.
+                        position = limit;
+                        return false;
+                    }
+                    if (accepts(slots, ++position) && match.test(child)) return true;
+                    if (find(child)) return true;
+                }
+                return false;
+            }
         }
 
         private boolean descendants(AccessibilityNodeInfo node, JSONArray slots, int next, int direction, int depth) {

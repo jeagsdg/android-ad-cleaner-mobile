@@ -1,0 +1,3 @@
+<resources>
+    <bool name="notification_channels_available">true</bool>
+</resources>

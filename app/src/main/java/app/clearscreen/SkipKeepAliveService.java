@@ -40,7 +40,7 @@ public final class SkipKeepAliveService extends Service {
         Intent service = new Intent(context, SkipKeepAliveService.class);
         try {
             if (eligible(context)) {
-                if (!running()) context.startForegroundService(service.setAction(START));
+                if (!running()) ForegroundServices.start(context, service.setAction(START));
             } else if (running()) {
                 context.stopService(service);
                 foreground = false;
@@ -63,6 +63,7 @@ public final class SkipKeepAliveService extends Service {
                     != PackageManager.PERMISSION_GRANTED) return false;
         NotificationManager manager = context.getSystemService(NotificationManager.class);
         if (!manager.areNotificationsEnabled()) return false;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return true;
         NotificationChannel channel = manager.getNotificationChannel(CHANNEL);
         return channel == null || channel.getImportance() != NotificationManager.IMPORTANCE_NONE;
     }
@@ -101,9 +102,6 @@ public final class SkipKeepAliveService extends Service {
     }
 
     private void showNotification() {
-        NotificationManager manager = getSystemService(NotificationManager.class);
-        manager.createNotificationChannel(new NotificationChannel(CHANNEL, "跳过保活",
-                NotificationManager.IMPORTANCE_LOW));
         Intent manage = new Intent(this, MainActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra("tab", MainActivity.SKIP_MANAGEMENT);
@@ -111,7 +109,7 @@ public final class SkipKeepAliveService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent stop = PendingIntent.getService(this, 41,
                 new Intent(this, SkipKeepAliveService.class).setAction(STOP), PendingIntent.FLAG_IMMUTABLE);
-        Notification notification = new Notification.Builder(this, CHANNEL)
+        Notification notification = ForegroundServices.lowPriorityNotification(this, CHANNEL, "跳过保活")
                 .setSmallIcon(R.drawable.ic_app)
                 .setContentTitle("净屏 · 跳过保活")
                 .setContentText("点击管理开屏与弹窗跳过")

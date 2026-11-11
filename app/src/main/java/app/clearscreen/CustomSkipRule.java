@@ -1,5 +1,6 @@
 package app.clearscreen;
 
+import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -98,7 +99,7 @@ final class CustomSkipRule {
                 terms[i] = contains;
             }
         }
-        return String.join("&", terms);
+        return TextUtils.join("&", terms);
     }
 
     private CustomSkipRule(String pkg, String activity, String mode, String viewId, String label, String context,

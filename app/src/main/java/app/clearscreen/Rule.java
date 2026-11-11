@@ -1,5 +1,6 @@
 package app.clearscreen;
 
+import android.text.TextUtils;
 import org.json.*;
 import java.util.*;
 
@@ -76,7 +77,7 @@ public final class Rule {
                     if (!label.startsWith("@id:")) labels.add(label);
                     else if (label.endsWith(":id/setting_menu")) labels.add("右上角设置");
                 }
-                text.append(" → ").append(labels.isEmpty() ? "相应的菜单按钮" : String.join(" / ", labels));
+                text.append(" → ").append(labels.isEmpty() ? "相应的菜单按钮" : TextUtils.join(" / ", labels));
             }
             if (!route.activity.isEmpty()) text.append("\n直达页面：").append(route.activity);
         }

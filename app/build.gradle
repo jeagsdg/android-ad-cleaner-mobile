@@ -32,9 +32,9 @@ android {
     compileSdk 35
     defaultConfig {
         applicationId 'app.clearscreen'
-        minSdk 26
+        minSdk 24
         targetSdk 35
-        versionCode 12
+        versionCode 13
         versionName '1.0.0'
         testInstrumentationRunner 'app.clearscreen.DeviceChecks'
         resValue 'bool', 'network_filter_available', offlineOnly ? 'false' : 'true'
@@ -43,6 +43,7 @@ android {
         main.java.srcDir(offlineOnly ? 'src/offline/java' : 'src/network/java')
         main.assets.srcDir(coverageOutput)
         if (!offlineOnly) {
+            test.java.srcDir 'src/networkTest/java'
             debug.manifest.srcFile 'src/network/AndroidManifest.xml'
             release.manifest.srcFile 'src/network/AndroidManifest.xml'
         }

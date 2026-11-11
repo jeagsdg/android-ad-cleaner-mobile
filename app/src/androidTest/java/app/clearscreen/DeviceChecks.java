@@ -637,13 +637,13 @@ public class DeviceChecks extends Instrumentation {
             require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "release home visible");
             require((appNode(service, "净屏 9.9.9 可更新") != null) == full, "newer feed notice only on full variant");
             if (full) {
-                AccessibilityNodeInfo link = appNode(service, "查看版本说明");
+                AccessibilityNodeInfo link = appNode(service, "查看更新");
                 AccessibilityNodeInfo details = link == null ? null : SplashSkipper.clickable(link);
                 require(details != null && details.performAction(AccessibilityNodeInfo.ACTION_CLICK), "tap update notice");
                 require(waitUntil(() -> appNode(service, testNotes) != null), "version notes visible before download");
-                require(waitUntil(() -> appNode(service, "去 GitHub 下载") != null),
+                require(waitUntil(() -> appNode(service, "下载更新") != null),
                         "download needs a separate action");
-                AccessibilityNodeInfo later = appNode(service, "稍后");
+                AccessibilityNodeInfo later = appNode(service, "返回首页");
                 require(later != null && later.performAction(AccessibilityNodeInfo.ACTION_CLICK), "dismiss version notes");
                 require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "returned to home");
             }

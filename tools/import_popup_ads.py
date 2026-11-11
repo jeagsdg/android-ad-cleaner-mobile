@@ -207,6 +207,8 @@ REVIEWED = {
         '[id="com.miui.player:id/banner_image"] + [id="com.miui.player:id/close_banner"]',
     ('com.miui.video', 1, 0):
         '@ImageView[id="com.miui.video:id/iv_close"][visibleToUser=true] - [text="立即下载"] - ImageView[id="com.miui.video:id/download_icon"] < [id="com.miui.video:id/v_download"]',
+    ('com.mygolbs.mybus', 1, 4):
+        '[text="广告"] <3 View + @View[clickable=true] >2 [text="×"][visibleToUser=true]',
     ('com.mygolbs.mybus', 1, 6):
         '[id="com.mygolbs.mybus:id/ll_ad"] [id="com.mygolbs.mybus:id/btn_cancel"]',
     ('com.netease.gl', 2, 0):
@@ -265,8 +267,8 @@ REVIEWED_ACTIVITY_FILTERS = {
     ('com.jd.app.reader', 2, 0): {'com.jingdong.app.reader.main.ui.JdMainActivity'},
 }
 
-# Preserve the exact source pattern, then require the close itself to be a visible
-# clickable node. The ad label and the close are adjacent in a single overlay.
+# Preserve the exact source pattern, then require a visible, clickable close.
+# When the source accepts a generic label too, retain only the ad-specific branch.
 REVIEWED_TARGETS = {
     ('com.netease.cloudmusic', 4, 1): (
         '[text="广告"] < ViewGroup + ImageView',
@@ -283,6 +285,18 @@ REVIEWED_TARGETS = {
     ('com.baidu.tieba', 9, 1): (
         '@TextView[clickable=true && text=null] - FrameLayout TextView[text="广告"]',
         '@TextView[clickable=true][text=null][childCount=0] - FrameLayout TextView[text="广告"]',
+    ),
+    ('com.google.android.youtube', 1, 0): (
+        'ImageView[desc="更多选项"||desc^="More"] + @ImageView[desc="关闭广告面板"||desc^="Close"]',
+        'ImageView[desc="更多选项"] + @ImageView[desc="关闭广告面板"][clickable=true]',
+    ),
+    ('com.sina.weibo', 5, 3): (
+        '[id="com.sina.weibo:id/tvTrendsTitle"] + [id="com.sina.weibo:id/iv_ad_x"]',
+        '[id="com.sina.weibo:id/tvTrendsTitle"] + [id="com.sina.weibo:id/iv_ad_x"][clickable=true]',
+    ),
+    ('com.wallstreetcn.news', 10, 0): (
+        '[text="广告" || text="活动"] + [id="com.wallstreetcn.news:id/close"][visibleToUser=true]',
+        '[text="广告"] + [id="com.wallstreetcn.news:id/close"][visibleToUser=true][clickable=true]',
     ),
 }
 

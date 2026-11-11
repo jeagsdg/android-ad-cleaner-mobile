@@ -2,6 +2,7 @@ package app.clearscreen;
 
 import android.graphics.Rect;
 import android.view.accessibility.AccessibilityNodeInfo;
+import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -64,6 +65,21 @@ public class SplashRulesCoverageTest {
         assertTrue(rules.matches(pkg, "", skip));
         marker.setVisibleToUser(false);
         assertFalse(rules.matches(pkg, "", skip));
+    }
+
+    @Test public void indexedDescendantCanBeMatchedFromTheAncestor() throws Exception {
+        String pkg = "test.app";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        add(root, frame(pkg, null)).setVisibleToUser(false);
+        AccessibilityNodeInfo branch = add(root, frame(pkg, null));
+        AccessibilityNodeInfo label = add(branch, node(pkg, "android.widget.TextView", null, false, CORNER));
+        JSONObject selector = new JSONObject(
+                "{\"path\":[{\"class\":\"TextView\",\"tests\":[]},{\"class\":\"FrameLayout\",\"tests\":[]}],"
+                        + "\"relations\":[[\"<<\",[3]]],\"target\":1}");
+
+        assertTrue(SplashRules.targetMatches(pkg, root, selector, true));
+        label.setVisibleToUser(false);
+        assertFalse(SplashRules.targetMatches(pkg, root, selector, true));
     }
 
     @Test public void pagePrerequisiteMustBeVisibleAndSameTree() {
@@ -261,6 +277,58 @@ public class SplashRulesCoverageTest {
         marker.setViewIdResourceName(pkg + ":id/ordinary_panel");
         assertNull(SplashSkipper.match(root, rules, activity));
         close.setText("关闭");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void railwaySplashClosesTheUnlabeledSkipOnlyInItsAdContainer() {
+        String pkg = "com.MobileTicket";
+        String activity = pkg + ".ui.activity.MainActivity";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo container = add(root, node(pkg, "android.widget.LinearLayout",
+                pkg + ":id/ll_splash_ad_container", false, SCREEN));
+        AccessibilityNodeInfo content = add(container, frame(pkg, pkg + ":id/fl_adContent_container"));
+        AccessibilityNodeInfo ad = add(content, node(pkg, "android.widget.ImageView", pkg + ":id/img_adContent",
+                true, SCREEN));
+        ad.setContentDescription("广告");
+        AccessibilityNodeInfo wrapper = add(content, frame(pkg, pkg + ":id/fl_skip_wrong"));
+        AccessibilityNodeInfo skip = add(wrapper, button(pkg, "android.widget.TextView", pkg + ":id/tv_skip"));
+
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".ui.activity.OtherActivity"));
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setClickable(true);
+        ad.setContentDescription(null);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        ad.setContentDescription("广告");
+        container.setViewIdResourceName(pkg + ":id/ordinary_container");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void ahVideoRecognizesTheLeftSkipInTheDocumentedSdkLayout() {
+        String pkg = "com.chunqiu.ah";
+        String activity = "com.androlua.LuaActivity";
+        Rect leftCorner = new Rect(56, 168, 168, 280);
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo area = add(root, node(pkg, "android.widget.LinearLayout",
+                pkg + ":id/ksad_splash_left_top_root", false, SCREEN));
+        AccessibilityNodeInfo wrapper = add(area, node(pkg, "android.widget.LinearLayout",
+                pkg + ":id/ksad_preload_left_container", false, leftCorner));
+        AccessibilityNodeInfo skip = add(wrapper, node(pkg, "android.widget.FrameLayout",
+                pkg + ":id/ksad_splash_circle_skip_left_view", true, leftCorner));
+        AccessibilityNodeInfo label = add(skip, node(pkg, "android.widget.TextView", null, false, leftCorner));
+        label.setText("跳过");
+        AccessibilityNodeInfo badge = add(root, node(pkg, "android.widget.TextView",
+                pkg + ":id/ksad_logo_text", false, SCREEN));
+        badge.setText("广告");
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, "com.androlua.MainActivity"));
+        label.setText("继续");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        label.setText("跳过");
+        badge.setVisibleToUser(false);
         assertNull(SplashSkipper.match(root, rules, activity));
     }
 

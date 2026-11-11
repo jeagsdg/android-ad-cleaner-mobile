@@ -74,10 +74,12 @@ final class PermissionAccess {
         }
         // AOSP restricts this details action to system/installer callers. Some OEMs expose it.
         // Permission denial is expected: fall back to the public list, without private fragments.
-        Intent details = new Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
-                .setPackage("com.android.settings")
-                .putExtra(Intent.EXTRA_COMPONENT_NAME, component(context));
-        if (tryStart(launcher, details)) return Destination.DETAILS;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent details = new Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
+                    .setPackage("com.android.settings")
+                    .putExtra(Intent.EXTRA_COMPONENT_NAME, component(context));
+            if (tryStart(launcher, details)) return Destination.DETAILS;
+        }
         Intent list = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
         // A best-effort row highlight understood by AOSP Settings; OEMs may ignore it.
         String key = component(context).flattenToString();

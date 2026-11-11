@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public final class Store {
+    static final String NOT_APPLIED="not_applied";
     private static final Object JOURNAL_LOCK=new Object();
     private static final Object SKIP_HISTORY_LOCK=new Object();
     private final Context context;
@@ -108,7 +109,23 @@ public final class Store {
     public synchronized void save(String key,JSONArray value){if(!prefs().edit().putString(key,value.toString()).commit())throw new IllegalStateException("记录保存失败，已停止操作");}
     public List<Rule> allRules(){try{JSONArray a=new JSONArray(asset("rules.json"));List<Rule> r=new ArrayList<>();for(int i=0;i<a.length();i++)r.add(new Rule(a.getJSONObject(i)));return r;}catch(JSONException e){throw new IllegalStateException(e);}}
     public List<Rule> available(){List<Rule> result=new ArrayList<>();for(Rule r:allRules())if(r.matches(Build.MANUFACTURER,Build.BRAND)){for(Route route:r.routes)if(packageVersion(route.pkg)>=0){result.add(r);break;}}return result;}
-    public List<Rule> plan(){List<Rule> result=new ArrayList<>();for(Rule r:available())if(!r.manual)result.add(r);Policy policy=policy();JSONArray channels=read("channels");for(int i=0;i<channels.length();i++){JSONObject j=channels.optJSONObject(i);if(j==null||j.optBoolean("uncertain"))continue;Rule r=new Rule(j);if(packageVersion(r.pkg)>=0&&policy.classify(r.channelName,r.channelId,r.pkg,r.channelApp).recommended()&&!policy.criticalNotification(r.channelName))result.add(r);}return result;}
+    public List<Rule> plan(){
+        List<Rule> result=new ArrayList<>();
+        boolean channelsSupported=Build.VERSION.SDK_INT>=Build.VERSION_CODES.O;
+        for(Rule rule:available())if(!rule.manual&&(channelsSupported||!rule.notification()))result.add(rule);
+        if(!channelsSupported)return result;
+        Policy policy=policy();
+        JSONArray channels=read("channels");
+        for(int i=0;i<channels.length();i++){
+            JSONObject entry=channels.optJSONObject(i);
+            if(entry==null||entry.optBoolean("uncertain"))continue;
+            Rule rule=new Rule(entry);
+            if(rule.notification()&&packageVersion(rule.pkg)>=0
+                    &&policy.classify(rule.channelName,rule.channelId,rule.pkg,rule.channelApp).recommended()
+                    &&!policy.criticalNotification(rule.channelName))result.add(rule);
+        }
+        return result;
+    }
     public List<Rule> retryRules(){return CleanerService.retryTargets(plan(),read("scan"),false);}
     public List<Rule> resumeRules(){return CleanerService.resumableTargets(plan(),read("scan"));}
     public List<Rule> retrySelection(JSONObject item){return CleanerService.retrySelection(plan(),read("scan"),item);}
@@ -119,6 +136,8 @@ public final class Store {
         for(int i=journal.length()-1;i>=0;i--){
             JSONObject entry=journal.optJSONObject(i),rule=entry==null?null:entry.optJSONObject("rule");
             if(rule==null||entry.optString("id").isEmpty())continue;
+            if(NOT_APPLIED.equals(entry.optString("status")))continue;
+            if(Build.VERSION.SDK_INT<Build.VERSION_CODES.O&&!rule.optString("channelId").isEmpty())continue;
             List<String> key=Arrays.asList(rule.optString("package"),rule.optString("id"),entry.optString("label"));
             if(seen.add(key)&&!entry.optString("status").equals("restored"))result.add(entry);
         }

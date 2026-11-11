@@ -18,6 +18,7 @@ import java.util.regex.Pattern;
 /** Opt-in launch and in-app dismissal through verified accessibility controls. */
 final class SplashSkipper {
     static final long WINDOW_MS=12000;
+    private static final long WINDOW_SIGNAL_MS=1200;
     private static final long QUICK_SCAN_MS=65;
     private static final long USER_INPUT_PAUSE_MS=900;
     private static final long PREVIEW_INTERVAL_MS=250;
@@ -37,7 +38,8 @@ final class SplashSkipper {
     private static final Pattern SKIP_LABEL=Pattern.compile(
             "(?:"+EXPLICIT_SKIP.pattern()+"|"+SKIP_WORD+")(?:\\("+COUNTDOWN+"\\)|[·:|]?"+COUNTDOWN+")?"
                     +"|"+COUNTDOWN+"[·:|]?"+SKIP_WORD);
-    private static final Pattern AD_MARKER=Pattern.compile("广告|廣告|推广|推廣|ad|advertisement|広告|광고");
+    private static final Pattern AD_MARKER=Pattern.compile(
+            "广告|廣告|推广|推廣|ad|advertisement|広告|광고|广告\\|已wi-?fi预加载|品牌广告|启动图广告");
     private static final Pattern ONBOARDING_PAGE=Pattern.compile("onboarding|tutorial|setupwizard|userguide|walkthrough",Pattern.CASE_INSENSITIVE);
     private static final Pattern REWARDED_AD=Pattern.compile(
             "观看广告领取|觀看廣告領取|看广告得奖励|看廣告得獎勵|观看视频领奖|看视频领奖|观看完整视频|獎勵將|奖励将"
@@ -50,6 +52,8 @@ final class SplashSkipper {
     private final PopupAdRules popupAds;
     private final SkipFeedback feedback;
     private final SkipDiagnostics diagnostics = SkipDiagnostics.LOCAL;
+    private final Object diagnosticOwner = new Object();
+    private SkipDiagnostics.Attempt diagnosticAttempt;
     private final RulePreview preview=RulePreview.LOCAL;
     private String foreground="",launcher="";
     private String activity="";
@@ -66,6 +70,7 @@ final class SplashSkipper {
     private String pendingPackage="";
     private String pendingClass="";
     private int pendingWindowId=-1;
+    private long pendingStateAt;
     private int popupRetries;
     private int popupStep;
     private int activeWindow=-1;
@@ -81,7 +86,12 @@ final class SplashSkipper {
         feedback = new SkipFeedback(service, main);
         try{android.content.pm.ResolveInfo info=service.getPackageManager().resolveActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),0);if(info!=null&&info.activityInfo!=null)launcher=info.activityInfo.packageName;}catch(Exception ignored){}
     }
-    void close(){closed=true;feedback.clear();main.removeCallbacksAndMessages(null);}
+    void close(){
+        closed=true;
+        diagnostics.disconnected(diagnosticOwner);
+        feedback.clear();
+        main.removeCallbacksAndMessages(null);
+    }
     void interruptFeedback(){feedback.clear();}
     boolean startRulePreview(List<CustomSkipRule> drafts){
         if(closed||service.busy||gesturesInFlight!=0||drafts.isEmpty())return false;
@@ -101,17 +111,19 @@ final class SplashSkipper {
         if(service.busy||(!store.splashEnabled()&&!store.popupEnabled()&&media.isEmpty()
                 &&!preview.hasSession()&&!diagnostics.hasSession())){
             if(!foreground.isEmpty()){
-                feedback.clear();cancelWindowRetry();stopCurrentInput();foreground="";foregroundVisit++;
+                feedback.clear();stopCurrentInput();foreground="";foregroundVisit++;
                 previewDue=Long.MAX_VALUE;
                 schedule();
-            }
+            }else cancelWindowRetry();
             return;
         }
         if(pkg.equals(service.getPackageName())&&SkipFeedback.ACCESSIBILITY_CLASS.contentEquals(
                 event.getClassName()==null?"":event.getClassName()))return;
         int type=event.getEventType();
         boolean previewing=preview.observes(pkg);
-        if(!previewing&&pkg.equals(foreground)&&event.getWindowId()==activeWindow
+        boolean inActiveWindow=pkg.equals(foreground)&&event.getWindowId()==activeWindow;
+        boolean inPendingWindow=pkg.equals(pendingPackage)&&event.getWindowId()==pendingWindowId;
+        if(!previewing&&(inActiveWindow||inPendingWindow)
                 &&(type==AccessibilityEvent.TYPE_VIEW_CLICKED||type==AccessibilityEvent.TYPE_VIEW_SCROLLED
                 ||(type==AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED&&editableSource(event)))){
             if(type==AccessibilityEvent.TYPE_VIEW_CLICKED&&isOwnClick(event))return;
@@ -125,30 +137,40 @@ final class SplashSkipper {
             cancelWindowRetry();
             AccessibilityNodeInfo root=service.getRootInActiveWindow();
             String windowClass=String.valueOf(event.getClassName());
+            long stateAt=SystemClock.elapsedRealtime();
             if(!matchesWindow(root,pkg,event.getWindowId())){
                 // Some launch transitions report an intermediate window. The verified
                 // active package can arm splash detection, while page rules wait for its class.
                 if(belongsTo(root,pkg)&&!pkg.equals(foreground)){
-                    acceptWindow(pkg,"",root.getWindowId(),true);
+                    acceptWindow(pkg,"",root.getWindowId(),stateAt);
                     if(pkg.equals(foreground))queueWindowContent(media);
                 }
-                retryWindow(pkg,windowClass,event.getWindowId(),5);
+                pendingPackage=pkg;
+                pendingClass=windowClass;
+                pendingWindowId=event.getWindowId();
+                pendingStateAt=stateAt;
+                retryWindow(5);
                 schedule();
                 return;
             }
-            acceptWindow(pkg,windowClass,root.getWindowId(),true);
+            acceptWindow(pkg,windowClass,root.getWindowId(),stateAt);
         }else if(type==AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
                 &&event.getWindowId()>=0&&(!pkg.equals(foreground)||activeWindow!=event.getWindowId())){
             // Confirm an actual window transition from the active root. A service rebind
             // without a preceding launch signal must not arm splash from ordinary content.
             AccessibilityNodeInfo root=service.getRootInActiveWindow();
             if(matchesWindow(root,pkg,event.getWindowId())){
+                long now=SystemClock.elapsedRealtime();
                 boolean pendingForApp=pkg.equals(pendingPackage);
                 boolean sameStateWindow=pendingForApp&&pendingWindowId==event.getWindowId();
-                String windowClass=sameStateWindow?pendingClass:"";
-                boolean launchEvent=pendingForApp||!foreground.isEmpty();
-                if(pendingForApp||!pkg.equals(foreground))cancelWindowRetry();
-                acceptWindow(pkg,windowClass,root.getWindowId(),launchEvent);
+                // After the short polling loop, only a matching window can confirm the earlier signal.
+                boolean launchSignal=pendingForApp&&(pendingWindow!=null
+                        ||(sameStateWindow&&now-pendingStateAt<=WINDOW_SIGNAL_MS));
+                String windowClass=launchSignal&&sameStateWindow?pendingClass:"";
+                long launchAt=foreground.isEmpty()?-1:now;
+                if(launchSignal)launchAt=pendingStateAt;
+                if(launchSignal||!pkg.equals(foreground))cancelWindowRetry();
+                acceptWindow(pkg,windowClass,root.getWindowId(),launchAt);
             }
         }
         if(pkg.equals(foreground)&&(type==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
@@ -186,6 +208,7 @@ final class SplashSkipper {
     }
     private void stopCurrentInput(){
         deadline=0;
+        cancelWindowRetry();
         cancelDelayedSplash();
         popupPending=false;
         mediaPending=false;
@@ -203,24 +226,25 @@ final class SplashSkipper {
         pendingPackage="";
         pendingClass="";
         pendingWindowId=-1;
+        pendingStateAt=0;
     }
-    private void retryWindow(String pkg,String windowClass,int windowId,int attempts){
-        pendingPackage=pkg;
-        pendingClass=windowClass;
-        pendingWindowId=windowId;
+    private void retryWindow(int attempts){
         pendingWindow=()->{
-            cancelWindowRetry();
-            if(closed||service.busy)return;
+            pendingWindow=null;
+            if(closed||service.busy){cancelWindowRetry();return;}
             AccessibilityNodeInfo root=service.getRootInActiveWindow();
-            if(matchesWindow(root,pkg,windowId)){
-                acceptWindow(pkg,windowClass,root.getWindowId(),true);
+            if(matchesWindow(root,pendingPackage,pendingWindowId)){
+                String pkg=pendingPackage,windowClass=pendingClass;
+                long launchAt=pendingStateAt;
+                cancelWindowRetry();
+                acceptWindow(pkg,windowClass,root.getWindowId(),launchAt);
                 if(pkg.equals(foreground))queueWindowContent(store.mediaAssistEnabled());
                 schedule();
-            }else if(attempts>1)retryWindow(pkg,windowClass,windowId,attempts-1);
+            }else if(attempts>1)retryWindow(attempts-1);
         };
         main.postDelayed(pendingWindow,75);
     }
-    private void acceptWindow(String pkg,String windowClass,int windowId,boolean launchEvent){
+    private void acceptWindow(String pkg,String windowClass,int windowId,long launchAt){
         if(transientSystem(pkg)){
             feedback.clear();
             stopCurrentInput();
@@ -250,7 +274,7 @@ final class SplashSkipper {
             splashVerifying=false;
             popupVerifying=false;
             popupRetries=0;
-            if(launchEvent)armSplash(now);
+            if(launchAt>=0)armSplash(launchAt);
         }
         boolean newActivity=(newVisit||activityWindow!=windowId||!windowClass.equals(activity))
                 &&rememberActivity(pkg,windowClass,windowId);
@@ -270,8 +294,13 @@ final class SplashSkipper {
         }
     }
     private void armSplash(long now){
-        if(preview.observes(foreground))return;
-        diagnostics.enter(foreground,foregroundVisit);
+        cancelDelayedSplash();
+        diagnosticAttempt=diagnostics.begin(foreground,diagnosticOwner);
+        if(preview.observes(foreground)){
+            deadline=0;
+            note(SkipDiagnostics.Phase.PREVIEW_ACTIVE);
+            return;
+        }
         if(!store.splashEnabled())note(SkipDiagnostics.Phase.DISABLED);
         else if(CustomSkipRule.protectedPackage(foreground)||excluded(foreground)
                 ||store.skipExcluded(CustomSkipRule.SPLASH).contains(foreground))note(SkipDiagnostics.Phase.EXCLUDED);
@@ -359,7 +388,7 @@ final class SplashSkipper {
         KeyguardManager keyguard=service.getSystemService(KeyguardManager.class);
         return keyguard!=null&&keyguard.isKeyguardLocked();
     }
-    private void note(SkipDiagnostics.Phase phase){diagnostics.note(foreground,foregroundVisit,phase);}
+    private void note(SkipDiagnostics.Phase phase){diagnostics.note(foreground,diagnosticAttempt,phase);}
     private void schedule(){
         if(closed)return;
         long now=SystemClock.elapsedRealtime(), due=Long.MAX_VALUE;
@@ -367,7 +396,7 @@ final class SplashSkipper {
             if(previewDue!=Long.MAX_VALUE)due=Math.max(now+QUICK_SCAN_MS,previewDue);
         }else if(!service.busy){
             if(scanSplash())due=Math.max(now+QUICK_SCAN_MS,nextSplashProbe);
-            if(deadline>0&&diagnostics.observes(foreground,foregroundVisit))due=Math.min(due,Math.max(now,deadline));
+            if(deadline>0&&diagnostics.observes(foreground,diagnosticAttempt))due=Math.min(due,Math.max(now,deadline));
             if(!splashWaiting&&!splashVerifying&&!popupVerifying){
                 if(popupPending)due=Math.min(due,Math.max(now+QUICK_SCAN_MS,Math.max(pauseUntil,popupReadyAt())));
                 if(mediaPending)due=Math.min(due,Math.max(now+150,Math.max(pauseUntil,nextMediaProbe)));
@@ -432,7 +461,7 @@ final class SplashSkipper {
         List<AccessibilityNodeInfo> nodes=checkSplash||checkPopup?UiDriver.walkComplete(root):Collections.emptyList();
         if(checkSplash){
             List<CustomSkipRule> custom=customRules();
-            Consumer<SkipDiagnostics.Phase> trace=diagnostics.observes(foreground,foregroundVisit)?this::note:null;
+            Consumer<SkipDiagnostics.Phase> trace=diagnostics.observes(foreground,diagnosticAttempt)?this::note:null;
             SplashHit hit=splashHit(root,rules,splashActivity(root),custom,launchAge(),trace,nodes,false);
             if(hit!=null){
                 popupPending|=checkPopup;
@@ -497,8 +526,10 @@ final class SplashSkipper {
         }else{
             if(!rule.appliesTo(foreground,activity,CustomSkipRule.POPUP))return SkipDiagnostics.Phase.PAGE_MISMATCH;
             PopupMatch hit=PopupMatch.find(root,display,selection,nodes,trace);
-            if(hit!=null&&((rule.gesture&&hit.target!=null&&tapGesture(hit.target)==null)
-                    ||(rule.backsOut()&&displayId(root)!=Display.DEFAULT_DISPLAY)))return SkipDiagnostics.Phase.TOUCH_UNAVAILABLE;
+            if(hit!=null){
+                if(rule.backsOut()&&!canReturnFrom(root,foreground,activeWindow))return SkipDiagnostics.Phase.WINDOW_UNAVAILABLE;
+                if(rule.gesture&&hit.target!=null&&tapGesture(hit.target)==null)return SkipDiagnostics.Phase.TOUCH_UNAVAILABLE;
+            }
         }
         return result[0];
     }
@@ -541,18 +572,20 @@ final class SplashSkipper {
         String pkg=foreground;
         AccessibilityNodeInfo target=hit.target;
         long visit=foregroundVisit;
+        long interaction=userInteraction;
+        SkipDiagnostics.Attempt attempt=diagnosticAttempt;
         splashVerifying=true;
-        Runnable verify=()->main.postDelayed(()->verifySplash(pkg,visit,target,false),350);
+        Runnable verify=()->main.postDelayed(()->verifySplash(pkg,visit,interaction,attempt,target,false),350);
         if(gesture!=null){
-            boolean sent=sendGesture(gesture,verify,()->finishSplash(pkg,visit,SkipDiagnostics.Phase.CANCELLED));
+            boolean sent=sendGesture(gesture,verify,()->finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.CANCELLED));
             if(sent){rememberClick(target);note(SkipDiagnostics.Phase.SENT);}
-            else finishSplash(pkg,visit,SkipDiagnostics.Phase.REJECTED);
+            else finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.REJECTED);
         }else if(target.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
             rememberClick(target);
             note(SkipDiagnostics.Phase.SENT);
             verify.run();
         }else{
-            finishSplash(pkg,visit,SkipDiagnostics.Phase.REJECTED);
+            finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.REJECTED);
         }
     }
     private boolean scanPopup(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){
@@ -613,8 +646,6 @@ final class SplashSkipper {
                 PopupAdRules.Match current=popupAds.find(root,activity,screen(root),activityAge(),
                         UiDriver.walkComplete(root),this::catalogRuleAvailable);
                 if(current!=null&&current.rule==expected.rule&&current.target.equals(expected.target)){
-                    catalogAttempts.merge(current.rule,1,Integer::sum);
-                    catalogUnconfirmed.add(current.rule);
                     clickObservedPopup(current.target,current.rule);
                     return;
                 }
@@ -668,22 +699,26 @@ final class SplashSkipper {
         AccessibilityWindowInfo window=node.getWindow();
         return window==null?Display.INVALID_DISPLAY:window.getDisplayId();
     }
+    private static boolean canReturnFrom(AccessibilityNodeInfo root,String pkg,int window){
+        return window>=0&&matchesWindow(root,pkg,window)&&displayId(root)==Display.DEFAULT_DISPLAY;
+    }
     private void clickPopup(PopupMatch hit,int window){
         long visit=foregroundVisit;
         if(!ready(visit)||!matchesWindow(service.getRootInActiveWindow(),foreground,window)){schedule();return;}
         attemptedPopups.add(hit.rule);
         nextPopupClick=SystemClock.elapsedRealtime()+POPUP_COOLDOWN_MS;
         String pkg=foreground;
+        long interaction=userInteraction;
         boolean sent;
         if(hit.rule.backsOut()){
             AccessibilityNodeInfo root=service.getRootInActiveWindow();
-            sent=window>=0&&matchesWindow(root,pkg,window)&&displayId(root)==Display.DEFAULT_DISPLAY
+            sent=canReturnFrom(root,pkg,window)
                     &&service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
         }else if(hit.rule.gesture){
             AccessibilityNodeInfo root=service.getRootInActiveWindow();
             GestureDescription gesture=ready(visit)&&matchesWindow(root,pkg,window)
                     &&hit.target.getWindowId()==window?tapGesture(hit.target):null;
-            sent=gesture!=null&&sendGesture(gesture,()->main.postDelayed(()->verifyPopup(pkg,visit,hit,false),350),()->{
+            sent=gesture!=null&&sendGesture(gesture,()->main.postDelayed(()->verifyPopup(pkg,visit,interaction,hit,false),350),()->{
                 if(visit==foregroundVisit&&pkg.equals(foreground))finishPopupVerification();
                 recordPopup(pkg,false);
             });
@@ -692,14 +727,19 @@ final class SplashSkipper {
         if(!sent){recordPopup(pkg,false);schedule();return;}
         if(hit.target!=null)rememberClick(hit.target);
         popupVerifying=true;
-        main.postDelayed(()->verifyPopup(pkg,visit,hit,false),350);
+        main.postDelayed(()->verifyPopup(pkg,visit,interaction,hit,false),350);
     }
     private void clickObservedPopup(AccessibilityNodeInfo target,PopupAdRules.Rule rule){
         if(!ready(foregroundVisit)||!matchesWindow(service.getRootInActiveWindow(),foreground,target.getWindowId())){schedule();return;}
         if(rule==null)genericPopupWindows.add(target.getWindowId());
+        else {
+            catalogAttempts.merge(rule, 1, Integer::sum);
+            catalogUnconfirmed.add(rule);
+        }
         nextPopupClick=SystemClock.elapsedRealtime()+POPUP_COOLDOWN_MS;
         String pkg=foreground;
         long visit=foregroundVisit;
+        long interaction=userInteraction;
         if(!target.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
             recordPopup(pkg,false);
             schedule();
@@ -707,17 +747,18 @@ final class SplashSkipper {
         }
         rememberClick(target);
         popupVerifying=true;
-        main.postDelayed(()->verifyObservedPopup(pkg,visit,target,rule,false),350);
+        main.postDelayed(()->verifyObservedPopup(pkg,visit,interaction,target,rule,false),350);
     }
-    private void verifyObservedPopup(String pkg,long visit,AccessibilityNodeInfo target,PopupAdRules.Rule rule,boolean retried){
+    private void verifyObservedPopup(String pkg,long visit,long interaction,AccessibilityNodeInfo target,PopupAdRules.Rule rule,boolean retried){
         if(closed)return;
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         boolean sameVisit=visit==foregroundVisit&&pkg.equals(foreground);
-        boolean verifiedWindow=sameVisit&&pendingWindow==null&&matchesWindow(root,pkg,activeWindow);
+        boolean uninterrupted=sameVisit&&interaction==userInteraction;
+        boolean verifiedWindow=uninterrupted&&pendingWindow==null&&matchesWindow(root,pkg,activeWindow);
         List<AccessibilityNodeInfo> nodes=verifiedWindow?UiDriver.walkComplete(root):Collections.emptyList();
         boolean confirmed=verifiedWindow&&!visibleNode(nodes,target)&&(rule==null||!popupAds.visible(root,activity,rule,nodes));
-        if(!confirmed&&sameVisit&&!retried){
-            main.postDelayed(()->verifyObservedPopup(pkg,visit,target,rule,true),500);
+        if(!confirmed&&uninterrupted&&!retried){
+            main.postDelayed(()->verifyObservedPopup(pkg,visit,interaction,target,rule,true),500);
             return;
         }
         if(sameVisit){
@@ -777,16 +818,17 @@ final class SplashSkipper {
         if(sent)gesturesInFlight++;
         return sent;
     }
-    private void verifyPopup(String pkg,long visit,PopupMatch hit,boolean retried){
+    private void verifyPopup(String pkg,long visit,long interaction,PopupMatch hit,boolean retried){
         if(closed)return;
         CustomSkipRule rule=hit.rule;
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         boolean sameVisit=visit==foregroundVisit&&pkg.equals(foreground);
-        boolean verifiedWindow=sameVisit&&pendingWindow==null&&matchesWindow(root,pkg,activeWindow);
+        boolean uninterrupted=sameVisit&&interaction==userInteraction;
+        boolean verifiedWindow=uninterrupted&&pendingWindow==null&&matchesWindow(root,pkg,activeWindow);
         List<AccessibilityNodeInfo> nodes=verifiedWindow?UiDriver.walkComplete(root):Collections.emptyList();
         boolean confirmed=verifiedWindow&&!PopupMatch.promptVisible(nodes,rule)&&(hit.target==null||!visibleNode(nodes,hit.target));
-        if(!confirmed&&sameVisit&&!retried){
-            main.postDelayed(()->verifyPopup(pkg,visit,hit,true),500);
+        if(!confirmed&&uninterrupted&&!retried){
+            main.postDelayed(()->verifyPopup(pkg,visit,interaction,hit,true),500);
             return;
         }
         if(sameVisit){
@@ -803,21 +845,23 @@ final class SplashSkipper {
         try{store.recordPopup(pkg,confirmed);}catch(RuntimeException ignored){/* History failure never retries a screen click. */}
         if(confirmed)showFeedback(pkg,"净屏 · 弹窗已关闭");
     }
-    private void verifySplash(String pkg,long visit,AccessibilityNodeInfo target,boolean retried){
+    private void verifySplash(String pkg,long visit,long interaction,SkipDiagnostics.Attempt attempt,
+                              AccessibilityNodeInfo target,boolean retried){
         if(closed)return;
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         boolean sameVisit=visit==foregroundVisit&&pkg.equals(foreground);
+        if(sameVisit&&interaction!=userInteraction){finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.USER_INPUT);return;}
         boolean verifiedWindow=sameVisit&&pendingWindow==null&&matchesWindow(root,pkg,activeWindow);
         List<AccessibilityNodeInfo> nodes=verifiedWindow?UiDriver.walkComplete(root):Collections.emptyList();
-        if(verifiedWindow&&!visibleNode(nodes,target)){finishSplash(pkg,visit,SkipDiagnostics.Phase.CONFIRMED);return;}
-        if(sameVisit&&!retried){main.postDelayed(()->verifySplash(pkg,visit,target,true),500);return;}
-        finishSplash(pkg,visit,verifiedWindow&&!nodes.isEmpty()?SkipDiagnostics.Phase.TARGET_STILL_VISIBLE
+        if(verifiedWindow&&!visibleNode(nodes,target)){finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.CONFIRMED);return;}
+        if(sameVisit&&!retried){main.postDelayed(()->verifySplash(pkg,visit,interaction,attempt,target,true),500);return;}
+        finishSplash(pkg,visit,attempt,verifiedWindow&&!nodes.isEmpty()?SkipDiagnostics.Phase.TARGET_STILL_VISIBLE
                 :belongsTo(root,pkg)||root==null?SkipDiagnostics.Phase.UNCONFIRMED:SkipDiagnostics.Phase.LEFT_WINDOW);
     }
-    private void finishSplash(String pkg,long visit,SkipDiagnostics.Phase phase){
+    private void finishSplash(String pkg,long visit,SkipDiagnostics.Attempt attempt,SkipDiagnostics.Phase phase){
         if(closed)return;
         if(visit==foregroundVisit&&pkg.equals(foreground)){splashVerifying=false;schedule();}
-        diagnostics.note(pkg,visit,phase);
+        diagnostics.note(pkg,attempt,phase);
         boolean confirmed=phase==SkipDiagnostics.Phase.CONFIRMED;
         try{store.recordSplash(pkg,confirmed);}catch(RuntimeException ignored){/* History failure never retries a screen click. */}
         if(confirmed)showFeedback(pkg,"净屏 · 开屏已跳过");

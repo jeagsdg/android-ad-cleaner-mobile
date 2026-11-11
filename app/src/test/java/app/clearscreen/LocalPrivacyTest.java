@@ -76,6 +76,28 @@ public class LocalPrivacyTest {
         assertEquals(3, filter.blocked());
     }
 
+    @Test public void clearingLegacyDnsHistoryPreservesDomainDetailsAndCounters() {
+        context.getSharedPreferences("network-filter", Context.MODE_PRIVATE).edit()
+                .remove("keep-domain-details")
+                .putString("recent", "old-ads.example.com")
+                .putLong("queried", 3)
+                .putLong("blocked", 2)
+                .apply();
+        FilterStore filter = new FilterStore(context);
+        assertTrue(filter.keepsDomainDetails());
+        assertEquals(Collections.singletonList("old-ads.example.com"), filter.recent());
+
+        filter.clearHistory();
+
+        assertTrue(filter.recent().isEmpty());
+        assertTrue(filter.keepsDomainDetails());
+        assertEquals(3, filter.queried());
+        assertEquals(2, filter.blocked());
+
+        filter.counters(4, 3, Collections.singletonList("new-ads.example.com"));
+        assertEquals(Collections.singletonList("new-ads.example.com"), new FilterStore(context).recent());
+    }
+
     @Test public void localDnsExceptionsPersistAndProtectedHostsCannotBeAdded() {
         FilterStore filter = new FilterStore(context);
         String ad = "ads.example.com";
@@ -111,19 +133,39 @@ public class LocalPrivacyTest {
         assertEquals("", trace.summary(true, true));
         trace.start("com.example.target", 42);
         assertTrue(trace.summary(false, true).contains("服务未连接"));
-        trace.enter("com.example.unrelated", 1);
-        assertFalse(trace.observes("com.example.unrelated", 1));
-        trace.enter("com.example.target", 2);
-        trace.note("com.example.target", 2, SkipDiagnostics.Phase.TARGET_FOUND);
-        trace.note("com.example.target", 2, SkipDiagnostics.Phase.SENT);
-        trace.note("com.example.target", 2, SkipDiagnostics.Phase.CANCELLED);
-        trace.note("com.example.target", 2, SkipDiagnostics.Phase.CONFIRMED);
+        Object owner = new Object();
+        assertNull(trace.begin("com.example.unrelated", owner));
+        SkipDiagnostics.Attempt attempt = trace.begin("com.example.target", owner);
+        trace.note("com.example.target", attempt, SkipDiagnostics.Phase.TARGET_FOUND);
+        trace.note("com.example.target", attempt, SkipDiagnostics.Phase.SENT);
+        trace.note("com.example.target", attempt, SkipDiagnostics.Phase.CANCELLED);
+        trace.note("com.example.target", attempt, SkipDiagnostics.Phase.CONFIRMED);
         String report = trace.summary(true, true);
-        assertTrue(report.contains("系统取消了手势"));
-        assertTrue(report.contains("找到目标"));
+        assertTrue(report.startsWith("净屏开屏诊断\n系统取消了手势\n最近检测 找到目标，等待操作\n应用 "));
         assertTrue(report.contains("应用版本号 42"));
         assertFalse(report.contains("com.example.unrelated"));
         elapsed.addAndGet(SkipDiagnostics.SESSION_MS);
         assertEquals("", trace.summary(true, true));
+    }
+
+    @Test public void launchTraceIsolatesLateReadbackAndServiceDisconnects() {
+        String pkg = "com.example.target";
+        SkipDiagnostics trace = new SkipDiagnostics(() -> 100L);
+        Object oldService = new Object(), newService = new Object();
+        trace.start(pkg, 42);
+        SkipDiagnostics.Attempt first = trace.begin(pkg, oldService);
+        trace.note(pkg, first, SkipDiagnostics.Phase.SENT);
+        SkipDiagnostics.Attempt second = trace.begin(pkg, newService);
+        trace.note(pkg, first, SkipDiagnostics.Phase.CONFIRMED);
+        trace.note(pkg, second, SkipDiagnostics.Phase.SENT);
+        trace.disconnected(oldService);
+        assertTrue(trace.summary(true, true).startsWith("净屏开屏诊断\n" + SkipDiagnostics.Phase.SENT.label));
+        assertFalse(trace.summary(true, true).contains("CONFIRMED"));
+
+        trace.disconnected(newService);
+        trace.note(pkg, second, SkipDiagnostics.Phase.CONFIRMED);
+        String report = trace.summary(false, true);
+        assertTrue(report.startsWith("净屏开屏诊断\n" + SkipDiagnostics.Phase.SERVICE_DISCONNECTED.label));
+        assertFalse(report.contains("CONFIRMED"));
     }
 }

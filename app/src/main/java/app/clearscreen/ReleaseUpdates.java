@@ -10,8 +10,8 @@ import java.util.regex.Pattern;
 /** Read-only checks against the project's public GitHub update feed. */
 final class ReleaseUpdates {
     private static final String REPOSITORY = "jeagsdg/android-ad-cleaner-mobile";
-    private static final String APK_ROOT = "https://github.com/" + REPOSITORY + "/raw/refs/heads/main/dist/";
-    private static final String FILE_PAGE = "https://github.com/" + REPOSITORY + "/blob/main/dist/";
+    private static final String RAW_APK_ROOT = "https://raw.githubusercontent.com/" + REPOSITORY + "/main/dist/";
+    private static final String API_APK_ROOT = "https://api.github.com/repos/" + REPOSITORY + "/contents/dist/";
     private static final int MAX_FEED_BYTES = 16 * 1024;
     private static final int MAX_NOTES_LENGTH = 1200;
     private static final Pattern INTEGER = Pattern.compile("0|[1-9][0-9]{0,9}");
@@ -19,6 +19,8 @@ final class ReleaseUpdates {
     private static final Pattern VERSION = Pattern.compile(COMPONENT + "\\." + COMPONENT + "\\." + COMPONENT);
 
     private ReleaseUpdates() {}
+
+    static Uri repositoryUri() { return Uri.parse("https://github.com/" + REPOSITORY); }
 
     static final class Info {
         final int versionCode;
@@ -31,12 +33,12 @@ final class ReleaseUpdates {
             this.notes = notes;
         }
 
-        Uri downloadUri() {
-            return Uri.parse(APK_ROOT + apkName());
+        Uri rawDownloadUri() {
+            return Uri.parse(RAW_APK_ROOT + apkName());
         }
 
-        Uri filePageUri() {
-            return Uri.parse(FILE_PAGE + apkName());
+        Uri apiDownloadUri() {
+            return Uri.parse(API_APK_ROOT + apkName() + "?ref=main");
         }
 
         private String apkName() {
@@ -45,7 +47,7 @@ final class ReleaseUpdates {
     }
 
     static Info fetch() throws IOException {
-        return parse(ReleaseUpdateTransport.read(MAX_FEED_BYTES));
+        return ReleaseUpdateTransport.fetch(MAX_FEED_BYTES);
     }
 
     static Info parse(String source) throws IOException {

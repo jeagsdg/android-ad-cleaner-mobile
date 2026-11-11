@@ -192,6 +192,12 @@ public final class CleanerService extends AccessibilityService {
     }
     private void handleCleanHalt(Store store,JSONObject item,UiDriver.Halt halt){
         boolean prepared=item.optString("reason").equals("write_prepared");
+        boolean notApplied=prepared&&halt instanceof UiDriver.BeforeToggleClick;
+        if(notApplied){
+            store.finish(item.optString("journalId"),Store.NOT_APPLIED,halt.getMessage());
+            clearPreparedWrite(item);
+            prepared=false;
+        }
         if(halt.terminal)pauseFor(halt);
         if(prepared){
             String id=item.optString("journalId");
@@ -199,7 +205,7 @@ public final class CleanerService extends AccessibilityService {
             stopFor(halt.getMessage());
         }
         String state=item.optString("status");
-        if(prepared||state.equals("verify")||halt.reason.equals("journal_ambiguous"))state="verify";
+        if(prepared||(!notApplied&&state.equals("verify"))||halt.reason.equals("journal_ambiguous"))state="verify";
         else if(halt.terminal)state="checking";
         else if(halt.reason.equals("protected"))state="blocked";
         else if(halt.reason.equals("target_missing"))state="missing";
@@ -223,9 +229,28 @@ public final class CleanerService extends AccessibilityService {
     }
     private JSONObject journalToVerify(Store store,Rule rule,String label,JSONObject item)throws UiDriver.Halt{
         String expectedId=item.optString("journalId");
+        List<String> labels=rule.labels(label);
+        if(!expectedId.isEmpty()){
+            JSONArray journal=store.read("journal");
+            for(int i=journal.length()-1;i>=0;i--){
+                JSONObject entry=journal.optJSONObject(i);
+                if(entry==null||!expectedId.equals(entry.optString("id")))continue;
+                if(!rule.id.equals(scanRuleId(entry))||!labels.contains(entry.optString("label")))break;
+                String state=entry.optString("status");
+                if(state.equals("restored")){
+                    status(item,"restored","restored","已在改动记录中恢复，保留原始状态",false);
+                    return null;
+                }
+                if(Store.NOT_APPLIED.equals(state)){
+                    clearPreparedWrite(item);
+                    expectedId="";
+                }
+                break;
+            }
+        }
         List<JSONObject> possible=new ArrayList<>();
         for(JSONObject entry:store.restorable()){
-            if(!rule.id.equals(scanRuleId(entry))||!rule.labels(label).contains(entry.optString("label")))continue;
+            if(!rule.id.equals(scanRuleId(entry))||!labels.contains(entry.optString("label")))continue;
             String state=entry.optString("status");
             if(expectedId.equals(entry.optString("id"))||state.equals("pending")||state.equals("unknown")||
                     state.equals("restoring")||state.equals("restore_failed"))possible.add(entry);
@@ -236,16 +261,11 @@ public final class CleanerService extends AccessibilityService {
             status(item,"checking","checking","正在读取目标设置",false);
             return null;
         }
-        JSONArray journal=store.read("journal");
-        for(int i=journal.length()-1;i>=0;i--){
-            JSONObject entry=journal.optJSONObject(i);
-            if(entry!=null&&expectedId.equals(entry.optString("id"))&&rule.id.equals(scanRuleId(entry))
-                    &&rule.labels(label).contains(entry.optString("label"))&&entry.optString("status").equals("restored")){
-                status(item,"restored","restored","已在改动记录中恢复，保留原始状态",false);
-                return null;
-            }
-        }
         throw new UiDriver.Halt("无法对应上次的原值记录，请在改动记录中手动核对",false,false,"journal_ambiguous");
+    }
+    private static void clearPreparedWrite(JSONObject item){
+        item.remove("journalId");
+        item.remove("before");
     }
     private boolean reconcileWrite(Store store,UiDriver ui,Policy policy,JSONObject entry,JSONObject item,
                                    JSONArray results,boolean continuation)throws JSONException,UiDriver.Halt{
@@ -260,13 +280,13 @@ public final class CleanerService extends AccessibilityService {
         if(before==after)throw new UiDriver.Halt("上次原值记录不完整，请手动核对",false,false,"journal_ambiguous");
         if(found.checked==before){
             String previousStatus=entry.optString("status");
-            if(continuation&&(previousStatus.equals("restoring")||previousStatus.equals("restore_failed"))){
+            if(continuation&&(previousStatus.equals("changed")||previousStatus.equals("restoring")
+                    ||previousStatus.equals("restore_failed"))){
                 store.finish(id,"restored","重新读取时已确认是原始状态");
                 status(item,"restored","restored","已核对恢复结果，保留原始状态",false);
                 return true;
             }
-            item.remove("journalId");
-            item.remove("before");
+            clearPreparedWrite(item);
             status(item,"checking","checking","已核对原值，重新检查当前目标",false);
             store.save("scan",results);
             store.finish(id,"restored","重新读取时已确认是原始状态");
@@ -462,8 +482,9 @@ public final class CleanerService extends AccessibilityService {
             store.finish(id,"restored","已恢复原值并回读确认");note("已恢复 · "+label);
         }catch(UiDriver.Halt e){
             if(e.terminal)pauseFor(e);
-            if(prepared[0])stopFor(e.getMessage());
-            store.finish(id,prepared[0]?"restore_failed":entry.optString("status","unknown"),e.getMessage());
+            boolean uncertain=prepared[0]&&!(e instanceof UiDriver.BeforeToggleClick);
+            if(uncertain)stopFor(e.getMessage());
+            store.finish(id,uncertain?"restore_failed":entry.optString("status","unknown"),e.getMessage());
             note("恢复未完成，请查看记录");
         }
     }

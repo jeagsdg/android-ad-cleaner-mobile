@@ -1,16 +1,23 @@
 package app.clearscreen;
 
 import android.app.NotificationChannel;
+import android.os.Build;
 import android.service.notification.*;
 import org.json.*;
 
 /** Stores channel metadata only. Never reads message bodies or dismisses notifications. */
 public final class ChannelObserver extends NotificationListenerService {
     public static volatile boolean connected;
-    @Override public void onListenerConnected(){connected=true;StatusBarNotification[] a=getActiveNotifications();if(a!=null)for(StatusBarNotification n:a)remember(n,getCurrentRanking());}
+    @Override public void onListenerConnected(){
+        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.O){connected=false;return;}
+        connected=true;
+        StatusBarNotification[] active=getActiveNotifications();
+        if(active!=null)for(StatusBarNotification notification:active)remember(notification,getCurrentRanking());
+    }
     @Override public void onListenerDisconnected(){connected=false;}
     @Override public void onNotificationPosted(StatusBarNotification n,RankingMap map){remember(n,map);}
     private void remember(StatusBarNotification n,RankingMap map){
+        if(Build.VERSION.SDK_INT<Build.VERSION_CODES.O)return;
         if(n.getPackageName().equals(getPackageName()))return;
         Ranking rank=new Ranking();if(map==null||!map.getRanking(n.getKey(),rank))return;
         NotificationChannel c=rank.getChannel();if(c==null||c.getName()==null)return;

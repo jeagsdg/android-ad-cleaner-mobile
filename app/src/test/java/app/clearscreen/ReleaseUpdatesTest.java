@@ -21,11 +21,15 @@ public class ReleaseUpdatesTest {
         assertEquals(11, info.versionCode);
         assertEquals("0.9.0", info.versionName);
         assertEquals("扩充规则\n支持手动检查更新", info.notes);
-        Uri download = info.downloadUri();
+        Uri download = info.rawDownloadUri();
         assertEquals("https", download.getScheme());
-        assertEquals("github.com", download.getHost());
-        assertEquals("/jeagsdg/android-ad-cleaner-mobile/raw/refs/heads/main/dist/ClearScreen-0.9.0.apk",
+        assertEquals("raw.githubusercontent.com", download.getHost());
+        assertEquals("/jeagsdg/android-ad-cleaner-mobile/main/dist/ClearScreen-0.9.0.apk",
                 download.getPath());
+        Uri api = info.apiDownloadUri();
+        assertEquals("api.github.com", api.getHost());
+        assertEquals("/repos/jeagsdg/android-ad-cleaner-mobile/contents/dist/ClearScreen-0.9.0.apk", api.getPath());
+        assertEquals("main", api.getQueryParameter("ref"));
     }
 
     @Test public void rejectsMalformedOrSubstitutedMetadata() {

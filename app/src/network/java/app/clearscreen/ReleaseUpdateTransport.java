@@ -18,12 +18,12 @@ final class ReleaseUpdateTransport {
 
     private ReleaseUpdateTransport() { }
 
-    static String read(int maxBytes) throws IOException {
+    static ReleaseUpdates.Info fetch(int maxBytes) throws IOException {
         try {
-            return read(API_URL, "application/vnd.github.raw+json", maxBytes);
+            return ReleaseUpdates.parse(read(API_URL, "application/vnd.github.raw+json", maxBytes));
         } catch (IOException apiFailure) {
             try {
-                return read(RAW_URL, "text/plain", maxBytes);
+                return ReleaseUpdates.parse(read(RAW_URL, "text/plain", maxBytes));
             } catch (IOException rawFailure) {
                 rawFailure.addSuppressed(apiFailure);
                 throw rawFailure;

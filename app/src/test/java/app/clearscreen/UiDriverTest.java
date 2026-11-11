@@ -10,8 +10,10 @@ import org.junit.runner.RunWith;
 import org.robolectric.*;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowAccessibilityNodeInfo;
+import org.robolectric.util.ReflectionHelpers;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
+import static org.robolectric.util.ReflectionHelpers.ClassParameter.from;
 
 @RunWith(RobolectricTestRunner.class) @Config(sdk=28)
 public class UiDriverTest {
@@ -58,6 +60,81 @@ public class UiDriverTest {
         assertTrue(target.isChecked());
         assertTrue(shadowOf(target).getPerformedActions().isEmpty());
     }
+    @Test public void userChangeBeforeDispatchDoesNotBecomeARestoreRecord() throws Exception {
+        String label = "个性化推荐";
+        AccessibilityNodeInfo target = row(label, 100, true);
+        Store store = new Store(service);
+        String older = store.prepare(rule, label, true, false);
+        store.finish(older, "changed", "已回读确认");
+        String prepared = store.prepare(rule, label, true, false);
+        JSONObject checkpoint = new JSONObject().put("status", "verify").put("reason", "write_prepared")
+                .put("journalId", prepared).put("before", true);
+        JSONObject staleCheckpoint = new JSONObject(checkpoint.toString());
+        UiDriver.Found observed = driver.find(label);
+        UiDriver.Halt halt = assertThrows(UiDriver.Halt.class,
+                () -> driver.set(observed, false, () -> target.setChecked(false)));
+        assertTrue(halt instanceof UiDriver.BeforeToggleClick);
+        assertTrue(shadowOf(target).getPerformedActions().isEmpty());
+
+        CleanerService cleaner = Robolectric.buildService(CleanerService.class).create().get();
+        ReflectionHelpers.callInstanceMethod(cleaner, "handleCleanHalt", from(Store.class, store),
+                from(JSONObject.class, checkpoint), from(UiDriver.Halt.class, halt));
+        assertNull(ReflectionHelpers.getField(cleaner, "stopReason"));
+        assertEquals("failed", checkpoint.getString("status"));
+        assertFalse(checkpoint.has("journalId"));
+        assertFalse(checkpoint.has("before"));
+        assertEquals(Store.NOT_APPLIED, store.read("journal").getJSONObject(1).getString("status"));
+        assertEquals(1, store.restorable().size());
+        assertEquals(older, store.restorable().get(0).getString("id"));
+
+        JSONObject recovery = ReflectionHelpers.callInstanceMethod(cleaner, "journalToVerify", from(Store.class, store),
+                from(Rule.class, rule), from(String.class, label), from(JSONObject.class, staleCheckpoint));
+        assertNull(recovery);
+        assertEquals("checking", staleCheckpoint.getString("status"));
+        assertFalse(staleCheckpoint.has("journalId"));
+    }
+    @Test public void attemptedClickRejectionRemainsPendingReadback() throws Exception {
+        String label = "个性化推荐";
+        AccessibilityNodeInfo target = row(label, 100, true);
+        shadowOf(target).setOnPerformActionListener((action, args) -> false);
+        Store store = new Store(service);
+        String id = store.prepare(rule, label, true, false);
+        JSONObject checkpoint = new JSONObject().put("status", "verify").put("reason", "write_prepared")
+                .put("journalId", id).put("before", true);
+        UiDriver.Found observed = driver.find(label);
+        UiDriver.Halt halt = assertThrows(UiDriver.Halt.class, () -> driver.set(observed, false, () -> {}));
+        assertEquals("click_rejected", halt.reason);
+        assertEquals(1, shadowOf(target).getPerformedActions().size());
+
+        CleanerService cleaner = Robolectric.buildService(CleanerService.class).create().get();
+        ReflectionHelpers.callInstanceMethod(cleaner, "handleCleanHalt", from(Store.class, store),
+                from(JSONObject.class, checkpoint), from(UiDriver.Halt.class, halt));
+        assertEquals("verify", checkpoint.getString("status"));
+        assertEquals(id, checkpoint.getString("journalId"));
+        assertEquals("unknown", store.restorable().get(0).getString("status"));
+    }
+    @Test public void resumeKeepsOriginalValueWhenAConfirmedWriteWasManuallyRestored() throws Exception {
+        String label = "个性化推荐";
+        AccessibilityNodeInfo target = row(label, 100, true);
+        service.launch = intent -> {};
+        Store store = new Store(service);
+        String id = store.prepare(rule, label, true, false);
+        store.finish(id, "changed", "已回读确认");
+        JSONObject item = new JSONObject().put("status", "verify").put("reason", "write_prepared")
+                .put("journalId", id).put("before", true);
+        CleanerService cleaner = Robolectric.buildService(CleanerService.class).create().get();
+        JSONObject entry = ReflectionHelpers.callInstanceMethod(cleaner, "journalToVerify", from(Store.class, store),
+                from(Rule.class, rule), from(String.class, label), from(JSONObject.class, item));
+        assertEquals(id, entry.getString("id"));
+        boolean resolved = ReflectionHelpers.callInstanceMethod(cleaner, "reconcileWrite", from(Store.class, store),
+                from(UiDriver.class, driver), from(Policy.class, store.policy()), from(JSONObject.class, entry),
+                from(JSONObject.class, item), from(JSONArray.class, new JSONArray().put(item)), from(boolean.class, true));
+        assertTrue(resolved);
+        assertEquals("restored", item.getString("status"));
+        assertEquals("restored", store.read("journal").getJSONObject(0).getString("status"));
+        assertTrue(target.isChecked());
+        assertTrue(shadowOf(target).getPerformedActions().isEmpty());
+    }
     @Test public void settingsIconDoesNotMatchUnrelatedSettingSwitch()throws Exception{AccessibilityNodeInfo icon=node("","android.widget.ImageView",new Rect(680,30,750,100));icon.setViewIdResourceName("com.android.settings:id/settings_icon");icon.setClickable(true);shadowOf(service.root).addChild(icon);AccessibilityNodeInfo unrelated=row("设置壁纸",240,true);unrelated.setViewIdResourceName("com.android.settings:id/securitySettingSwitchLayout");shadowOf(icon).setOnPerformActionListener((action,args)->true);assertTrue(driver.tap(java.util.Collections.singletonList("设置")));assertEquals(1,shadowOf(icon).getPerformedActions().size());assertEquals(0,shadowOf(unrelated).getPerformedActions().size());}
     @Test public void appNotificationPageIsNotChannelPage()throws Exception{rule.channelId="promo";rule.channelName="营销通知";rule.channelApp="测试应用";shadowOf(service.root).addChild(node("测试应用","android.widget.TextView",new Rect(0,0,500,80)));row("营销通知",200,true);try{driver.current(rule);fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("渠道名"));}}
     @Test public void onlyExplicitMatchingDisableDialogCanBeConfirmed()throws Exception{
@@ -74,6 +151,21 @@ public class UiDriverTest {
         shadowOf(header).addChild(title);shadowOf(header).addChild(app);shadowOf(service.root).addChild(header);row("Show notifications",800,true);
         driver.current(rule);assertNotNull(driver.find("允许通知"));
         app.setText("其他应用");try{driver.current(rule);fail();}catch(UiDriver.Halt expected){assertTrue(expected.getMessage().contains("渠道名"));}
+    }
+    @Test @Config(sdk={24,25}) public void oldAndroidRejectsChannelActionsWithoutOpeningAppNotificationSettings() throws Exception {
+        Rule channel = new Rule(new JSONObject().put("id", "promo").put("package", "test.app")
+                .put("channelId", "promo").put("channelName", "活动优惠").put("channelApp", "测试应用"));
+        AccessibilityNodeInfo notifications = row("允许通知", 100, true);
+        service.launch = intent -> fail("No settings intent should open for a channel on Android 7");
+        assertEquals("channel_unsupported", assertThrows(UiDriver.Halt.class, () -> driver.open(channel)).reason);
+        assertEquals("channel_unsupported", assertThrows(UiDriver.Halt.class,
+                () -> driver.openForRestore(channel, "允许通知")).reason);
+        assertEquals("channel_unsupported", assertThrows(UiDriver.Halt.class, () -> driver.current(channel)).reason);
+        assertTrue(shadowOf(notifications).getPerformedActions().isEmpty());
+
+        AccessibilityNodeInfo recommendation = row("个性化推荐", 350, true);
+        driver.current(rule);
+        assertEquals(recommendation, driver.find("个性化推荐").node);
     }
     @Test public void failedDirectEntryFallsBackWithoutTouchingAnyToggle()throws Exception{
         row("个性化推荐",100,true);java.util.concurrent.atomic.AtomicInteger launches=new java.util.concurrent.atomic.AtomicInteger();

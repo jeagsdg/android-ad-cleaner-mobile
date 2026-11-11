@@ -4,7 +4,9 @@ import android.accessibilityservice.AccessibilityService;
 import android.app.KeyguardManager;
 import android.content.*;
 import android.graphics.Rect;
+import android.os.Build;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.*;
 import java.util.function.BooleanSupplier;
@@ -24,6 +26,9 @@ public final class UiDriver {
         Halt(String message,boolean terminal,boolean retryable,String reason){
             super(message);this.terminal=terminal;this.retryable=retryable&&!terminal;this.reason=reason;
         }
+    }
+    static final class BeforeToggleClick extends Halt {
+        BeforeToggleClick(Halt failure){super(failure.getMessage(),failure.terminal,failure.retryable,failure.reason);}
     }
     private static final class ConsentRequired extends Halt {
         ConsentRequired(){super("目标应用要求确认协议或授权，请手动处理后重试",false,false,"consent");}
@@ -78,6 +83,7 @@ public final class UiDriver {
         String reason=stopReason.get();
         if(reason!=null)throw new Halt(reason,true);
         if(Thread.currentThread().isInterrupted())throw new Halt("清理任务被中断，已完成的改动仍保存在记录中",true);
+        if(rule!=null&&rule.notification()&&Build.VERSION.SDK_INT<Build.VERSION_CODES.O)throw channelsUnavailable();
         KeyguardManager k=(KeyguardManager)service.getSystemService(Context.KEYGUARD_SERVICE);
         if(k!=null&&k.isKeyguardLocked())throw new Halt("手机已锁屏，本次操作已暂停",true,false,"screen_locked");
         if(expired())throw new Halt("本组检查超时，可在清理结果中单独重试",false,false,"timeout");
@@ -243,6 +249,7 @@ public final class UiDriver {
         check();
         Intent intent;
         if(r.notification()){
+            if(Build.VERSION.SDK_INT<Build.VERSION_CODES.O)throw channelsUnavailable();
             if(foreground!=null&&!Route.installed(service,r.pkg))throw new Halt("通知所属应用已不可用",false,false,"package_unavailable");
             intent=new Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,r.pkg).putExtra(Settings.EXTRA_CHANNEL_ID,r.channelId);
         }else{
@@ -263,7 +270,7 @@ public final class UiDriver {
         awaitPage(previous,candidate.path.isEmpty()?targets:candidate.path.get(0),8000,candidate.pkg,true);
         for(int i=0;i<candidate.path.size();i++){
             List<String> step=candidate.path.get(i);PageStamp before=new PageStamp(root());
-            if(!tap(step))throw new Halt("未找到唯一入口「"+String.join(" / ",step)+"」，未改动",false,true,"entry_missing");
+            if(!tap(step))throw new Halt("未找到唯一入口「"+TextUtils.join(" / ",step)+"」，未改动",false,true,"entry_missing");
             expectedPackage=candidate.destinations.get(i);
             awaitPage(before,i+1<candidate.path.size()?candidate.path.get(i+1):targets,8000,"",false);
         }
@@ -306,6 +313,9 @@ public final class UiDriver {
             }
         }
         if(!(title&&app)&&!entityPair)throw new Halt("未同时确认应用名与通知渠道名，未操作",false,false,"channel_unconfirmed");
+    }
+    private static Halt channelsUnavailable(){
+        return new Halt("Android 8.0 起支持通知渠道，未操作",false,false,"channel_unsupported");
     }
     static String text(AccessibilityNodeInfo n){CharSequence t=n.getText();if(t==null||t.toString().trim().isEmpty())t=n.getContentDescription();return t==null?"":t.toString().trim();}
     static List<AccessibilityNodeInfo> walk(AccessibilityNodeInfo root){
@@ -448,10 +458,13 @@ public final class UiDriver {
         if(before.checked==desired)return true;
         if(before.checked!=observed.checked)throw new Halt("开关状态已变化，未覆盖你的设置",false,false,"state_changed");
         beforeClick.run();
-        Found current=findLabels(exactLabel,1);
-        if(!sameControl(before,current)||current.checked!=before.checked)
-            throw new Halt("保存原值后目标开关发生变化，请回读核对",false,false,"state_changed");
-        requireActionWindow(current.click);
+        Found current;
+        try{
+            current=findLabels(exactLabel,1);
+            if(!sameControl(before,current)||current.checked!=before.checked)
+                throw new Halt("保存原值后目标开关发生变化，未点击",false,false,"state_changed");
+            requireActionWindow(current.click);
+        }catch(Halt failure){throw new BeforeToggleClick(failure);}
         if(!current.click.performAction(AccessibilityNodeInfo.ACTION_CLICK))throw new Halt("系统拒绝此次点击",false,false,"click_rejected");
         long groupDeadline=deadlineNanos;
         // Finish read-back even if the group budget was nearly spent before this click.

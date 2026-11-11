@@ -2,6 +2,7 @@ package app.clearscreen;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import java.util.*;
 
 final class FilterStore {
@@ -22,7 +23,7 @@ final class FilterStore {
     }
     void counters(long queried,long blocked,Collection<String> recent){
         SharedPreferences.Editor update=prefs.edit().putLong("queried",queried).putLong("blocked",blocked);
-        if(keepsDomainDetails())update.putString("recent",String.join("\n",recent));
+        if(keepsDomainDetails())update.putString("recent",TextUtils.join("\n",recent));
         else update.remove("recent");
         update.apply();
     }
@@ -46,5 +47,8 @@ final class FilterStore {
     Set<String> bypassedApps(){return new HashSet<>(prefs.getStringSet("bypassed-apps",Collections.emptySet()));}
     void setBypassedApps(Set<String> packages){prefs.edit().putStringSet("bypassed-apps",new HashSet<>(packages)).apply();}
     void clearHistory(){if(!AdFilterService.clearRecent())forgetRecent();}
-    void forgetRecent(){prefs.edit().remove("recent").apply();}
+    void forgetRecent() {
+        // Older installations infer the preference from saved history until the toggle is set.
+        prefs.edit().putBoolean("keep-domain-details", keepsDomainDetails()).remove("recent").apply();
+    }
 }
