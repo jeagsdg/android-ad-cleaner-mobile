@@ -1,0 +1,9 @@
+ClearScreen 1.0.0 local checks
+Unit tests per variant: 191 passed
+Lint per variant: No issues found
+
+Isolated Android API 34 full: 186 assertions passed; APK SHA-256 386f1ede01d8aaf73bfede2dc5da81cf70c6e1b2ee5fb68e34a15eb2c1101b1d
+Isolated Android API 34 offline: 50 assertions passed; APK SHA-256 06c43e0b6c4ae194cd64b1d814bb5715e66ff83dc0985acb1a3b0514ac63512e
+Isolated Android API 35 full: 52 assertions passed; APK SHA-256 386f1ede01d8aaf73bfede2dc5da81cf70c6e1b2ee5fb68e34a15eb2c1101b1d
+
+Real-device compatibility and actual ad hit rate: pending

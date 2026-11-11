@@ -36,7 +36,11 @@ public final class Rule {
         return out;
     }
     public boolean matches(String manufacturer, String brand) {
-        for (String value : brands) if (value.equalsIgnoreCase(manufacturer) || value.equalsIgnoreCase(brand)) return true;
+        for (String value : brands) {
+            if (value.equalsIgnoreCase(manufacturer) || value.equalsIgnoreCase(brand)) return true;
+            if (value.equalsIgnoreCase("oppo")
+                    && ("oplus".equalsIgnoreCase(manufacturer) || "oplus".equalsIgnoreCase(brand))) return true;
+        }
         return false;
     }
     public boolean notification() { return !channelId.isEmpty(); }

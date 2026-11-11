@@ -15,7 +15,7 @@ import static org.junit.Assert.*;
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class ScreenTest {
     @Test public void supportIsOptionalAndExportsOriginalImage()throws Exception{
-        MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();assertNotNull(find(a.getWindow().getDecorView(),"系统广告设置"));find(a.getWindow().getDecorView(),"支持作者 · 自愿赞赏").performClick();assertNotNull(find(a.getWindow().getDecorView(),"保存赞赏码"));
+        MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();assertNotNull(find(a.getWindow().getDecorView(),"系统广告设置"));find(a.getWindow().getDecorView(),"赞赏").performClick();assertNotNull(find(a.getWindow().getDecorView(),"保存赞赏码"));
         java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();a.copySupportCode(output);byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(output.toByteArray());StringBuilder hex=new StringBuilder();for(byte b:hash)hex.append(String.format(java.util.Locale.ROOT,"%02x",b));assertEquals("a7821f2dc8ea85999ff1159a7e399a7de3d3981dfba55f6acbbc897d1aff4508",hex.toString());
         find(a.getWindow().getDecorView(),"保存赞赏码").performClick();android.content.Intent save=org.robolectric.Shadows.shadowOf(a).getNextStartedActivityForResult().intent;assertEquals(android.content.Intent.ACTION_CREATE_DOCUMENT,save.getAction());assertEquals("image/jpeg",save.getType());find(a.getWindow().getDecorView(),"返回首页").performClick();assertNotNull(find(a.getWindow().getDecorView(),"系统广告设置"));
     }
@@ -28,7 +28,7 @@ public class ScreenTest {
         find(reopened.getWindow().getDecorView(),"返回首页").performClick();
         find(reopened.getWindow().getDecorView(),"使用说明").performClick();assertNotNull(find(reopened.getWindow().getDecorView(),"数据留在你的手机"));capture(reopened,"about.png",822,1782);
     }
-    @Test @Config(qualifiers="zh-rCN-w360dp-h780dp-xhdpi") public void narrowHomeKeepsMainActionAndNavigation()throws Exception{MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();capture(a,"home-narrow.png",720,1560);assertNotNull(find(a.getWindow().getDecorView(),"开启开屏跳过"));assertTrue(find(a.getWindow().getDecorView(),"使用说明").getWidth()>0);}
+    @Test @Config(qualifiers="zh-rCN-w360dp-h780dp-xhdpi") public void narrowHomeKeepsMainActionAndNavigation()throws Exception{MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();capture(a,"home-narrow.png",720,1560);assertNotNull(find(a.getWindow().getDecorView(),"开启自动跳过"));assertTrue(find(a.getWindow().getDecorView(),"使用说明").getWidth()>0);}
     @Test public void resultFilterShowsOnlyUnfinishedItems() throws Exception {
         MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
         Store store = new Store(a);
@@ -94,7 +94,7 @@ public class ScreenTest {
         View view=a.getWindow().getDecorView();view.measure(View.MeasureSpec.makeMeasureSpec(822,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(1782,View.MeasureSpec.EXACTLY));view.layout(0,0,822,1782);
         Bitmap b=Bitmap.createBitmap(822,1782,Bitmap.Config.ARGB_8888);view.draw(new Canvas(b));File dir=new File(System.getProperty("clearscreen.artifacts"),"screenshots");dir.mkdirs();try(FileOutputStream out=new FileOutputStream(new File(dir,"home.png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}
         clickFeature(a, "系统广告设置");
-        assertNotNull(find(a.getWindow().getDecorView(), "前往系统授权"));
+        assertNotNull(find(a.getWindow().getDecorView(), "打开手机设置"));
         assertNotNull(find(a.getWindow().getDecorView(), "开启遇到问题"));
     }
     @Test public void popupRulesAndPermissionReturnToPopupManagement() {
@@ -103,10 +103,10 @@ public class ScreenTest {
         assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
         find(activity.getWindow().getDecorView(), "管理自定义规则").performClick();
         assertEquals(MainActivity.CUSTOM_RULES, activity.tab);
-        activity.onBackPressed();
+        find(activity.getWindow().getDecorView(), "返回弹窗管理").performClick();
         assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
         activity.accessibility();
-        assertNotNull(find(activity.getWindow().getDecorView(), "前往系统授权"));
+        assertNotNull(find(activity.getWindow().getDecorView(), "打开手机设置"));
         activity.onBackPressed();
         assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
     }

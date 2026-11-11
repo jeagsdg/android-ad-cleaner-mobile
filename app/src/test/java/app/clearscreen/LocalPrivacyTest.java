@@ -76,6 +76,35 @@ public class LocalPrivacyTest {
         assertEquals(3, filter.blocked());
     }
 
+    @Test public void localDnsExceptionsPersistAndProtectedHostsCannotBeAdded() {
+        FilterStore filter = new FilterStore(context);
+        String ad = "ads.example.com";
+        filter.allow(ad, true);
+        assertFalse(filter.blockHost("connect.rom.miui.com", false));
+        assertFalse(filter.blockHost("*.example.com", false));
+        assertTrue(filter.blockHost(ad, true));
+        assertFalse(filter.allowsHost(ad));
+        assertTrue(filter.customHost(ad));
+        assertFalse(filter.customHost("sub." + ad));
+        filter.setBypassedApps(Collections.singleton("com.example.privateapp"));
+        assertEquals(Collections.singleton("com.example.privateapp"), new FilterStore(context).bypassedApps());
+        filter.removeCustomHost(ad);
+        assertFalse(filter.customHost(ad));
+    }
+
+    @Test public void rulePreviewKeepsItsDraftScopedToTheSelectedApp() {
+        RulePreview preview = new RulePreview();
+        CustomSkipRule draft = new CustomSkipRule("com.example.target", "", CustomSkipRule.SPLASH, "", "跳过", "");
+        assertTrue(preview.start(Collections.singletonList(draft)));
+        assertFalse(preview.observes("com.example.unrelated"));
+        java.util.List<CustomSkipRule> selected = preview.rulesFor(draft.pkg);
+        preview.note(selected, 0, SkipDiagnostics.Phase.TARGET_FOUND);
+        assertTrue(preview.summary(true).contains("规则匹配通过"));
+        preview.clear();
+        assertTrue(preview.rulesFor(draft.pkg).isEmpty());
+        assertEquals("", preview.summary(true));
+    }
+
     @Test public void launchTraceOnlyTracksSelectedPackageAndExpiresInMemory() {
         AtomicLong elapsed = new AtomicLong(100);
         SkipDiagnostics trace = new SkipDiagnostics(elapsed::get);

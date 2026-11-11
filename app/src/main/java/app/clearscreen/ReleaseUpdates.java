@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 final class ReleaseUpdates {
     private static final String REPOSITORY = "jeagsdg/android-ad-cleaner-mobile";
     private static final String APK_ROOT = "https://github.com/" + REPOSITORY + "/raw/refs/heads/main/dist/";
+    private static final String FILE_PAGE = "https://github.com/" + REPOSITORY + "/blob/main/dist/";
     private static final int MAX_FEED_BYTES = 16 * 1024;
     private static final int MAX_NOTES_LENGTH = 1200;
     private static final Pattern INTEGER = Pattern.compile("0|[1-9][0-9]{0,9}");
@@ -31,7 +32,15 @@ final class ReleaseUpdates {
         }
 
         Uri downloadUri() {
-            return Uri.parse(APK_ROOT + "ClearScreen-" + versionName + ".apk");
+            return Uri.parse(APK_ROOT + apkName());
+        }
+
+        Uri filePageUri() {
+            return Uri.parse(FILE_PAGE + apkName());
+        }
+
+        private String apkName() {
+            return "ClearScreen-" + versionName + ".apk";
         }
     }
 

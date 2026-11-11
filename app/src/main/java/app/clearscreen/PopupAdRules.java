@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /** Packaged in-app ad dismissals evaluated as bounded predicates and native clicks. */
@@ -57,8 +58,7 @@ final class PopupAdRules {
         }
 
         boolean activityMatches(String activity) {
-            return (activity == null || !PROTECTED_ACTIVITY.matcher(activity).find())
-                    && SplashRules.activityMatches(activity, entry);
+            return !protectedActivity(activity) && SplashRules.activityMatches(activity, entry);
         }
 
         boolean withinTime(long elapsedMs) {
@@ -96,10 +96,18 @@ final class PopupAdRules {
     }
 
     boolean hasRules(String pkg, String activity, long elapsedMs) {
+        return hasRules(pkg, activity, elapsedMs, rule -> true);
+    }
+
+    boolean hasRules(String pkg, String activity, long elapsedMs, Predicate<Rule> available) {
         for (Rule rule : byPackage.getOrDefault(pkg, Collections.emptyList())) {
-            if (rule.withinTime(elapsedMs) && rule.activityMatches(activity)) return true;
+            if (available.test(rule) && rule.withinTime(elapsedMs) && rule.activityMatches(activity)) return true;
         }
         return false;
+    }
+
+    static boolean protectedActivity(String activity) {
+        return activity != null && PROTECTED_ACTIVITY.matcher(activity).find();
     }
 
     Match find(AccessibilityNodeInfo root, String activity, Rect screen) {
@@ -107,18 +115,29 @@ final class PopupAdRules {
     }
 
     Match find(AccessibilityNodeInfo root, String activity, Rect screen, long elapsedMs) {
+        return find(root, activity, screen, elapsedMs, UiDriver.walkComplete(root));
+    }
+
+    Match find(AccessibilityNodeInfo root, String activity, Rect screen, long elapsedMs,
+               List<AccessibilityNodeInfo> nodes) {
+        return find(root, activity, screen, elapsedMs, nodes, rule -> true);
+    }
+
+    Match find(AccessibilityNodeInfo root, String activity, Rect screen, long elapsedMs,
+               List<AccessibilityNodeInfo> nodes, Predicate<Rule> available) {
         if (root == null || screen.isEmpty()) return null;
         String pkg = String.valueOf(root.getPackageName());
-        if (!hasRules(pkg, activity, elapsedMs)) return null;
-        List<AccessibilityNodeInfo> nodes = UiDriver.walkComplete(root);
         if (nodes.isEmpty()) return null;
         Match hit = null;
         for (Rule rule : byPackage.getOrDefault(pkg, Collections.emptyList())) {
-            if (!rule.withinTime(elapsedMs) || !rule.activityMatches(activity)) continue;
+            if (!available.test(rule) || !rule.withinTime(elapsedMs) || !rule.activityMatches(activity)) continue;
+            Boolean requirementsPresent = null;
             for (AccessibilityNodeInfo node : nodes) {
                 if (!node.isEnabled() || !rule.matchesTarget(node)) continue;
                 AccessibilityNodeInfo click = clickTarget(root, node, pkg, screen);
-                if (click == null || !rule.requirementsPresent(nodes)) continue;
+                if (click == null) continue;
+                if (requirementsPresent == null) requirementsPresent = rule.requirementsPresent(nodes);
+                if (!requirementsPresent) break;
                 if (hit != null && !hit.target.equals(click)) return null;
                 if (hit == null) hit = new Match(rule, click);
             }
@@ -127,9 +146,12 @@ final class PopupAdRules {
     }
 
     boolean visible(AccessibilityNodeInfo root, String activity, Rule rule) {
+        return visible(root, activity, rule, UiDriver.walkComplete(root));
+    }
+
+    boolean visible(AccessibilityNodeInfo root, String activity, Rule rule, List<AccessibilityNodeInfo> nodes) {
         if (root == null || !rule.pkg.equals(String.valueOf(root.getPackageName()))
                 || !rule.activityMatches(activity)) return false;
-        List<AccessibilityNodeInfo> nodes = UiDriver.walkComplete(root);
         return nodes.isEmpty()
                 || (nodes.stream().anyMatch(rule::matchesTarget) && rule.requirementsPresent(nodes));
     }
@@ -155,10 +177,9 @@ final class PopupAdRules {
     private static boolean safePage(List<AccessibilityNodeInfo> nodes) {
         for (AccessibilityNodeInfo node : nodes) {
             if (!node.isVisibleToUser()) continue;
-            if (node.isEditable() && node.isFocused()) return false;
+            if (SplashSkipper.unsafeWindowNode(node, false)) return false;
             String text = label(node.getText()), desc = label(node.getContentDescription());
-            if (CustomSkipRule.sensitiveText(text) || CustomSkipRule.sensitiveText(desc)
-                    || SplashSkipper.rewardAd(text) || SplashSkipper.rewardAd(desc)) return false;
+            if (CustomSkipRule.sensitiveText(text) || CustomSkipRule.sensitiveText(desc)) return false;
         }
         return true;
     }

@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 
+import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
 /** A single opt-in launch trace. It never stores nodes, text, or screenshots. */
@@ -17,13 +18,18 @@ final class SkipDiagnostics {
     enum Phase {
         WAITING("等待打开应用"),
         WINDOW_UNAVAILABLE("暂未读到应用窗口"),
-        TREE_UNAVAILABLE("无法读取完整控件结构"),
+        TREE_UNAVAILABLE("控件树无法完整读取或超出读取上限"),
         NO_READABLE_TARGET("未发现可读的跳过控件"),
+        PAGE_MISMATCH("尚未确认规则要求的页面"),
+        AD_EVIDENCE_MISSING("发现跳过文字，未确认广告标识"),
         NO_RULE_MATCH("发现候选控件，未通过规则或安全检查"),
+        TARGET_UNSAFE("候选控件不符合安全点击或位置条件"),
         GUARDED("页面包含输入、授权或受保护的操作"),
         AMBIGUOUS("多个候选按钮，未执行点击"),
         TARGET_FOUND("找到目标，等待操作"),
         TARGET_CHANGED("执行前窗口或控件变化"),
+        TOUCH_UNAVAILABLE("未确认目标坐标属于可触摸的前台窗口"),
+        SCAN_ENDED("本次开屏检测时限已结束"),
         SENT("已请求操作，等待页面确认"),
         EXCLUDED("该应用已排除或受到保护"),
         DISABLED("开屏跳过未开启"),
@@ -31,18 +37,31 @@ final class SkipDiagnostics {
         REJECTED("系统未接受点击或手势"),
         CANCELLED("系统取消了手势"),
         UNCONFIRMED("已尝试点击，未确认关闭"),
+        TARGET_STILL_VISIBLE("操作已发出，目标控件仍可见"),
+        LEFT_WINDOW("操作已发出，离开目标页面前未能确认结果"),
         CONFIRMED("操作后已确认跳过控件消失");
 
         final String label;
         Phase(String label) { this.label = label; }
+
+        boolean terminal() { return ordinal() >= EXCLUDED.ordinal(); }
+        boolean probe() { return ordinal() <= TARGET_FOUND.ordinal(); }
+    }
+
+    private static final class Observation {
+        final long first;
+        long last;
+        int count;
+        Observation(long time) { first = last = time; }
     }
 
     private final LongSupplier clock;
     private String packageName = "";
-    private long appVersion, expiresAt, launchAt, updatedAt;
+    private long appVersion, expiresAt, launchAt, updatedAt, launchWallTime;
     private long visit = -1;
     private Phase phase = Phase.WAITING;
     private Phase probe = Phase.WAITING;
+    private final EnumMap<Phase, Observation> evidence = new EnumMap<>(Phase.class);
 
     SkipDiagnostics(LongSupplier clock) { this.clock = clock; }
 
@@ -62,9 +81,10 @@ final class SkipDiagnostics {
     synchronized void clear() {
         packageName = "";
         appVersion = -1;
-        expiresAt = launchAt = updatedAt = 0;
+        expiresAt = launchAt = updatedAt = launchWallTime = 0;
         visit = -1;
         phase = probe = Phase.WAITING;
+        evidence.clear();
     }
 
     synchronized boolean hasSession() {
@@ -76,19 +96,26 @@ final class SkipDiagnostics {
         if (!hasSession() || !packageName.equals(pkg) || this.visit == visit) return;
         this.visit = visit;
         launchAt = updatedAt = clock.getAsLong();
+        launchWallTime = System.currentTimeMillis();
         phase = probe = Phase.WAITING;
+        evidence.clear();
     }
+
+    synchronized boolean targets(String pkg) { return hasSession() && packageName.equals(pkg); }
 
     synchronized boolean observes(String pkg, long visit) {
         return hasSession() && this.visit == visit && packageName.equals(pkg);
     }
 
     synchronized void note(String pkg, long visit, Phase observed) {
-        if (!observes(pkg, visit) || phase.ordinal() >= Phase.EXCLUDED.ordinal()
-                || observed.ordinal() < phase.ordinal()) return;
-        if (observed.ordinal() <= Phase.TARGET_FOUND.ordinal()) probe = observed;
-        phase = observed;
-        updatedAt = clock.getAsLong();
+        if (!observes(pkg, visit) || phase.terminal()) return;
+        long now = clock.getAsLong();
+        Observation entry = evidence.computeIfAbsent(observed, key -> new Observation(now - launchAt));
+        entry.last = now - launchAt;
+        entry.count++;
+        if (observed.probe()) probe = observed;
+        if (observed.ordinal() >= phase.ordinal()) phase = observed;
+        updatedAt = now;
     }
 
     synchronized String summary(boolean connected, boolean enabled) {
@@ -98,10 +125,19 @@ final class SkipDiagnostics {
             if (!connected) status = "无障碍服务未连接";
             else if (!enabled) status = Phase.DISABLED.label;
         }
-        String elapsed = visit < 0 ? "" : "\n最后一次观察距打开应用 " + (updatedAt - launchAt) + " 毫秒";
-        return "净屏开屏诊断\n应用 " + packageName + "\n应用版本号 " + (appVersion < 0 ? "未知" : appVersion)
+        String elapsed = visit < 0 ? "" : "\n观察开始 " + java.time.Instant.ofEpochMilli(launchWallTime)
+                + "\n最后一次观察距打开应用 " + (updatedAt - launchAt) + " 毫秒";
+        StringBuilder report = new StringBuilder("净屏开屏诊断\n应用 " + packageName + "\n应用版本号 " + (appVersion < 0 ? "未知" : appVersion)
                 + "\nAndroid " + Build.VERSION.RELEASE + " · SDK " + Build.VERSION.SDK_INT
                 + "\n无障碍 " + (connected ? "已连接" : "未连接") + "\n" + status
-                + (probe != Phase.WAITING && probe != phase ? "\n检测阶段 " + probe.label : "") + elapsed;
+                + (probe != Phase.WAITING && probe != phase ? "\n最近检测 " + probe.label : "") + elapsed);
+        evidence.entrySet().stream().sorted(java.util.Comparator.comparingLong(entry -> entry.getValue().first))
+                .forEach(entry -> {
+                    Observation event = entry.getValue();
+                    report.append("\n+").append(event.first).append(" 毫秒 · ")
+                            .append(entry.getKey().name()).append(" · ").append(entry.getKey().label);
+                    if (event.count > 1) report.append(" ×").append(event.count).append(" · 最后 +").append(event.last).append(" 毫秒");
+                });
+        return report.toString();
     }
 }

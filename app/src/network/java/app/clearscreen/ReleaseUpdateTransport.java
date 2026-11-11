@@ -9,21 +9,36 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.HttpsURLConnection;
 
-/** Reads the public release feed after an explicit check or opt-in. */
+/** Reads the public release feed from the same branch through either GitHub endpoint. */
 final class ReleaseUpdateTransport {
-    private static final String FEED_URL =
+    private static final String API_URL =
             "https://api.github.com/repos/jeagsdg/android-ad-cleaner-mobile/contents/update.json?ref=main";
+    private static final String RAW_URL =
+            "https://raw.githubusercontent.com/jeagsdg/android-ad-cleaner-mobile/main/update.json";
 
     private ReleaseUpdateTransport() { }
 
     static String read(int maxBytes) throws IOException {
-        long deadline = SystemClock.elapsedRealtime() + 8000;
-        HttpsURLConnection connection = (HttpsURLConnection) new URL(FEED_URL).openConnection();
-        connection.setConnectTimeout(4000);
-        connection.setReadTimeout(4000);
+        try {
+            return read(API_URL, "application/vnd.github.raw+json", maxBytes);
+        } catch (IOException apiFailure) {
+            try {
+                return read(RAW_URL, "text/plain", maxBytes);
+            } catch (IOException rawFailure) {
+                rawFailure.addSuppressed(apiFailure);
+                throw rawFailure;
+            }
+        }
+    }
+
+    private static String read(String url, String accept, int maxBytes) throws IOException {
+        long deadline = SystemClock.elapsedRealtime() + 6000;
+        HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
+        connection.setConnectTimeout(3000);
+        connection.setReadTimeout(3000);
         connection.setInstanceFollowRedirects(false);
         connection.setUseCaches(false);
-        connection.setRequestProperty("Accept", "application/vnd.github.raw+json");
+        connection.setRequestProperty("Accept", accept);
         connection.setRequestProperty("User-Agent", "ClearScreen-Update");
         try {
             if (connection.getResponseCode() != HttpsURLConnection.HTTP_OK)

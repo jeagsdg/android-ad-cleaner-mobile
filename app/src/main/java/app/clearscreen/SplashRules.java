@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,32 +72,79 @@ final class SplashRules {
     }
 
     Action action(String pkg, String activity, AccessibilityNodeInfo node, long elapsedMs) {
-        String id = node.getViewIdResourceName();
-        if (sdkResources.contains(resourceName(id)) || (node.isClickable() && clickableSdkIds.contains(id))) {
-            return Action.CLICK;
+        return prepare(pkg, activity, elapsedMs, null).action(node, UiDriver.text(node));
+    }
+
+    Prepared prepare(String pkg, String activity, long elapsedMs, List<AccessibilityNodeInfo> nodes) {
+        List<JSONObject> available = byPackage.get(pkg);
+        List<JSONObject> active = Collections.emptyList();
+        if (available != null) {
+            active = new ArrayList<>(available.size());
+            for (JSONObject rule : available) {
+                if (elapsedMs < rule.optInt("matchTime", Integer.MAX_VALUE) && activityMatches(activity, rule)) active.add(rule);
+            }
         }
+        return new Prepared(pkg, active, nodes);
+    }
+
+    final class Prepared {
+        private final String pkg;
+        private final List<JSONObject> active;
+        private final List<AccessibilityNodeInfo> nodes;
+        private final Map<JSONObject, Boolean> requirements = new IdentityHashMap<>();
+
+        Prepared(String pkg, List<JSONObject> active, List<AccessibilityNodeInfo> nodes) {
+            this.pkg = pkg;
+            this.active = active;
+            this.nodes = nodes;
+        }
+
+        Action action(AccessibilityNodeInfo node, String label) {
+            String id = node.getViewIdResourceName();
+            if (id != null && (sdkResources.contains(resourceName(id)) || (clickableSdkIds.contains(id) && node.isClickable()))) {
+                return Action.CLICK;
+            }
+            for (JSONObject rule : active) {
+                if (rule.optBoolean("requireClickable") && !node.isClickable()) continue;
+                String evidence = rule.optString("evidence");
+                if (evidence.equals("structure") || evidence.equals("activity") || evidence.equals("page")) {
+                    boolean skipLabel = SplashSkipper.skipLabel(label);
+                    if (evidence.equals("structure")) {
+                        // Anonymous structural controls must themselves be clickable.
+                        boolean countdownClose = rule.optBoolean("adCountdownClose")
+                                && CLOSE_COUNTDOWN.matcher(label).matches();
+                        if (!skipLabel && (!node.isClickable()
+                                || (!label.isEmpty() && !countdownClose
+                                && !label.matches("关闭|關閉|关闭广告|關閉廣告|[xX×]")))) continue;
+                    } else if (!skipLabel) continue;
+                }
+                if (targetMatches(pkg, node, rule.optJSONObject("targetSelector")) && requirementsPresent(node, rule)) {
+                    return rule.optBoolean("tap") ? Action.TAP : Action.CLICK;
+                }
+            }
+            return null;
+        }
+
+        private boolean requirementsPresent(AccessibilityNodeInfo node, JSONObject rule) {
+            JSONArray required = rule.optJSONArray("required");
+            if (required == null || required.length() == 0) return true;
+            if (nodes == null) return requiredVisible(pkg, node, required);
+            return requirements.computeIfAbsent(rule, ignored -> requiredInWindow(pkg, node.getWindowId(), nodes, required));
+        }
+    }
+
+    SkipDiagnostics.Phase explainMiss(String pkg, String activity, long elapsedMs, int window,
+                                      List<AccessibilityNodeInfo> nodes) {
         for (JSONObject rule : byPackage.getOrDefault(pkg, Collections.emptyList())) {
-            if (elapsedMs >= rule.optInt("matchTime", Integer.MAX_VALUE)
-                    || !activityMatches(activity, rule) || (rule.optBoolean("requireClickable") && !node.isClickable())) {
-                continue;
-            }
-            String evidence = rule.optString("evidence");
-            if (evidence.equals("structure") || evidence.equals("activity") || evidence.equals("page")) {
-                String label = UiDriver.text(node);
-                boolean skipLabel = SplashSkipper.skipLabel(label);
-                if (evidence.equals("structure")) {
-                    // Anonymous structural controls must themselves be clickable.
-                    boolean countdownClose = rule.optBoolean("adCountdownClose")
-                            && CLOSE_COUNTDOWN.matcher(label).matches();
-                    if (!skipLabel && (!node.isClickable()
-                            || (!label.isEmpty() && !countdownClose
-                            && !label.matches("关闭|關閉|关闭广告|關閉廣告|[xX×]")))) continue;
-                } else if (!skipLabel) continue;
-            }
-            if (targetMatches(pkg, node, rule.optJSONObject("targetSelector"))
-                    && requiredVisible(pkg, node, rule.optJSONArray("required"))) {
-                return rule.optBoolean("tap") ? Action.TAP : Action.CLICK;
-            }
+            if (elapsedMs >= rule.optInt("matchTime", Integer.MAX_VALUE)) continue;
+            JSONArray required = rule.optJSONArray("required");
+            boolean wrongActivity = !activityMatches(activity, rule);
+            if (!wrongActivity && (required == null || required.length() == 0)) continue;
+            JSONObject target = rule.optJSONObject("targetSelector");
+            boolean found = nodes.stream().anyMatch(node -> node.getWindowId() == window && targetMatches(pkg, node, target, true));
+            if (!found) continue;
+            if (wrongActivity) return SkipDiagnostics.Phase.PAGE_MISMATCH;
+            if (!requiredInWindow(pkg, window, nodes, required)) return SkipDiagnostics.Phase.AD_EVIDENCE_MISSING;
         }
         return null;
     }
@@ -125,19 +173,21 @@ final class SplashRules {
         for (int depth = 0; depth < 40; depth++) {
             AccessibilityNodeInfo parent = root.getParent();
             if (parent == null) {
-                List<AccessibilityNodeInfo> nodes = UiDriver.walkComplete(root);
-                for (int i = 0; i < required.length(); i++) {
-                    JSONObject selector = required.optJSONObject(i);
-                    if (nodes.stream().noneMatch(node -> node.getWindowId() == window
-                            && targetMatches(pkg, node, selector, true))) {
-                        return false;
-                    }
-                }
-                return true;
+                return requiredInWindow(pkg, window, UiDriver.walkComplete(root), required);
             }
             root = parent;
         }
         return false;
+    }
+
+    private static boolean requiredInWindow(String pkg, int window, List<AccessibilityNodeInfo> nodes, JSONArray required) {
+        for (int i = 0; i < required.length(); i++) {
+            JSONObject selector = required.optJSONObject(i);
+            if (nodes.stream().noneMatch(node -> node.getWindowId() == window && targetMatches(pkg, node, selector, true))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean targetMatches(String pkg, AccessibilityNodeInfo node, JSONObject selector) {

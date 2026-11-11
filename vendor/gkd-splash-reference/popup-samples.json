@@ -1,0 +1,312 @@
+[
+  {
+    "package": "com.taobao.idlefish",
+    "name": "闲鱼",
+    "group": "夜市推广弹窗",
+    "activity": "com.idlefish.flutterbridge.flutterboost.boost.FishFlutterBoostActivity",
+    "versionName": "7.23.40",
+    "snapshot": "https://i.gkd.li/i/23183586",
+    "sha256": "28963d6497f662c387b6e523f937db80dea87eafc5c0a19b57d80efe194c4069",
+    "selector": "@TextView[id=null][text=\"\"][desc=null][childCount=0][clickable=true] < View[childCount=1] < View[childCount=1] <2 View[id=\"root\"][childCount=2] < WebView[text=\"夜市氛围弹框\"] <<4 FrameLayout[id=\"com.taobao.idlefish:id/fish_layer_container_id\"]"
+  },
+  {
+    "package": "com.taobao.idlefish",
+    "name": "闲鱼",
+    "group": "搜索页红包推广弹窗",
+    "activity": "com.taobao.idlefish.search_implement.SearchResultActivity",
+    "versionName": "7.23.40",
+    "snapshot": "https://i.gkd.li/i/23125419",
+    "sha256": "83fe647bd2f60b6a4e267d6413d35e6bd0a07ecf10ee46c71e810b0eb22ee541",
+    "selector": "View[childCount=5] > @TextView[id=null][text=\"\"][desc=null][childCount=0][clickable=true] - TextView[text=\"收下红包\"][clickable=true] <<9 FrameLayout[id=\"com.taobao.idlefish:id/fish_layer_container_id\"]"
+  },
+  {
+    "package": "com.sdu.didi.psnger",
+    "name": "滴滴",
+    "activity": "com.didi.sdk.app.MainActivity",
+    "versionName": "6.9.17",
+    "snapshot": "https://i.gkd.li/i/18173921",
+    "sha256": "e43508ef4946bde0be7686c3d1f2a58d56f98eb9776698f527b573f1eab45465",
+    "selector": "ViewPager[id=\"com.sdu.didi.psnger:id/popViewpager\"][desc=\"广告弹窗\"] +2 ImageView[id=\"com.sdu.didi.psnger:id/popClose\"][desc=\"关闭弹窗\"][clickable=true]",
+    "group": "首页广告弹窗"
+  },
+  {
+    "package": "me.ele",
+    "name": "饿了么",
+    "activity": "me.ele.application.ui.Launcher.LauncherActivity",
+    "versionName": "11.15.88",
+    "snapshot": "https://i.gkd.li/i/17321305",
+    "sha256": "47a243f169da1bef8762ec7663eac32533fae84f98a69339217f824e4292550a",
+    "selector": "LinearLayout[id=\"me.ele:id/floating_view\"] >2 FrameLayout[childCount=2] > Button[id=\"me.ele:id/iv_normal\"][desc=\"抢大牌免单\"] + Button[id=\"me.ele:id/iv_close\"][desc=\"关闭抢大牌免单\"][clickable=true]",
+    "group": "首页免单推广浮窗"
+  },
+  {
+    "package": "com.sankuai.meituan.takeoutnew",
+    "name": "美团外卖",
+    "activity": "com.sankuai.waimai.business.page.homepage.MainActivity",
+    "versionName": "8.51.3",
+    "snapshot": "https://i.gkd.li/i/25865139",
+    "sha256": "e5244bbabe93a7182f64e9a0d5e6449d384f7112a1445e2916cc548096d611af",
+    "selector": "LinearLayout[id=\"com.sankuai.meituan.takeoutnew:id/module_container\"] >5 FrameLayout[childCount=5] > @FrameLayout[id=null][clickable=true][childCount=1] - FrameLayout >5 TextView[text=\"外卖神券\"]",
+    "group": "首页外卖神券推广弹窗"
+  },
+  {
+    "package": "com.tongcheng.android",
+    "name": "同程旅行",
+    "activity": "com.tongcheng.android.TongchengMainActivity",
+    "versionName": "11.1.4.1",
+    "snapshot": "https://i.gkd.li/i/20921290",
+    "sha256": "f48950952d0513f4309ab192fb535882ccdbb1df53f8b95a704a496f0a8d62f5",
+    "selector": "LinearLayout[id=\"com.tongcheng.android:id/home_ad_dialog_indicator_ctn\"] + ImageView[id=\"com.tongcheng.android:id/iv_home_ad_close\"][clickable=true][childCount=0]",
+    "group": "首页推广弹窗"
+  },
+  {
+    "package": "ctrip.android.view",
+    "name": "携程旅行",
+    "activity": "ctrip.android.publicproduct.home.business.activity.CtripHomeActivity",
+    "versionName": "8.82.2",
+    "snapshot": "https://i.gkd.li/i/20921664",
+    "sha256": "3c64df72404ff202017a343b7408c1bbdc22b07aa7979fcaaf18c31ad394736f",
+    "selector": "@ImageView[id=\"ctrip.android.view:id/a\"][clickable=true][childCount=0] < RelativeLayout + RelativeLayout[id=\"ctrip.android.view:id/a\"] >5 ImageView[desc=\"广告素材\"] + TextView[text=\"去预订\"]",
+    "group": "首页预订推广弹窗"
+  },
+  {
+    "package": "com.quark.browser",
+    "name": "夸克浏览器",
+    "activity": "com.ucpro.BrowserActivity",
+    "versionName": "6.6.3.371",
+    "snapshot": "https://i.gkd.li/i/13292571",
+    "sha256": "198fa71b012db11da862f1cf027c9bcac190935f45c50e0b3501a6ad4681e5e6",
+    "selector": "LinearLayout[id=\"com.quark.browser:id/rl_notice_dialog_root\"] > FrameLayout[id=\"com.quark.browser:id/operate_content_layout\"] + ImageView[id=\"com.quark.browser:id/close_img\"][clickable=true][childCount=0]",
+    "group": "运营广告弹窗"
+  },
+  {
+    "package": "com.heytap.market",
+    "name": "OPPO软件商店",
+    "activity": "com.heytap.cdo.client.cards.page.main.maintab.MainTabActivity",
+    "versionName": "11.9.0beta2",
+    "snapshot": "https://i.gkd.li/i/14469932",
+    "sha256": "3565aec7c3072600afb47ac0d546172f3f487518ab2eea874a8db0a3f56b8095",
+    "selector": "RelativeLayout[id=\"com.heytap.market:id/view_id_float_ad\"] > ImageView[desc=\"图片\"] + ImageView[desc=\"关闭\"][clickable=true][childCount=0]",
+    "group": "首页浮窗广告"
+  },
+  {
+    "package": "com.xiaomi.market",
+    "name": "小米应用商店",
+    "activity": "com.xiaomi.market.business_ui.main.MarketTabActivity",
+    "versionName": "4.118.4",
+    "snapshot": "https://i.gkd.li/i/28141509",
+    "sha256": "525ae25498229d636a1c14dd2a8b0bbcb12265071fe19504fe52793d326b5580",
+    "selector": "ImageView[id=\"com.xiaomi.market:id/iv_ad\"] + ImageView[id=\"com.xiaomi.market:id/iv_close\"][desc=\"关闭\"][clickable=true][childCount=0]",
+    "group": "首页广告弹窗"
+  },
+  {
+    "package": "com.huawei.appmarket",
+    "name": "华为应用市场",
+    "activity": "com.huawei.appmarket.MarketActivity",
+    "versionName": "13.5.1.301",
+    "snapshot": "https://i.gkd.li/i/15523964",
+    "sha256": "63733960cd2d229ee43a7186ee0c62bb7c737751d584121b2b9fcd3fccba21d8",
+    "selector": "ImageView[id=\"com.huawei.appmarket:id/small_banner\"][desc=\"图片\"] + ImageView[id=\"com.huawei.appmarket:id/close_icon\"][desc=\"关闭\"][clickable=true][childCount=0]",
+    "group": "横幅广告"
+  },
+  {
+    "package": "com.wuba.zhuanzhuan",
+    "name": "转转",
+    "activity": "com.zhuanzhuan.module.reach.channel.impl.uicode.ReachDialogActivity",
+    "versionName": "10.31.0",
+    "snapshot": "https://i.gkd.li/i/14927441",
+    "sha256": "301fdc2cd852e74861a86414b6d328ba86242d1b1e732d1fe433a8c9926cc711",
+    "selector": "FrameLayout[id=\"com.wuba.zhuanzhuan:id/a9y\"] > ViewGroup[childCount=3] > ImageView[id=\"com.wuba.zhuanzhuan:id/dao\"] + ImageView[id=\"com.wuba.zhuanzhuan:id/bcp\"][clickable=true][childCount=0]",
+    "group": "广告弹窗"
+  },
+  {
+    "package": "com.wuba.zhuanzhuan",
+    "name": "转转",
+    "activity": "com.zhuanzhuan.module.reach.channel.impl.uicode.ReachDialogActivity",
+    "versionName": "10.31.0",
+    "snapshot": "https://i.gkd.li/i/15140820",
+    "sha256": "aa4e0d2573514df733150a538d3828fdcf3fe8bb24f9cc6667024037c123467a",
+    "selector": "FrameLayout[id=\"com.wuba.zhuanzhuan:id/a9y\"] > ViewGroup[childCount=2] > ImageView[id=\"com.wuba.zhuanzhuan:id/c4l\"] + ImageView[id=\"com.wuba.zhuanzhuan:id/bcp\"][clickable=true][childCount=0]",
+    "group": "广告弹窗"
+  },
+  {
+    "package": "com.achievo.vipshop",
+    "name": "唯品会",
+    "activity": "com.achievo.vipshop.activity.LodingActivity",
+    "versionName": "9.86.4",
+    "snapshot": "https://i.gkd.li/i/33897647",
+    "sha256": "72aac7f2ed952a8d8224c8f6037e3c92525c65d27bfd0c53813d550d0919b71f",
+    "selector": "@FrameLayout[id=\"com.achievo.vipshop:id/iv_close\"][clickable=true][childCount=1] + FrameLayout[id=\"com.achievo.vipshop:id/coupon_la_container\"]",
+    "group": "优惠券推广弹窗"
+  },
+  {
+    "package": "com.dragon.read",
+    "name": "番茄免费小说",
+    "activity": "com.dragon.read.pages.main.MainFragmentActivity",
+    "versionName": "5.9.3.32",
+    "snapshot": "https://i.gkd.li/i/12910159",
+    "sha256": "851f20122bd571c2682f4ab2a914b24bf79b6df4fccd1af3b14390bf0b296b8a",
+    "selector": "FrameLayout[id=\"com.dragon.read:id/y3\"] > FrameLayout[childCount=9] > FlattenUIText[text=\"番茄送你电商惊喜券\"] +4 FlattenUIText[text=\"去逛商城\"] + LynxFlattenUI[text=\"\"][clickable=true][childCount=0]",
+    "group": "书城电商券推广弹窗"
+  },
+  {
+    "package": "com.ss.android.article.news",
+    "name": "今日头条",
+    "group": "首页推广弹窗",
+    "activity": "com.ss.android.article.news.activity.MainActivity",
+    "versionName": "9.7.5",
+    "snapshot": "https://i.gkd.li/i/15314921",
+    "sha256": "fa449b6883e5b0ce8ea308ceb953ec2559c703025f9d8008b8bb5eee7d5b059b",
+    "selector": "FrameLayout[id=\"com.ss.android.article.news:id/g47\"][childCount=3] > ImageView[id=\"com.ss.android.article.news:id/g45\"] +2 ImageView[id=\"com.ss.android.article.news:id/g42\"][clickable=true][childCount=0]"
+  },
+  {
+    "package": "com.xiaomi.market",
+    "name": "小米应用商店",
+    "group": "首页悬浮推广弹窗",
+    "activity": "com.xiaomi.market.ui.HomeFloatWebActivity",
+    "versionName": "4.105.0",
+    "snapshot": "https://i.gkd.li/i/23249365",
+    "sha256": "769b9490570e68127c83f4f91b9b88eece793c488894360c9032d53c414cd3dd",
+    "selector": "FrameLayout[id=\"com.xiaomi.market:id/webview_container\"] > FrameLayout[id=\"com.xiaomi.market:id/webview\"] >2 WebView[text=\"小米应用商店\"][childCount=2] >4 View[childCount=2] > View[childCount=2] + Button[desc=\"关闭\"][clickable=true][childCount=0]"
+  },
+  {
+    "package": "com.tmall.wireless",
+    "name": "手机天猫",
+    "activity": "com.tmall.wireless.turboweb.container.TurboWebViewActivity",
+    "versionName": "15.7.5",
+    "snapshot": "https://i.gkd.li/i/13222500",
+    "sha256": "05bdd57a9e5061bca10492c4260ae21665dfeb87b890a0b79ac3a35f6e827fe3",
+    "selector": "FrameLayout[id=\"com.tmall.wireless:id/layermanager_penetrate_webview_container_id\"] >5 WebView[text=\"策略流通用poplayer\"][childCount=1] >3 View[id=\"recyclerview\"][childCount=10] > View[id=\"4401364540\"][childCount=2] > Image[id=null][text=\"TB1XICqw4v1gK0jSZFFXXb0sXXa-105-105\"][clickable=true][childCount=0]",
+    "group": "电商推广弹窗"
+  },
+  {
+    "package": "com.tmall.wireless",
+    "name": "手机天猫",
+    "activity": "com.tmall.wireless.webview.TMCommonWebViewActivity",
+    "versionName": "15.7.5",
+    "snapshot": "https://i.gkd.li/i/13222510",
+    "sha256": "45c8d53fbfaa826c14fe49b2a5a1a6252b06789746bf0a6738afb26a06a907d4",
+    "selector": "FrameLayout[id=\"com.tmall.wireless:id/layermanager_penetrate_webview_container_id\"] >5 WebView[text=\"策略流通用poplayer\"][childCount=1] >3 View[id=\"recyclerview\"][childCount=10] > View[id=\"4401364540\"][childCount=2] > Image[id=null][text=\"TB1XICqw4v1gK0jSZFFXXb0sXXa-105-105\"][clickable=true][childCount=0]",
+    "group": "电商推广弹窗"
+  },
+  {
+    "package": "com.wondertek.paper",
+    "name": "澎湃新闻",
+    "activity": "cn.thepaper.paper.ui.main.MainActivity",
+    "versionName": "9.7.9",
+    "snapshot": "https://i.gkd.li/i/12899226",
+    "sha256": "743f4cf96de2f643a260fd5142604a641962ae267d2c87ee6ad877c788452a31",
+    "selector": "TextView[id=\"com.wondertek.paper:id/second_num\"] < RelativeLayout[id=\"com.wondertek.paper:id/relative_layout\"] + ImageView[id=\"com.wondertek.paper:id/close_photo\"][clickable=true][childCount=0]",
+    "group": "首页论坛推广弹窗"
+  },
+  {
+    "package": "com.duowan.kiwi",
+    "name": "虎牙直播",
+    "activity": "com.duowan.kiwi.homepage.Homepage",
+    "versionName": "11.8.44",
+    "snapshot": "https://i.gkd.li/i/13625453",
+    "sha256": "ba78eb8fcb5fe45dcc463f254da2fff53a5f65dafcd635f2875f80619e542fcb",
+    "selector": "LinearLayout[id=\"com.duowan.kiwi:id/ll_content\"] > FrameLayout[id=\"com.duowan.kiwi:id/animation_view\"] + FrameLayout[id=\"com.duowan.kiwi:id/v_close\"][clickable=true][childCount=1]",
+    "group": "首页游戏预约推广弹窗"
+  },
+  {
+    "package": "com.ss.android.article.lite",
+    "name": "头条搜索极速版",
+    "activity": "com.ss.android.article.lite.activity.SplashActivity",
+    "versionName": "9.4.6.0",
+    "snapshot": "https://i.gkd.li/i/12705414",
+    "sha256": "4df1c68825910d28cc26101df6f9abe89511fee0e5c187f0bf1bbdec5e135406",
+    "selector": "@ImageView[id=\"com.ss.android.article.lite:id/rf\"][desc=\"关闭\"][clickable=true][childCount=0] + TextView[id=\"com.ss.android.article.lite:id/sa\"][text=\"恭喜！你收到一个现金红包\"]",
+    "group": "首页现金红包推广弹窗"
+  },
+  {
+    "package": "com.ss.android.article.video",
+    "name": "西瓜视频",
+    "activity": "com.ss.android.article.video.activity.SplashActivity",
+    "versionName": "8.1.0",
+    "snapshot": "https://i.gkd.li/i/13620299",
+    "sha256": "a8e2d94f16b594f93333b2b2596e29cd0041fde7a9c52f551155d00ae3817dc5",
+    "selector": "FrameLayout[id=\"com.ss.android.article.video:id/an9\"] > FrameLayout[childCount=17] > FlattenUIText[text=\"开心收下\"] +2 @FlattenUIImage[id=null][clickable=true][childCount=0]",
+    "group": "首页周末红包推广弹窗"
+  },
+  {
+    "package": "tv.danmaku.bili",
+    "name": "哔哩哔哩",
+    "activity": "com.bilibili.bililive.room.ui.roomv3.LiveRoomActivityV3",
+    "versionName": "7.42.0",
+    "snapshot": "https://i.gkd.li/i/13200549",
+    "sha256": "44122eae679352861b88e296ce1463e07ad5bf209b09b4683693afd6a7651958",
+    "selector": "ViewGroup[id=\"tv.danmaku.bili:id/shopping_card_motion_layout\"] > ImageView[id=\"tv.danmaku.bili:id/shopping_close\"][clickable=true][childCount=0]",
+    "group": "直播间购物推广卡片"
+  },
+  {
+    "package": "tv.danmaku.bili",
+    "name": "哔哩哔哩",
+    "activity": "com.bilibili.ship.theseus.detail.UnitedBizDetailsActivity",
+    "versionName": "7.50.0",
+    "snapshot": "https://i.gkd.li/i/12892611",
+    "sha256": "b0165645bfba88617165fa52bf0d31101a513a03312938e39392b69e0b8687b4",
+    "selector": "@ImageView[id=\"tv.danmaku.bili:id/toast_x\"][clickable=true][childCount=0] +2 LinearLayout[id=\"tv.danmaku.bili:id/toast_jump_container\"] > TextView[id=\"tv.danmaku.bili:id/toast_jump\"][text=\"立即免流\"]",
+    "group": "播放器免流星卡推广"
+  },
+  {
+    "package": "com.tencent.karaoke",
+    "name": "全民K歌",
+    "activity": "com.tencent.karaoke.module.splash.ui.SplashBaseActivity",
+    "versionName": "8.15.38.278",
+    "snapshot": "https://i.gkd.li/i/13363281",
+    "sha256": "8515f1cf169dc27844f4230a2c3e1ebd4c1754fa99e4d8b222e1c866243e7385",
+    "selector": "LinearLayout[id=\"com.tencent.karaoke:id/htn\"] >3 ViewGroup[childCount=1] > ViewGroup[desc*=\"双十一大促\"][desc$=\"霸屏的按钮\"] <n ViewGroup + @ViewGroup[clickable=true][childCount=1] > ViewGroup[childCount=0]",
+    "group": "活动推广弹窗"
+  },
+  {
+    "package": "com.ss.android.ugc.aweme",
+    "name": "抖音",
+    "activity": "com.ss.android.ugc.aweme.main.MainActivity",
+    "versionName": "27.2.0",
+    "snapshot": "https://i.gkd.li/i/12749276",
+    "sha256": "dfa91f1bdef0c2ca9f6ddef807aa89c9e8c64c0f2cbf86e2bc9b8decb892bf1f",
+    "selector": "FrameLayout[id=\"com.ss.android.ugc.aweme:id/pi-\"][childCount=2] > FrameLayout[childCount=2] > ImageView[id=\"com.ss.android.ugc.aweme:id/a+w\"][desc=\"活动入口\"] <n FrameLayout + ImageView[id=\"com.ss.android.ugc.aweme:id/c8g\"][desc=\"关闭\"][clickable=true][childCount=0]",
+    "group": "首页活动推广浮窗"
+  },
+  {
+    "package": "com.smile.gifmaker",
+    "name": "快手",
+    "activity": "com.yxcorp.plugin.search.SearchActivity",
+    "versionName": "14.7.20.49696",
+    "snapshot": "https://i.gkd.li/i/32433383",
+    "sha256": "4a42b2294946d0519244c7cb814a8dbb1cf4afa794ebf7accbaf92143f7928d7",
+    "selector": "FrameLayout[id=\"com.smile.gifmaker:id/krn_container\"] >4 ViewGroup[childCount=3] > ViewGroup[childCount=6] > TextView[text=\"生活服务新人敢省券\"] <4 ViewGroup[childCount=6] +2 @ViewGroup[id=null][clickable=true][childCount=1] > ViewGroup[childCount=1] > ImageView[childCount=0]",
+    "group": "搜索页生活服务新人红包推广"
+  },
+  {
+    "package": "com.tencent.qqlive",
+    "name": "腾讯视频",
+    "activity": "com.tencent.qqlive.redpacket.rain.OpenRedPacketActivity",
+    "versionName": "8.9.95.28007",
+    "snapshot": "https://i.gkd.li/i/13842643",
+    "sha256": "485eca62e1e26c83091c1d68532f8a284054a77d3db0c0f5e9fa4519f04cb664",
+    "selector": "ViewGroup[id=\"com.tencent.qqlive:id/arg\"][childCount=5] > @ImageView[id=\"com.tencent.qqlive:id/arg\"][clickable=true][childCount=0] +3 TextView[id=\"com.tencent.qqlive:id/arg\"][text=\"精美时装丰厚福利  登录即领\"]",
+    "group": "首页游戏福利推广弹窗"
+  },
+  {
+    "package": "com.ss.android.article.news",
+    "name": "今日头条",
+    "activity": "com.ss.android.ugc.detail.activity.TikTokActivity",
+    "versionName": "9.5.9",
+    "snapshot": "https://i.gkd.li/i/13761236",
+    "sha256": "bb8aa67daf8b57f1b699a93863afde88e98c6299e531064c941b099b6a699cb3",
+    "selector": "FrameLayout[id=\"com.ss.android.article.news:id/iun\"][childCount=2] > ImageView[id=\"com.ss.android.article.news:id/cvc\"] + ImageView[id=\"com.ss.android.article.news:id/ben\"][clickable=true][childCount=0]",
+    "group": "视频页促销浮窗"
+  },
+  {
+    "package": "com.kugou.android",
+    "name": "酷狗音乐",
+    "activity": "com.kugou.android.app.MediaActivity",
+    "versionName": "12.0.6",
+    "snapshot": "https://i.gkd.li/i/13558426",
+    "sha256": "32dc14d4f1caea134dec048ddbfb491f9a944b4e9211ca0f0cc3b0e900a1d289",
+    "selector": "FrameLayout[id=\"com.kugou.android:id/rdl\"] > ViewGroup[childCount=2] > ImageView[id=\"com.kugou.android:id/f29\"] + @FrameLayout[id=\"com.kugou.android:id/egj\"][clickable=true][childCount=1] >2 ImageView[id=\"com.kugou.android:id/gxc\"][childCount=0]",
+    "group": "个人页会员推广横幅"
+  }
+]

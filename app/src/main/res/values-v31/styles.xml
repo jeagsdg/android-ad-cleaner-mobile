@@ -1,0 +1,6 @@
+<resources>
+    <style name="AppTheme" parent="AppThemeLightNavigation">
+        <item name="android:windowSplashScreenBackground">#F5F6F0</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launch_mark</item>
+    </style>
+</resources>

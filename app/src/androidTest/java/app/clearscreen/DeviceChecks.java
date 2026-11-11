@@ -32,7 +32,19 @@ public class DeviceChecks extends Instrumentation {
             if(root!=null&&getTargetContext().getPackageName().equals(String.valueOf(root.getPackageName())))return;
             Thread.sleep(100);
         }
-        require(false,"results activity did not return to the foreground");
+        AccessibilityNodeInfo current = service.getRootInActiveWindow();
+        require(false,"results activity did not return to the foreground; progress=" + service.progress
+                + "; root=" + (current == null ? "null" : current.getPackageName() + "/" + current.getWindowId())
+                + "; scan=" + new Store(getTargetContext()).read("scan"));
+    }
+    private void useCleaner(CleanerService service, Runnable operation) throws Exception {
+        Context context = getTargetContext();
+        context.startActivity(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        require(waitUntil(() -> {
+            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            return root != null && context.getPackageName().equals(String.valueOf(root.getPackageName()));
+        }), "cleaning starts from the NetScreen window");
+        operation.run();
     }
     @Override public void onStart(){Bundle result=new Bundle();try{
         if(suite.equals("network")){NetworkChecks.run(this);result.putString("stream","PASS: "+assertions+" network assertions on Android "+Build.VERSION.RELEASE+"\n");finish(RESULT_OK,result);return;}
@@ -76,6 +88,13 @@ public class DeviceChecks extends Instrumentation {
             finish(RESULT_OK, result);
             return;
         }
+        if (suite.equals("rule-preview")) {
+            rulePreviewChecks(new Store(getTargetContext()), connectService());
+            result.putString("stream", "PASS: " + assertions + " rule-preview assertions on Android "
+                    + Build.VERSION.RELEASE + "; isolated fixture only\n");
+            finish(RESULT_OK, result);
+            return;
+        }
         if (suite.equals("release-ui")) {
             releaseUiChecks(connectService());
             result.putString("stream", "PASS: " + assertions + " release UI assertions on Android "
@@ -98,17 +117,19 @@ public class DeviceChecks extends Instrumentation {
         Rule rule=new Rule(new JSONObject("{\"id\":\"test-only\",\"title\":\"隔离测试页面\",\"package\":\"app.clearscreen.testfixture\",\"activity\":\".FixtureActivity\",\"targets\":[\"个性化推荐\",\"限制广告跟踪\",\"应用更新通知\"]}"));
         UiDriver ui=new UiDriver(service,()->false);ui.open(rule);
         require(ui.find("个性化推荐").checked,"initial recommendation on");require(!ui.find("限制广告跟踪").checked,"initial protection off");
-        service.clean(Collections.singletonList(rule));await(service);
+        useCleaner(service,()->service.clean(Collections.singletonList(rule)));await(service);
         JSONArray entries=store.read("journal");require(entries.length()==2,"only two ad-related changes recorded");
         require(entries.getJSONObject(0).getString("status").equals("changed"),"verified journal entry");
         ui.open(rule);require(!ui.find("个性化推荐").checked,"recommendation disabled after fresh launch");require(ui.find("限制广告跟踪").checked,"inverse protection enabled");require(ui.find("应用更新通知").checked,"service notification untouched");
-        service.clean(Collections.singletonList(rule));await(service);require(store.read("journal").length()==2,"idempotent second run");
-        service.restore(entries.getJSONObject(0));await(service);ui.open(rule);require(ui.find("个性化推荐").checked,"restore original on");
-        service.restore(entries.getJSONObject(1));await(service);ui.open(rule);require(!ui.find("限制广告跟踪").checked,"restore original off");require(ui.find("应用更新通知").checked,"service survives restore");
+        useCleaner(service,()->service.clean(Collections.singletonList(rule)));await(service);require(store.read("journal").length()==2,"idempotent second run");
+        JSONObject firstChange=entries.getJSONObject(0), secondChange=entries.getJSONObject(1);
+        useCleaner(service,()->service.restore(firstChange));await(service);ui.open(rule);require(ui.find("个性化推荐").checked,"restore original on");
+        useCleaner(service,()->service.restore(secondChange));await(service);ui.open(rule);require(!ui.find("限制广告跟踪").checked,"restore original off");require(ui.find("应用更新通知").checked,"service survives restore");
         JSONObject confirmationJson=rule.json();confirmationJson.remove("routes");confirmationJson.put("activity",".ConfirmActivity");confirmationJson.put("targets",new JSONArray().put("个性化推荐"));Rule confirmation=new Rule(confirmationJson);
-        service.clean(Collections.singletonList(confirmation));await(service);JSONArray confirmed=store.read("journal");require(confirmed.length()==3,"confirmation change recorded");require(confirmed.getJSONObject(2).getString("status").equals("changed"),"known disable dialog confirmed and read back");
+        useCleaner(service,()->service.clean(Collections.singletonList(confirmation)));await(service);JSONArray confirmed=store.read("journal");require(confirmed.length()==3,"confirmation change recorded");require(confirmed.getJSONObject(2).getString("status").equals("changed"),"known disable dialog confirmed and read back");
         ui.open(confirmation);require(!ui.find("个性化推荐").checked,"confirmed setting persisted");
-        service.restore(confirmed.getJSONObject(2));await(service);ui.open(confirmation);
+        JSONObject confirmationChange=confirmed.getJSONObject(2);
+        useCleaner(service,()->service.restore(confirmationChange));await(service);ui.open(confirmation);
         JSONObject restoredConfirmation=store.read("journal").optJSONObject(2);
         UiDriver.Found restoredControl=ui.find("个性化推荐");
         require(restoredControl!=null&&restoredControl.checked,"confirmed setting restored. Journal "
@@ -117,16 +138,18 @@ public class DeviceChecks extends Instrumentation {
         ui.open(rule);require(ui.tap(Collections.singletonList("发送测试通知")),"post fixture notifications through visible button");
         long channelDeadline=System.currentTimeMillis()+10000;while(store.read("channels").length()==0&&System.currentTimeMillis()<channelDeadline)Thread.sleep(200);
         JSONArray channels=store.read("channels");require(channels.length()==1,"marketing detected, weather warning excluded");Rule channel=new Rule(channels.getJSONObject(0));require(channel.channelName.equals("活动优惠"),"correct marketing channel");
-        service.clean(Collections.singletonList(channel));await(service);JSONArray withChannel=store.read("journal");require(withChannel.length()==4,"channel change recorded");require(withChannel.getJSONObject(3).getString("status").equals("changed"),"channel change verified");
-        ui.open(channel);require(!ui.find("允许通知").checked,"AOSP channel disabled");service.restore(withChannel.getJSONObject(3));await(service);ui.open(channel);require(ui.find("允许通知").checked,"AOSP channel restored");
+        useCleaner(service,()->service.clean(Collections.singletonList(channel)));await(service);JSONArray withChannel=store.read("journal");require(withChannel.length()==4,"channel change recorded");require(withChannel.getJSONObject(3).getString("status").equals("changed"),"channel change verified");
+        JSONObject channelChange=withChannel.getJSONObject(3);
+        ui.open(channel);require(!ui.find("允许通知").checked,"AOSP channel disabled");useCleaner(service,()->service.restore(channelChange));await(service);ui.open(channel);require(ui.find("允许通知").checked,"AOSP channel restored");
         require(!store.export().contains("测试通知正文不得进入净屏记录"),"notification body not persisted in export");
         Rule alternate=new Rule(new JSONObject("{\"id\":\"route-fixture\",\"title\":\"备用入口与同义名称\",\"package\":\"app.clearscreen.testfixture\",\"targets\":[\"个性化广告推荐\",\"限制广告跟踪\"],\"aliases\":{\"个性化广告推荐\":[\"个性化推荐\"]},\"routes\":[{\"activity\":\".PrivateSettingsActivity\"},{\"activity\":\".FixtureActivity\",\"anchors\":[\"不存在的页面标题\"]},{\"activity\":\".RouteActivity\",\"path\":[[\"广告设置\"]]}]}"));
         ui.open(alternate);require(ui.attempts().length()==3,"private direct entry and wrong page fallback to menu");require(ui.find("个性化广告推荐").checked,"route selection never toggles setting");
-        service.clean(Collections.singletonList(alternate));await(service);JSONArray routed=store.read("journal");require(routed.length()==6,"alias and inverse changes recorded through fallback");
+        useCleaner(service,()->service.clean(Collections.singletonList(alternate)));await(service);JSONArray routed=store.read("journal");require(routed.length()==6,"alias and inverse changes recorded through fallback");
         JSONObject pinned=routed.getJSONObject(4);Rule pinnedRule=new Rule(pinned.getJSONObject("rule"));require(pinnedRule.routes.size()==1&&pinnedRule.routes.get(0).activity.equals(".RouteActivity"),"restoration pins successful menu entry");require(pinned.getString("label").equals("个性化推荐"),"actual alias label retained");
         require(store.read("scan").getJSONObject(0).getJSONArray("attempts").length()==3,"diagnostic retains bounded route attempts");
-        service.restoreAll(Arrays.asList(routed.getJSONObject(5),pinned));await(service);ui.open(alternate);require(ui.find("个性化广告推荐").checked,"batch restore original recommendation");require(!ui.find("限制广告跟踪").checked,"batch restore inverse original");require(ui.find("应用更新通知").checked,"batch restore preserves service notification");
-        service.clean(Arrays.asList(alternate,rule));service.stop();await(service);require(store.read("journal").length()==6,"immediate stop performs no writes");
+        List<JSONObject> toRestore=Arrays.asList(routed.getJSONObject(5),pinned);
+        useCleaner(service,()->service.restoreAll(toRestore));await(service);ui.open(alternate);require(ui.find("个性化广告推荐").checked,"batch restore original recommendation");require(!ui.find("限制广告跟踪").checked,"batch restore inverse original");require(ui.find("应用更新通知").checked,"batch restore preserves service notification");
+        useCleaner(service,()->{service.clean(Arrays.asList(alternate,rule));service.stop();});await(service);require(store.read("journal").length()==6,"immediate stop performs no writes");
         JSONArray stopped=store.read("scan");require(stopped.length()==5,"stopped run retains all untouched targets");boolean queued=false;for(int i=0;i<stopped.length();i++){JSONObject item=stopped.getJSONObject(i);if(item.getJSONObject("rule").optString("id").equals("test-only")&&item.optString("status").equals("queued"))queued=true;}require(queued,"unvisited rule remains queued for retry");
         boolean halted=false;try{new UiDriver(service,()->true).current(rule);}catch(UiDriver.Halt expected){halted=true;}require(halted,"cancellation prevents access");
         getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(1000);
@@ -134,7 +157,7 @@ public class DeviceChecks extends Instrumentation {
         Rule delayed=new Rule(new JSONObject("{\"id\":\"delayed-fixture\",\"title\":\"延迟加载\",\"package\":\"app.clearscreen.testfixture\",\"activity\":\".DelayedActivity\",\"targets\":[\"个性化推荐\"]}"));
         Rule consent=new Rule(new JSONObject("{\"id\":\"consent-fixture\",\"title\":\"需先确认协议\",\"package\":\"app.clearscreen.testfixture\",\"activity\":\".ConsentActivity\",\"targets\":[\"个性化推荐\"]}"));
         long began=SystemClock.elapsedRealtime();
-        service.clean(Arrays.asList(consent,delayed));
+        useCleaner(service,()->service.clean(Arrays.asList(consent,delayed)));
         await(service);
         long elapsed = SystemClock.elapsedRealtime() - began;
         JSONArray batch=store.read("scan");
@@ -467,7 +490,9 @@ public class DeviceChecks extends Instrumentation {
         SkipDiagnostics.LOCAL.start(FIXTURE_PACKAGE, store.packageVersion(FIXTURE_PACKAGE));
         launchSplashFixture(service, "plain");
         require(waitForFixtureText(service, "跳过 5", 6_000), "ordinary skip control remains visible");
-        require(waitUntil(() -> SkipDiagnostics.LOCAL.summary(true, true).contains("未通过规则")), "miss reason observed");
+        require(waitUntil(() -> SkipDiagnostics.LOCAL.summary(true, true)
+                .contains(SkipDiagnostics.Phase.AD_EVIDENCE_MISSING.label)),
+                "missing ad evidence observed: " + SkipDiagnostics.LOCAL.summary(true, true));
         require(!feedbackVisible(automation) && store.splashCount() == before, "no badge or count on miss");
 
         launchSplashFixture(service, "ad");
@@ -503,6 +528,44 @@ public class DeviceChecks extends Instrumentation {
         require(SkipDiagnostics.LOCAL.summary(true, true).isEmpty(), "diagnostic can be cleared");
         store.setSplashEnabled(false);
         store.setSkipToastEnabled(true);
+    }
+
+    private void rulePreviewChecks(Store store, CleanerService service) throws Exception {
+        boolean splash = store.splashEnabled();
+        Set<String> excluded = store.splashExcluded();
+        Set<String> splashExcluded = store.skipExcluded(CustomSkipRule.SPLASH);
+        long before = store.splashCount();
+        try {
+            store.setSplashEnabled(true);
+            store.setSplashExcluded(Collections.emptySet());
+            store.setSkipExcluded(CustomSkipRule.SPLASH, Collections.emptySet());
+            CustomSkipRule draft = new CustomSkipRule(FIXTURE_PACKAGE, FIXTURE_PACKAGE + ".SplashActivity",
+                    CustomSkipRule.SPLASH, "", "跳过 5", "");
+            Context context = getTargetContext();
+            context.startActivity(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            require(waitUntil(() -> appNode(service, "开屏广告跳过") != null), "preview starts from NetScreen");
+            java.util.concurrent.atomic.AtomicBoolean started = new java.util.concurrent.atomic.AtomicBoolean();
+            require(waitUntil(() -> {
+                runOnMainSync(() -> started.set(service.startRulePreview(Collections.singletonList(draft))));
+                return started.get();
+            }), "preview starts on the service main thread after pending actions finish");
+            launchSplashFixture(service, "ad");
+            require(waitUntil(() -> RulePreview.LOCAL.summary(true).contains("规则匹配通过")),
+                    "preview observes the actual target");
+            Thread.sleep(700);
+            require(fixtureShows(service, "跳过 5") && store.splashCount() == before,
+                    "preview leaves matched ad visible and counters unchanged");
+            runOnMainSync(RulePreview.LOCAL::clear);
+            launchSplashFixture(service, "ad");
+            require(waitForFixtureText(service, "已进入测试内容", 7000),
+                    "normal skipping resumes after leaving preview");
+            require(waitUntil(() -> store.splashCount() == before + 1), "only actual close is counted");
+        } finally {
+            runOnMainSync(RulePreview.LOCAL::clear);
+            store.setSplashEnabled(splash);
+            store.setSplashExcluded(excluded);
+            store.setSkipExcluded(CustomSkipRule.SPLASH, splashExcluded);
+        }
     }
 
     private void launchSplashFixture(CleanerService service, String mode) throws Exception {

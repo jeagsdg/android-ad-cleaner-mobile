@@ -77,6 +77,8 @@ final class AdvancedRuleEditor {
         screen.action(content, "从已安装应用选择", false, () -> screen.chooseSkipRuleApp(packageField));
 
         replaceDefaults = new CheckBox(screen);
+        replaceDefaults.setMinHeight(screen.dp(48));
+        replaceDefaults.setPaddingRelative(0, screen.dp(8), 0, screen.dp(8));
         replaceDefaults.setText("用此应用的规则替换默认开屏匹配");
         replaceDefaults.setChecked(!original.isEmpty() && original.get(0).replaceDefaults);
         if (CustomSkipRule.SPLASH.equals(mode)) content.addView(replaceDefaults);
@@ -98,6 +100,15 @@ final class AdvancedRuleEditor {
         error = screen.text("", 14, 0xff9d302a);
         error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         error.setVisibility(View.GONE);
+        screen.linkAction(content, "试运行当前内容", () -> {
+            try {
+                screen.beginRulePreview(CustomSkipRule.parse(CustomSkipRule.export(drafts())));
+                error.setVisibility(View.GONE);
+            } catch (IllegalArgumentException failure) {
+                showError(failure);
+            }
+        });
+        screen.linkAction(content, "查看试运行结果", screen::showRulePreview);
         content.addView(error);
     }
 
@@ -126,21 +137,15 @@ final class AdvancedRuleEditor {
                     List<CustomSkipRule> next = new ArrayList<>(rules);
                     next.removeAll(original);
                     int position = existingIndex < 0 ? next.size() : Math.min(existingIndex, next.size());
-                    for (int i = 0; i < steps.size(); i++) {
-                        try {
-                            next.add(position + i, steps.get(i).rule(sequence ? i : -1));
-                        } catch (IllegalArgumentException failure) {
-                            if (!sequence) throw failure;
-                            throw new IllegalArgumentException("第 " + (i + 1) + " 步 · " + failure.getMessage(), failure);
-                        }
-                    }
+                    List<CustomSkipRule> draft = drafts();
+                    next.addAll(position, draft);
                     screen.store.saveCustomSkipRules(next);
+                    if (RulePreview.LOCAL.packageName().equals(draft.get(0).pkg)) RulePreview.LOCAL.clear();
                     dialog.dismiss();
                     screen.render();
                     screen.toast(sequence ? "连续弹窗规则已保存" : "规则已保存");
                 } catch (IllegalArgumentException | IllegalStateException failure) {
-                    error.setText(failure.getMessage());
-                    error.setVisibility(View.VISIBLE);
+                    showError(failure);
                     form.post(() -> form.fullScroll(View.FOCUS_DOWN));
                 }
             });
@@ -152,6 +157,24 @@ final class AdvancedRuleEditor {
         dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
                 | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         dialog.show();
+    }
+
+    private List<CustomSkipRule> drafts() {
+        List<CustomSkipRule> result = new ArrayList<>();
+        for (int i = 0; i < steps.size(); i++) {
+            try {
+                result.add(steps.get(i).rule(sequence ? i : -1));
+            } catch (IllegalArgumentException failure) {
+                if (!sequence) throw failure;
+                throw new IllegalArgumentException("第 " + (i + 1) + " 步 · " + failure.getMessage(), failure);
+            }
+        }
+        return result;
+    }
+
+    private void showError(RuntimeException failure) {
+        error.setText(failure.getMessage());
+        error.setVisibility(View.VISIBLE);
     }
 
     private EditText numberField(LinearLayout parent, String label, int value) {
@@ -198,6 +221,8 @@ final class AdvancedRuleEditor {
             target = screen.skipRuleField(fields, "目标控件", "如 =关闭广告 或 com.example.app:id/close",
                     existing == null || existing.backsOut() ? "" : existing.label);
             gesture = new CheckBox(screen);
+            gesture.setMinHeight(screen.dp(48));
+            gesture.setPaddingRelative(0, screen.dp(8), 0, screen.dp(8));
             gesture.setText("使用手势点击已匹配控件");
             gesture.setChecked(existing != null && existing.gesture);
             fields.addView(gesture);
@@ -233,6 +258,8 @@ final class AdvancedRuleEditor {
 
         private RadioButton operation(String label) {
             RadioButton button = new RadioButton(screen);
+            button.setMinHeight(screen.dp(48));
+            button.setPaddingRelative(0, screen.dp(8), 0, screen.dp(8));
             button.setId(View.generateViewId());
             button.setText(label);
             return button;

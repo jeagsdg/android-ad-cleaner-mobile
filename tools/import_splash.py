@@ -16,6 +16,7 @@ VENDOR = ROOT / 'vendor/gkd-splash-reference'
 ASSETS = ROOT / 'app/src/main/assets'
 SOURCE_SHA = '5624137f8c70566a8dc985990dd18571600efa1c76129734703533ca5ee71c23'
 LICENSE_SHA = '3771ee111d68071b0e2994817cff88599d59d7272e75ea026f87af810160340e'
+SOURCE_COMMIT = '4746d192b4c57a4b62ed92a7f5deaf79e64fa811'
 
 STRING = r"""(?:"[^"\\]*"|'[^'\\]*'|`[^`\\]*`)"""
 ATTRIBUTE = r'\[(?:' + STRING + r'|[^\[\]"\'\x60])*\]'
@@ -287,14 +288,18 @@ def import_reviewed_samples(path):
         touch_only = sample.get('touchOnly') is True
         if countdown_close and (evidence != 'structure' or not required):
             raise ValueError(f'Countdown close needs a visible ad anchor in {sample["package"]}')
+        labelled_touch = guaranteed(target, lambda field, op, value: field in ('text', 'desc') and (
+            (op in ('=', '^=') and value == '跳过') or (op == '=' and value == '跳过广告')
+        ))
+        baidu_touch = (sample['package'], sample['activity'], evidence) == (
+            'com.baidu.BaiduMap', 'com.baidu.baidumaps.MapsActivity', 'resource',
+        ) and guaranteed(target, lambda field, op, value: (
+            field, op, value
+        ) == ('id', '=', 'com.baidu.BaiduMap:id/ms_skipView'))
         if touch_only and (sample.get('tap') is not True or not required or not guaranteed(
             target, lambda field, op, value: (field, op, value) == ('childCount', '=', 0)
-        ) or not guaranteed(
-            target, lambda field, op, value: field in ('text', 'desc') and (
-                (op in ('=', '^=') and value == '跳过') or (op == '=' and value == '跳过广告')
-            )
-        )):
-            raise ValueError(f'Reviewed touch control needs a labelled leaf and visible ad anchor in {sample["package"]}')
+        ) or not (labelled_touch or baidu_touch)):
+            raise ValueError(f'Reviewed touch control needs an identified leaf and visible ad anchor in {sample["package"]}')
         entry = dict(
             package=sample['package'], name=sample['name'], groupKey=-90, ruleIndex=index,
             selector=sample['selector'], snapshots=[sample['snapshot']], evidence=evidence,
@@ -369,7 +374,7 @@ def main():
     ))
     out = dict(
         source='https://github.com/ganlinte/GKD-subscription', sourcePath='dist/ganlin_gkd.json5',
-        sourceSha256=SOURCE_SHA, version=data['version'], license='MIT', retrieved='2026-11-03',
+        sourceCommit=SOURCE_COMMIT, sourceSha256=SOURCE_SHA, version=data['version'], license='MIT', retrieved='2026-11-03',
         rules=entries, sdkRules=sdk,
     )
     (ASSETS / 'splash-rules.json').write_text(

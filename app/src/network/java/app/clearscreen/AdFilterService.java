@@ -92,6 +92,10 @@ public final class AdFilterService extends VpnService {
             checkLegacyPrivateDns(network);
             Builder builder=new Builder().setSession("净屏 · DNS 广告过滤").setMtu(1500).addAddress("198.18.0.1",32).addRoute("198.18.0.2",32).addDnsServer("198.18.0.2")
                     .allowFamily(OsConstants.AF_INET6).setBlocking(false).setUnderlyingNetworks(new Network[]{network});
+            for(String pkg:store.bypassedApps()){
+                try{builder.addDisallowedApplication(pkg);}
+                catch(android.content.pm.PackageManager.NameNotFoundException ignored){/* The app may have been uninstalled. */}
+            }
             DnsTcp endpoint=new DnsTcp(this::write,this::resolve,SystemClock::elapsedRealtime);
             // Keep Android's conservative metered default; do not mask mobile-data accounting.
             ParcelFileDescriptor created=builder.establish();if(created==null)throw new IOException("系统未建立 VPN，请重新授权");
@@ -130,7 +134,8 @@ public final class AdFilterService extends VpnService {
     private void resolve(byte[] query,Consumer<byte[]> callback){
         if(stopping)return;DnsWire.Question question=DnsWire.question(query);
         if(question==null){callback.accept(DnsWire.error(query,1,false));return;}
-        boolean blocked=rules.blocked(question.name,store.allowed());
+        boolean blocked=!store.allowsHost(question.name)
+                &&(rules.contains(question.name)||store.customHost(question.name));
         synchronized(historyLock){
             if(stopping)return;
             queries.incrementAndGet();

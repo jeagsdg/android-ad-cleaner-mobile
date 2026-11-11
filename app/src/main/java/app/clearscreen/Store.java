@@ -20,13 +20,21 @@ public final class Store {
     public void setSplashEnabled(boolean enabled){prefs().edit().putBoolean("splash-enabled",enabled).apply();}
     public boolean popupEnabled(){return prefs().getBoolean("popup-enabled",false);}
     public void setPopupEnabled(boolean enabled){prefs().edit().putBoolean("popup-enabled",enabled).apply();}
+    void enableAdFeatures(boolean splash, boolean popup){
+        SharedPreferences.Editor edit=prefs().edit();
+        if(splash)edit.putBoolean("splash-enabled",true);
+        if(popup)edit.putBoolean("popup-enabled",true);
+        edit.apply();
+    }
     public boolean skipToastEnabled(){return prefs().getBoolean("skip-toast",true);}
     public void setSkipToastEnabled(boolean enabled){prefs().edit().putBoolean("skip-toast",enabled).apply();}
     boolean updateChecksEnabled(){return context.getResources().getBoolean(R.bool.network_filter_available)
             &&prefs().getBoolean("update-checks",true);}
     void setUpdateChecksEnabled(boolean enabled){prefs().edit().putBoolean("update-checks",enabled).apply();}
-    long lastUpdateCheck(){return prefs().getLong("last-update-check",0);}
-    void noteUpdateCheck(long now){prefs().edit().putLong("last-update-check",now).apply();}
+    long lastUpdateCheck(){return prefs().getLong("last-update-success",0);}
+    void noteUpdateCheck(long now){prefs().edit().putLong("last-update-success",now).apply();}
+    long lastUpdateAttempt(){return prefs().getLong("last-update-attempt",0);}
+    void noteUpdateAttempt(long now){prefs().edit().putLong("last-update-attempt",now).apply();}
     ReleaseUpdates.Info cachedRelease(){
         String saved=prefs().getString("public-release-info","");
         if(saved.isEmpty())return null;
@@ -102,6 +110,8 @@ public final class Store {
     public List<Rule> available(){List<Rule> result=new ArrayList<>();for(Rule r:allRules())if(r.matches(Build.MANUFACTURER,Build.BRAND)){for(Route route:r.routes)if(packageVersion(route.pkg)>=0){result.add(r);break;}}return result;}
     public List<Rule> plan(){List<Rule> result=new ArrayList<>();for(Rule r:available())if(!r.manual)result.add(r);Policy policy=policy();JSONArray channels=read("channels");for(int i=0;i<channels.length();i++){JSONObject j=channels.optJSONObject(i);if(j==null||j.optBoolean("uncertain"))continue;Rule r=new Rule(j);if(packageVersion(r.pkg)>=0&&policy.classify(r.channelName,r.channelId,r.pkg,r.channelApp).recommended()&&!policy.criticalNotification(r.channelName))result.add(r);}return result;}
     public List<Rule> retryRules(){return CleanerService.retryTargets(plan(),read("scan"),false);}
+    public List<Rule> resumeRules(){return CleanerService.resumableTargets(plan(),read("scan"));}
+    public List<Rule> retrySelection(JSONObject item){return CleanerService.retrySelection(plan(),read("scan"),item);}
     public List<JSONObject> restorable(){
         List<JSONObject> result=new ArrayList<>();
         JSONArray journal=read("journal");
@@ -117,7 +127,20 @@ public final class Store {
     public String appVersion(){try{return context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionName;}catch(Exception e){return "未知版本";}}
     private JSONObject profile(){try{JSONArray a=new JSONArray(asset("device-profiles.json"));for(int i=0;i<a.length();i++){JSONObject p=a.getJSONObject(i);if(!Rule.strings(p.optJSONArray("brands")).stream().anyMatch(b->b.equalsIgnoreCase(Build.BRAND)||b.equalsIgnoreCase(Build.MANUFACTURER)))continue;for(String model:Rule.strings(p.optJSONArray("models")))if(model.equalsIgnoreCase(Build.MODEL)||model.equalsIgnoreCase(Build.DEVICE))return p;}}catch(JSONException e){throw new IllegalStateException(e);}return new JSONObject();}
     public String deviceName(){return profile().optString("name",Build.MANUFACTURER+" "+Build.MODEL);}
-    public String deviceDescription(){String family="Android";String b=(Build.MANUFACTURER+" "+Build.BRAND).toLowerCase(Locale.ROOT);if(b.matches(".*(oppo|oneplus|realme).*"))family="ColorOS / 系列系统";else if(b.contains("honor"))family="MagicOS";else if(b.matches(".*(xiaomi|redmi|poco).*"))family="MIUI / HyperOS";else if(b.matches(".*(vivo|iqoo).*"))family="OriginOS / Funtouch OS";else if(b.contains("meizu"))family="Flyme";return (family.equals("Android")?"Android ":family+" · Android ")+Build.VERSION.RELEASE+"\n按实际页面匹配；此设备尚待实机验证";}
+    public String deviceDescription(){
+        String family;
+        switch(PermissionAccess.family()){
+            case "coloros": family="ColorOS / 系列系统"; break;
+            case "honor": family="MagicOS"; break;
+            case "xiaomi": family="MIUI / HyperOS"; break;
+            case "vivo": family="OriginOS / Funtouch OS"; break;
+            case "meizu": family="Flyme"; break;
+            case "samsung": family="三星系统"; break;
+            case "huawei": family="华为 Android 兼容系统"; break;
+            default: family=""; break;
+        }
+        return (family.isEmpty()?"":family+" · ")+"Android "+Build.VERSION.RELEASE;
+    }
     public JSONObject deviceInfo(){JSONObject out=new JSONObject();try{out.put("name",deviceName());out.put("manufacturer",Build.MANUFACTURER);out.put("brand",Build.BRAND);out.put("model",Build.MODEL);out.put("device",Build.DEVICE);out.put("android",Build.VERSION.RELEASE);out.put("sdk",Build.VERSION.SDK_INT);out.put("display",Build.DISPLAY);out.put("fingerprint",Build.FINGERPRINT);out.put("securityPatch",Build.VERSION.SECURITY_PATCH);out.put("oemVerified",false);JSONObject packages=new JSONObject();for(Rule r:available())for(Route route:r.routes){if(packageVersion(route.pkg)>=0)packages.put(route.pkg,packageVersion(route.pkg));if(packageVersion(route.finalPackage())>=0)packages.put(route.finalPackage(),packageVersion(route.finalPackage()));}out.put("targetPackageVersions",packages);}catch(JSONException e){throw new IllegalStateException(e);}return out;}
     public long packageVersion(String pkg){try{android.content.pm.PackageInfo info=context.getPackageManager().getPackageInfo(pkg,0);return Build.VERSION.SDK_INT>=28?info.getLongVersionCode():info.versionCode;}catch(Exception e){return -1;}}
     public JSONObject routeVersions(Rule r){JSONObject versions=new JSONObject();Set<String> packages=new LinkedHashSet<>();packages.add(r.pkg);for(Route route:r.routes){packages.add(route.pkg);packages.add(route.foreground);packages.addAll(route.destinations);}for(String pkg:packages){long version=packageVersion(pkg);if(version>=0)try{versions.put(pkg,version);}catch(JSONException e){throw new IllegalStateException(e);}}return versions;}
@@ -163,4 +186,33 @@ public final class Store {
         return root.toString();
     }
     public String exportText(){try{return new JSONObject(export()).toString(2);}catch(JSONException e){throw new IllegalStateException(e);}}
+    String compactDiagnosticReport() {
+        try {
+            JSONObject report = new JSONObject();
+            report.put("app", "净屏 " + appVersion());
+            report.put("manufacturer", Build.MANUFACTURER);
+            report.put("model", Build.MODEL);
+            report.put("android", Build.VERSION.RELEASE);
+            report.put("sdk", Build.VERSION.SDK_INT);
+            report.put("systemBuild", Build.DISPLAY);
+            report.put("permissions", PermissionAccess.diagnostics(context));
+            report.put("lastRun", lastRun());
+            JSONArray scan = read("scan");
+            JSONArray results = new JSONArray();
+            for (int i = 0; i < scan.length(); i++) {
+                JSONObject row = scan.optJSONObject(i);
+                JSONObject rule = row == null ? null : row.optJSONObject("rule");
+                if (rule == null) continue;
+                JSONObject result = new JSONObject();
+                result.put("id", rule.optString("id"));
+                result.put("group", rule.optString("title"));
+                result.put("package", rule.optString("package"));
+                for (String key : Arrays.asList("label", "status", "message", "reason", "route", "routePackage",
+                        "attemptCount", "attempts")) if (row.has(key)) result.put(key, row.get(key));
+                results.put(result);
+            }
+            report.put("results", results);
+            return report.toString(2);
+        } catch (JSONException e) { throw new IllegalStateException("诊断报告暂时无法生成", e); }
+    }
 }

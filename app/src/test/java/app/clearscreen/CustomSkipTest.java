@@ -154,6 +154,27 @@ public class CustomSkipTest {
         assertNull(PopupMatch.findGenericAd(root, SCREEN));
     }
 
+    @Test public void genericAdRecognizesExplicitEnglishDismissalLabels() {
+        AccessibilityNodeInfo root = node("", false, SCREEN);
+        AccessibilityNodeInfo panel = node("", false, new Rect(80, 860, 1000, 1510));
+        AccessibilityNodeInfo button = node("Close this ad", true, new Rect(430, 1320, 680, 1440));
+        add(root, panel);
+        add(panel, button);
+        add(root, node("Ad", false, new Rect(80, 400, 1000, 500)));
+        assertNull(PopupMatch.findGenericAd(root, SCREEN));
+
+        add(panel, node("Ad", false, new Rect(80, 920, 1000, 1040)));
+        assertEquals(button, PopupMatch.findGenericAd(root, SCREEN).target);
+        button.setText("Dismiss this ad");
+        assertEquals(button, PopupMatch.findGenericAd(root, SCREEN).target);
+        button.setText("");
+        button.setContentDescription("Skip this ad");
+        assertEquals(button, PopupMatch.findGenericAd(root, SCREEN).target);
+
+        add(panel, node("Close this ad", true, new Rect(710, 1320, 960, 1440)));
+        assertNull(PopupMatch.findGenericAd(root, SCREEN));
+    }
+
     @Test public void genericAdPanelCanBeCenteredWithinASplitScreenApp() {
         Rect display = new Rect(0, 0, 2200, 1600);
         AccessibilityNodeInfo root = node("", false, new Rect(1100, 0, 2200, 1600));

@@ -5,7 +5,7 @@ import re
 import json5
 
 from import_splash import (
-    ASSETS, FINANCIAL, LICENSE_SHA, SOURCE_SHA, VENDOR, array, compile_selector, guaranteed, verified,
+    ASSETS, FINANCIAL, LICENSE_SHA, SOURCE_COMMIT, SOURCE_SHA, VENDOR, array, compile_selector, guaranteed, verified,
 )
 
 SOURCE = 'https://github.com/ganlinte/GKD-subscription'
@@ -116,11 +116,153 @@ REVIEWED = {
     ('com.nowcasting.activity', 3, 0): '[id="com.nowcasting.activity:id/jad_feed_close"]',
     ('com.guodongbaohe.app', 6, 0): 'LinearLayout[id="com.guodongbaohe.app:id/close_dialog_lv"]',
     ('com.hihonor.appmarket', 1, 0): '[id="com.hihonor.appmarket:id/iv_dialog_operation_close"]',
+    # Screen-specific ad dismissals in the pinned v72 subscription.
+    ('cn.com.langeasy.LangEasyLexis', 2, 0):
+        '[id="cn.com.langeasy.LangEasyLexis:id/close_float_button"]',
+    ('cn.speedtest.lite', 10, 0):
+        '@[id="cn.speedtest.lite:id/iv_close"] - RelativeLayout >n [id="cn.speedtest.lite:id/ad_banner"]',
+    ('cn.yonghui.hyd', 1, 0):
+        '@TextView[id="cn.yonghui.hyd:id/close"] -n [id="cn.yonghui.hyd:id/title"][text="天降红包"]',
+    ('com.baidu.BaiduMap', 1, 0):
+        'ImageView[id="com.baidu.BaiduMap:id/yellow_banner_close"]',
+    ('com.baidu.BaiduMap', 6, 0):
+        'ImageView[id="com.baidu.BaiduMap:id/operational_activities_content_close"]',
+    ('com.baidu.netdisk', 1, 0):
+        '[id="com.baidu.netdisk:id/cl_content"] - [id="com.baidu.netdisk:id/iv_close"]',
+    ('com.baidu.netdisk', 3, 0):
+        '[id="com.baidu.netdisk:id/vf_content"] + [id="com.baidu.netdisk:id/close"]',
+    ('com.baidu.netdisk.samsung', 2, 0):
+        '[id="com.baidu.netdisk.samsung:id/buy_product_root"] > [id="com.baidu.netdisk.samsung:id/iv_close"]',
+    ('com.baidu.youavideo', 3, 0):
+        '[id="com.baidu.youavideo:id/img_operation_close"]',
+    ('com.baidu.youavideo', 6, 0):
+        '[id="com.baidu.youavideo:id/dialog_home_pop_close_button"] ',
+    ('com.cainiao.wireless', 1, 0):
+        '[id="com.cainiao.wireless:id/draw_dialog_iv_close"]',
+    ('com.cainiao.wireless', 7, 0):
+        '[vid="dialog_full_image_close"]',
+    ('com.cctv.cctv5ultimate', 1, 0):
+        '[id="com.cctv.cctv5ultimate:id/iv_close"]',
+    ('com.chinamobile.mcloud', 3, 0):
+        '[id="com.chinamobile.mcloud:id/iv_logo"] + [id="com.chinamobile.mcloud:id/iv_close"]',
+    ('com.chinatower.tthd', 1, 0):
+        '[id="com.chinatower.tthd:id/fl_content_container"] + [id="com.chinatower.tthd:id/iv_close"]',
+    ('com.cmcc.cmvideo', 2, 0):
+        '[id="com.cmcc.cmvideo:id/iv_right_bottom_close"]',
+    ('com.ct.client', 3, 1):
+        'ImageView[id="com.ct.client:id/ivFloatClose"]',
+    ('com.ddsy.songyao', 1, 0):
+        '[id="com.ddsy.songyao:id/iv_coupon_bottom"] + [id="com.ddsy.songyao:id/iv_close"]',
+    ('com.dianping.v1', 4, 0):
+        '[id="com.dianping.v1:id/operate_cross_icon"]',
+    ('com.dianping.v1', 3, 0):
+        '[id="com.dianping.v1:id/float_image"] + [id="com.dianping.v1:id/close"][clickable=true]',
+    ('com.dmzj.manhua', 1, 0):
+        '[id="com.dmzj.manhua:id/iv_close"]',
+    ('com.dubox.drive', 1, 0):
+        'ImageView[id="com.dubox.drive:id/ivClose"]',
+    ('com.fcbox.hivebox', 1, 0):
+        '[id="com.fcbox.hivebox:id/fl_content_container"] + [id="com.fcbox.hivebox:id/iv_close"]',
+    ('com.gamersky', 1, 0):
+        '[text="广告"] < * + [id="com.gamersky:id/delete"]',
+    ('com.gotokeep.keep', 2, 0):
+        '[id="com.gotokeep.keep:id/layoutLottie"] +(1,2) [id="com.gotokeep.keep:id/imgCloseHomePageDialog"]',
+    ('com.gspace.android', 1, 0):
+        '[id="com.gspace.android:id/hiad_banner_close_button"]',
+    ('com.hihonor.appmarket', 2, 0):
+        '[id="com.hihonor.appmarket:id/iv_floating_close"]',
+    ('com.hihonor.vmall', 1, 0):
+        '[id="com.hihonor.vmall:id/gift_close_iv"]',
+    ('com.huawei.health', 4, 0):
+        '[id="com.huawei.health:id/marketing_close_icon"]',
+    ('com.huawei.music', 3, 0):
+        'TextView[id="com.huawei.music:id/live_info"] < LinearLayout -2 [id="com.huawei.music:id/close_button"]',
+    ('com.huawei.search', 1, 0):
+        '[id="com.huawei.search:id/iv_topic_close_in_image"||id="com.huawei.search:id/iv_topic_left_close"||id="com.huawei.search:id/iv_topic_close_in_pps"]',
+    ('com.hunantv.imgo.activity', 3, 0):
+        '@[id="com.hunantv.imgo.activity:id/apperience_close"] + [id="com.hunantv.imgo.activity:id/apperience_enter"]',
+    ('com.hunantv.imgo.activity', 3, 1):
+        '@[id="com.hunantv.imgo.activity:id/iv_float_close"] + [id="com.hunantv.imgo.activity:id/iv_float_content"]',
+    ('com.jd.app.reader', 2, 0):
+        '[id="com.jd.app.reader:id/mCardView"] + [id="com.jd.app.reader:id/mCloseBtn"]',
+    ('com.jingdong.app.mall', 1, 0):
+        '[id="com.jd.lib.cart.feature:id/iv_egg_close"]',
+    ('com.jingdong.pdj', 1, 1):
+        '[id="com.jingdong.pdj:id/ivClose"][desc="关闭"]',
+    ('com.jingyao.easybike', 10, 0):
+        'FrameLayout[id="com.jingyao.easybike:id/hbDialogLayout"] + ImageView[id="com.jingyao.easybike:id/actionDialogClose"][clickable=true]',
+    ('com.jingyao.easybike', 11, 0):
+        '[id="com.jingyao.easybike:id/lottie_view"] < ViewGroup + [id="com.jingyao.easybike:id/btn_close"]',
+    ('com.kuangxiangciweimao.novel', 2, 0):
+        '@[id="com.kuangxiangciweimao.novel:id/imgclose"] - [vid="img_activity"]',
+    ('com.lptiyu.tanke', 0, 0):
+        '[id="com.lptiyu.tanke:id/interact_ad_root"] >n [id="com.lptiyu.tanke:id/iv_close"]',
+    ('com.luna.music', 2, 1):
+        '[id="com.luna.music:id/fl_pendant_container"] > [id="com.luna.music:id/view_close"]',
+    ('com.m4399.gamecenter', 1, 1):
+        '@[id="com.m4399.gamecenter:id/close"] + [id="com.m4399.gamecenter:id/image"]',
+    ('com.miui.player', 4, 0):
+        '[id="com.miui.player:id/cl_floating_promote"] > [id="com.miui.player:id/iv_close"]',
+    ('com.miui.player', 11, 0):
+        '[id="com.miui.player:id/banner_image"] + [id="com.miui.player:id/close_banner"]',
+    ('com.miui.video', 1, 0):
+        '@ImageView[id="com.miui.video:id/iv_close"][visibleToUser=true] - [text="立即下载"] - ImageView[id="com.miui.video:id/download_icon"] < [id="com.miui.video:id/v_download"]',
+    ('com.mygolbs.mybus', 1, 6):
+        '[id="com.mygolbs.mybus:id/ll_ad"] [id="com.mygolbs.mybus:id/btn_cancel"]',
+    ('com.netease.gl', 2, 0):
+        '@[id="com.netease.gl:id/iv_close"] + [id="com.netease.gl:id/iv_cover"]',
+    ('com.oppo.store', 2, 0):
+        'ImageView[id="com.oppo.store:id/dialog_delete"][desc="关闭"]',
+    ('com.qidian.QDReader', 13, 0):
+        '[id="com.qidian.QDReader:id/rootView"] > [id="com.qidian.QDReader:id/btnHongbaoClose"]',
+    ('com.qinlin.edoor', 1, 0):
+        '[id="com.qinlin.edoor:id/close"]',
+    ('com.showstartfans.activity', 1, 0):
+        '[id="com.showstartfans.activity:id/img_close_coupon"]',
+    ('com.shuqi.controller', 0, 0):
+        '[id="com.shuqi.controller:id/promotion_close"]',
+    ('com.sina.weibo', 13, 0):
+        '[id="com.sina.weibo:id/floating_window"] >2 [id="com.sina.weibo:id/close"]',
+    ('com.sina.weibo', 13, 1):
+        '[id="com.sina.weibo:id/floating_window"] >n [id="com.sina.weibo:id/closeView"]',
+    ('com.sinovatech.unicom.ui', 4, 0):
+        '[id="com.sinovatech.unicom.ui:id/home_xuanfu_close"]',
+    ('com.smile.gifmaker', 11, 0):
+        '[id="com.smile.gifmaker:id/pendant_mask_bg"] + [id="com.smile.gifmaker:id/pendant_close"][visibleToUser=true]',
+    ('com.smzdm.client.android', 1, 0):
+        '[id="com.smzdm.client.android:id/dialog_home_close"]',
+    ('com.taobao.taobao', 1, 0):
+        '[desc^="限时福利"] < FrameLayout + [desc="关闭按钮"]',
+    ('com.tencent.news', 2, 0):
+        '@[text="关闭"] + [text="查看活动详情"]',
+    ('com.umetrip.android.msky.app', 11, 0):
+        '@[id="com.umetrip.android.msky.app:id/iv_close_envelope"] + [id="com.umetrip.android.msky.app:id/media_view_envelope"]',
+    ('com.wm.dmall', 2, 0):
+        '@[id="com.wm.dmall:id/iv_close"] + [id="com.wm.dmall:id/view_float"]',
+    ('com.xiachufang', 1, 1):
+        '[id="com.xiachufang:id/jad_feed_close"][visibleToUser=true]',
+    ('com.ximalaya.ting.android', 11, 0):
+        '@[id="com.ximalaya.ting.android:id/host_close_firework"] +2 [id="com.ximalaya.ting.android:id/host_firework_ad_tag"]',
+    ('com.xunmeng.pinduoduo', 22, 0):
+        '@ImageView[id=null][clickable=true] < ViewGroup + ViewGroup > ImageView + ViewGroup > ImageView +(2) FrameLayout > TextView[text="专属现金红包"]',
+    ('com.yek.android.uniqlo', 1, 0):
+        'ImageView[id="com.yek.android.uniqlo:id/pop_close"]',
+    ('com.youdao.dict', 1, 1):
+        '[vid="close_pop"][text="收起广告"]',
+    ('com.zhihu.android', 11, 0):
+        'ImageView[id="com.zhihu.android:id/floating_img"] + ImageView[id="com.zhihu.android:id/floating_close_btn"][clickable=true]',
+    ('com.zhihu.android', 12, 0):
+        '[id="com.zhihu.android:id/image"] < RelativeLayout + [id="com.zhihu.android:id/dismiss"]',
+    ('com.zmzx.college.search', 3, 1):
+        '[id^="com.zmzx.college.search:id/ad_flag_source"] - * > [id="com.zmzx.college.search:id/close"]',
 }
 
-# Keep the market's original ad close control on the market page itself.
+# Keep dismissals on the activity where the ad was documented.
 REVIEWED_ACTIVITY_FILTERS = {
     ('com.hihonor.appmarket', 1, 0): {'com.hihonor.appmarket.module.main.MainActivity'},
+    ('com.baidu.BaiduMap', 1, 0): {'com.baidu.baidumaps.MapsActivity'},
+    ('com.baidu.BaiduMap', 6, 0): {'com.baidu.baidumaps.MapsActivity'},
+    ('com.jd.app.reader', 2, 0): {'com.jingdong.app.reader.main.ui.JdMainActivity'},
 }
 
 # Preserve the exact source pattern, then require the close itself to be a visible
@@ -279,8 +421,6 @@ def import_popup_rules(source):
                     [package + value if value.startswith('.') else value for value in array(props.get(field))]
                     for field in ('activityIds', 'excludeActivityIds')
                 ]
-                if any(SENSITIVE.search(activity) for activity in activities):
-                    continue
                 snapshots = array(props.get('snapshotUrls'))
                 if not snapshots:
                     continue
@@ -312,7 +452,7 @@ def import_popup_rules(source):
                                                 if activity in REVIEWED_ACTIVITY_FILTERS[identity]]
                             if not entry_activities:
                                 continue
-                    if not evidence:
+                    if not evidence or any(SENSITIVE.search(activity) for activity in entry_activities):
                         continue
                     entry = dict(
                         package=package, name=app['name'], group=group['name'], groupKey=group['key'], ruleIndex=index,
@@ -324,6 +464,31 @@ def import_popup_rules(source):
                     if accepted != original:
                         entry['upstreamSelector'] = original
                     entries.append(entry)
+    return entries
+
+
+def import_reviewed_samples(path):
+    entries = []
+    for sample in json.loads(path.read_text(encoding='utf-8')):
+        selector = compile_popup_selector(sample['selector'])
+        package = sample['package']
+        activity = sample['activity']
+        if protected(package) or not activity or SENSITIVE.search(activity) or not selector:
+            raise ValueError(f'Invalid reviewed popup evidence in {package}')
+        nodes = selector['path']
+        target = selector['target']
+        if not guaranteed(nodes[target], lambda f, o, v: (f, o, v) == ('clickable', '=', True)) or not any(
+            i != target and guaranteed(node, lambda f, o, v: f == 'id' and o == '='
+                and isinstance(v, str) and v.startswith(package + ':id/'))
+            for i, node in enumerate(nodes)
+        ):
+            raise ValueError(f'Reviewed popup requires a clickable target and an app-specific anchor in {package}')
+        entries.append(dict(
+            package=package, name=sample['name'], group=sample['group'],
+            activityIds=[activity], maxPerVisit=1, evidence='reviewed-ad-path',
+            snapshots=[sample['snapshot']], selector=sample['selector'], targetSelector=selector,
+            required=[], reference=dict(versionName=sample['versionName'], snapshotSha256=sample['sha256']),
+        ))
     return entries
 
 
@@ -345,7 +510,9 @@ def main():
         snapshots=['https://i.gkd.li/i/16357287'], evidence='reviewed-ad-path',
         selector=ctrip, targetSelector=compiled, required=[],
     ))
-    manifest = dict(source=SOURCE, sourceSha256=SOURCE_SHA, version=source['version'], license='MIT', rules=rules)
+    rules.extend(import_reviewed_samples(VENDOR / 'popup-samples.json'))
+    manifest = dict(source=SOURCE, sourceCommit=SOURCE_COMMIT, sourceSha256=SOURCE_SHA,
+                    version=source['version'], license='MIT', rules=rules)
     (ASSETS / 'popup-ad-rules.json').write_text(
         json.dumps(manifest, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8',
     )

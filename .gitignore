@@ -8,3 +8,4 @@ local.properties
 __pycache__/
 .local/
 *.log
+项目状态.md

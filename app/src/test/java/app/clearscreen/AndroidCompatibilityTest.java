@@ -86,7 +86,7 @@ public class AndroidCompatibilityTest {
         try {
             MainActivity activity = controller.get();
             ScreenTest.clickFeature(activity, "系统广告设置");
-            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "前往系统授权"));
+            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "打开手机设置"));
             assertNull(CleanerService.get());
             assertFalse(SkipKeepAliveService.running());
         } finally {

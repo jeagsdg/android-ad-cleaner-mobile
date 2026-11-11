@@ -3,6 +3,7 @@ package app.clearscreen;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.Settings;
@@ -37,14 +38,36 @@ public final class Route {
     public String finalPackage() { return destinations.isEmpty() ? foreground : destinations.get(destinations.size() - 1); }
     static boolean installed(Context context, String packageName) {
         try { context.getPackageManager().getPackageInfo(packageName, 0); return true; }
-        catch (PackageManager.NameNotFoundException ignored) { return false; }
+        catch (PackageManager.NameNotFoundException | SecurityException ignored) { return false; }
     }
+    String key() { return pkg + "|" + activity + "|" + uri + "|" + foreground + "|" + path; }
     Intent launchIntent(Context context) {
         if (!uri.isEmpty()) return new Intent(Intent.ACTION_VIEW, Uri.parse(uri)).setPackage(pkg);
         if (!activity.isEmpty()) return new Intent().setComponent(new ComponentName(pkg,
                 activity.startsWith(".") ? pkg + activity : activity));
-        if (pkg.equals("com.android.settings")) return new Intent(Settings.ACTION_SETTINGS);
+        if (pkg.equals("com.android.settings")) return new Intent(Settings.ACTION_SETTINGS).setPackage(pkg);
         return context.getPackageManager().getLaunchIntentForPackage(pkg);
+    }
+    Intent preflight(Context context) throws UiDriver.Halt {
+        Set<String> packages = new LinkedHashSet<>(Arrays.asList(pkg, foreground));
+        packages.addAll(destinations);
+        for (String required : packages) if (!installed(context, required))
+            throw new UiDriver.Halt("本机缺少路径所需的组件 " + required, false, false, "package_unavailable");
+        Intent intent = launchIntent(context);
+        if (intent == null)
+            throw new UiDriver.Halt("此组件没有可从净屏打开的入口", false, false, "entry_unavailable");
+        ComponentName explicit = intent.getComponent();
+        if (explicit != null) {
+            try {
+                ActivityInfo info = context.getPackageManager().getActivityInfo(explicit, 0);
+                if (!info.exported || !info.enabled || (info.permission != null
+                        && context.checkSelfPermission(info.permission) != PackageManager.PERMISSION_GRANTED))
+                    throw new UiDriver.Halt("此版本的设置入口未开放", false, false, "entry_unavailable");
+            } catch (PackageManager.NameNotFoundException ignored) {
+                throw new UiDriver.Halt("此版本没有对应的设置入口", false, false, "entry_unavailable");
+            }
+        }
+        return intent;
     }
     public JSONObject json() {
         JSONObject out = new JSONObject();

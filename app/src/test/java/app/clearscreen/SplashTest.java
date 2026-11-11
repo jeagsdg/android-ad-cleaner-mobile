@@ -23,6 +23,39 @@ public class SplashTest {
         assertEquals(skip,SplashSkipper.match(root));
     }
     @Test public void explicitAdSkipSupportsTraditionalEnglishAndCountdown(){for(String text:new String[]{"跳过广告","跳過廣告 (3秒)","Skip Ad 5s","5秒跳过"}){skip.setText(text);assertTrue(SplashSkipper.skipLabel(text));}skip.setText("Skip Ad 5s");assertEquals(skip,SplashSkipper.match(root));}
+    @Test public void genericSplashAcceptsOnlyExplicitAdCloseLabels(){
+        for(String text:new String[]{"关闭广告","关闭此广告","關閉廣告","關閉此廣告",
+                "Close ad","Close this ad","Close advertisement","Dismiss ad","Dismiss this ad"}){
+            skip.setText(text);
+            assertEquals(text,skip,SplashSkipper.match(root));
+        }
+        skip.setText("×");
+        skip.setContentDescription("Close this ad");
+        assertEquals(skip,SplashSkipper.match(root));
+
+        ad();
+        skip.setContentDescription("");
+        for(String text:new String[]{"关闭","Close","关闭广告设置","Close this ad settings"}){
+            skip.setText(text);
+            assertNull(text,SplashSkipper.match(root));
+        }
+    }
+    @Test public void explicitAdCloseStillRequiresSafePlacementAndUniqueTarget(){
+        skip.setText("关闭广告");
+        skip.setBoundsInScreen(new Rect(400,900,600,1000));
+        assertNull(SplashSkipper.match(root));
+        skip.setBoundsInScreen(new Rect(810,120,1030,220));
+        AccessibilityNodeInfo other=node("Close this ad",true,new Rect(40,120,250,220));
+        shadowOf(root).addChild(other);
+        assertNull(SplashSkipper.match(root));
+        other.setText("同意协议");
+        assertNull(SplashSkipper.match(root));
+        other.setText("观看广告领取奖励");
+        assertNull(SplashSkipper.match(root));
+        other.setText("");
+        other.setEditable(true);
+        assertNull(SplashSkipper.match(root));
+    }
     @Test public void closeAndCentralSkipNeverMatch(){ad();skip.setText("关闭");assertNull(SplashSkipper.match(root));skip.setText("跳过");skip.setBoundsInScreen(new Rect(400,900,600,1000));assertNull(SplashSkipper.match(root));}
     @Test public void editingOrConsentSuppressesAnyClick(){ad();AccessibilityNodeInfo input=node("",false,new Rect(20,500,1000,700));input.setEditable(true);shadowOf(root).addChild(input);assertNull(SplashSkipper.match(root));input.setEditable(false);AccessibilityNodeInfo consent=node("同意",true,new Rect(20,800,300,900));shadowOf(root).addChild(consent);assertNull(SplashSkipper.match(root));}
     @Test public void duplicatesAndRewardAdsAreNotClicked(){ad();AccessibilityNodeInfo duplicate=node("跳过",true,new Rect(700,250,1000,350));shadowOf(root).addChild(duplicate);assertNull(SplashSkipper.match(root));duplicate.setText("观看广告领取奖励");duplicate.setClickable(false);assertNull(SplashSkipper.match(root));}

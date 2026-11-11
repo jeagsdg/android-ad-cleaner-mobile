@@ -8,9 +8,13 @@ MIT，固定提交 `19bb74fbefece01763f713c3c26220f63659ed87`。仓库保留相�
 
 ## ganlinte/GKD-subscription
 
-MIT，Copyright (c) 2024 ganlinte。固定订阅 v72，源文件 SHA-256 为 `5624137f8c70566a8dc985990dd18571600efa1c76129734703533ca5ee71c23`。`tools/import_splash.py` 和 `tools/import_popup_ads.py` 将其中可安全表达的条件转换为净屏的开屏和应用内候选，保留应用范围和相关上下文。 [上游源码](https://github.com/ganlinte/GKD-subscription)
+MIT，Copyright (c) 2024 ganlinte。固定订阅 v72，提交 `4746d192b4c57a4b62ed92a7f5deaf79e64fa811`，源文件 SHA-256 为 `5624137f8c70566a8dc985990dd18571600efa1c76129734703533ca5ee71c23`。`tools/import_splash.py` 和 `tools/import_popup_ads.py` 将其中可表达的条件转换为净屏的开屏和应用内候选，保留应用范围和相关上下文。 [固定版本源文件](https://github.com/ganlinte/GKD-subscription/blob/4746d192b4c57a4b62ed92a7f5deaf79e64fa811/dist/ganlin_gkd.json5)
 
-许可原文保存在 [vendor/gkd-splash-reference/LICENSE](vendor/gkd-splash-reference/LICENSE)，也作为 [splash-license.txt](app/src/main/assets/splash-license.txt) 随应用分发。部分新增条件由净屏依据公开控件快照独立编写，相关快照索引随生成规则保留。
+许可原文保存在 [vendor/gkd-splash-reference/LICENSE](vendor/gkd-splash-reference/LICENSE)，也作为 [splash-license.txt](app/src/main/assets/splash-license.txt) 随应用分发。
+
+## 公开控件快照
+
+净屏依据公开 Android 无障碍快照独立编写部分规则。仓库与 APK 保留选中的控件条件、快照链接、应用版本和快照压缩包 SHA-256。 [开屏样本](vendor/gkd-splash-reference/startup-samples.json) · [应用内样本](vendor/gkd-splash-reference/popup-samples.json)
 
 ## Block List Project
 

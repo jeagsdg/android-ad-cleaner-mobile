@@ -1,0 +1,19 @@
+ClearScreen 1.0.0 (12) release verification
+
+Final full APK SHA-256: ea32fed2472a5c558d3c8aa64f0604993a9befb0effa46c550fb7447ad8be069
+Final offline APK SHA-256: d7740bbc104db1b46a174a72cfc494266a7c9a994f9ae6085efc534864f03aec
+Final full and offline: 198 JVM checks per variant, no Lint issues.
+Both APKs: original release certificate, min API 26, target API 35, asset verification passed.
+Offline: no Internet permission or VPN service in the packaged manifest.
+Final Android 15 full: release UI passed (13 assertions, synthetic update feed).
+The generic popup fixture did not appear in the first negative case. The host emulator then exited after a memory allocation failure. The final full emulator suite could not complete.
+
+UI regression on Android 14 before the final matcher-only change:
+Full APK SHA-256: 55648f9d01d190dc891a214c19dcfb71629c6be59ec95ccb48981145ea1499c5
+Visible controls: first enable, opening the Android Settings app, and returning to in-app authorization guidance.
+Screenshots reviewed at normal width, 320dp / 130% text, and 720dp.
+Release UI (13), feedback/privacy (17), generic popup (12), splash (18), popup (18), and legacy popup (11) passed.
+Rule-preview resumption failed once before ADB disconnected. The subsequent Android 14 reruns were interrupted by emulator host errors.
+The device fixture now clears its session on the main thread. The final JVM suite verifies read-only preview, returning to the app, clearing the preview and successful automatic dismissal on the next launch. Device fixture changes were not rerun after the host failure.
+
+All ads were synthetic. No physical device was operated.

@@ -3,5 +3,6 @@
   {"name":"荣耀 Magic8","brands":["honor"],"models":["BKQ-AN00","BKQ-AN80"],"source":"https://www.honor.com/cn/support/products/mobile-phones/honor-magic8/","verified":false},
   {"name":"荣耀 GT Pro","brands":["honor"],"models":["PPG-AN00"],"source":"https://developer.honor.com/cn/docs/game_center/guides/jieruzhinan/jixing","verified":false},
   {"name":"小米 10 至尊纪念版","brands":["xiaomi"],"models":["M2007J1SC","cas","Mi 10 Ultra"],"source":"https://lineageos.github.io/lineage_wiki/devices/cas/","verified":false},
+  {"name":"Redmi K70 Pro","brands":["xiaomi","redmi"],"models":["23117RK66C","Redmi K70 Pro"],"source":"https://github.com/rddmwmddr/android-ad-cleaner/blob/19bb74fbefece01763f713c3c26220f63659ed87/recipes/redmi-23117RK66C/recipe.py","verified":false},
   {"name":"iQOO Neo9","brands":["vivo","iqoo"],"models":["V2338A","iQOO Neo9"],"source":"https://www.vivo.com.cn/vivo/param/iqooneo9","verified":false}
 ]

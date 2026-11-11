@@ -64,4 +64,16 @@ public class CleanRetryTest {
         assertEquals("歧义开关",expanded.getJSONObject(2).getString("label"));
         assertEquals("skipped",expanded.getJSONObject(2).getString("status"));
     }
+    @Test public void continueUsesInterruptedTargetsAndLeavesRestoredValuesOut() throws Exception {
+        Rule rule = rule();
+        JSONObject interrupted = result(rule, "暂未出现", "failed", false)
+                .put("message", "目标页面已离开前台，任务已停止");
+        JSONObject restored = result(rule, "已成功", "restored", false).put("journalId", "previous-write");
+        JSONObject blocked = result(rule, "歧义开关", "blocked", false);
+        JSONArray scan = new JSONArray().put(interrupted).put(restored).put(blocked);
+        assertEquals(Collections.singletonList("暂未出现"),
+                CleanerService.resumableTargets(Collections.singletonList(rule), scan).get(0).targets);
+        assertFalse(CleanerService.needsContinuation(restored));
+        assertTrue(CleanerService.retrySelection(Collections.singletonList(rule), scan, blocked).isEmpty());
+    }
 }

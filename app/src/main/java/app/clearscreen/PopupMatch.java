@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /** Matches a unique close button and prompt inside the same compact panel. */
 final class PopupMatch {
@@ -14,7 +15,7 @@ final class PopupMatch {
             "广告", "廣告", "推广", "推廣", "ad", "advertisement", "插屏广告", "插屏廣告"));
     private static final Set<String> AD_ACTIONS = new HashSet<>(Arrays.asList(
             "关闭广告", "關閉廣告", "关闭此广告", "關閉此廣告", "跳过广告", "跳過廣告", "跳过此广告", "跳過此廣告",
-            "close ad", "close advertisement", "dismiss ad", "skip ad"));
+            "close ad", "close this ad", "close advertisement", "dismiss ad", "dismiss this ad", "skip ad", "skip this ad"));
     // Local presets for observed application pages. See NOTICE for reference and provenance.
     static final List<CustomSkipRule> APP_PRESETS = Arrays.asList(
             new CustomSkipRule("com.ss.android.ugc.aweme", "com.ss.android.ugc.aweme.main.MainActivity",
@@ -42,50 +43,65 @@ final class PopupMatch {
     }
 
     static PopupMatch find(AccessibilityNodeInfo root, Rect screen, List<CustomSkipRule> rules) {
-        if (root == null || screen.isEmpty() || rules.isEmpty()) return null;
+        return find(root, screen, rules, UiDriver.walkComplete(root), null);
+    }
+
+    static PopupMatch find(AccessibilityNodeInfo root, Rect screen, List<CustomSkipRule> rules,
+                           List<AccessibilityNodeInfo> nodes, Consumer<SkipDiagnostics.Phase> trace) {
+        if (root == null || screen.isEmpty()) return noMatch(trace, SkipDiagnostics.Phase.WINDOW_UNAVAILABLE);
+        if (nodes.isEmpty()) return noMatch(trace, SkipDiagnostics.Phase.TREE_UNAVAILABLE);
+        if (rules.isEmpty()) return noMatch(trace, SkipDiagnostics.Phase.PAGE_MISMATCH);
         String pkg = String.valueOf(root.getPackageName());
         int window = root.getWindowId();
-        List<AccessibilityNodeInfo> nodes = UiDriver.walkComplete(root);
+        if (!safeWindow(nodes)) return noMatch(trace, SkipDiagnostics.Phase.GUARDED);
         PopupMatch hit = null;
+        boolean candidate = false;
         for (AccessibilityNodeInfo node : nodes) {
             if (!node.isVisibleToUser() || !node.isEnabled()) continue;
-            if (node.isEditable() && node.isFocused()) return null;
             if (node.getWindowId() != window || !pkg.equals(String.valueOf(node.getPackageName()))) continue;
             for (CustomSkipRule rule : rules) {
                 if (!pkg.equals(rule.pkg)) continue;
+                if (!(rule.backsOut() ? rule.matchesPrompt(node) : rule.matchesButton(node))) continue;
+                candidate = true;
                 AccessibilityNodeInfo click;
                 if (rule.times == 0) {
-                    if (!rule.matchesButton(node) || !inPopup(root, node, screen, rule)) continue;
+                    if (!inPopup(root, node, screen, rule)) continue;
                     click = null;
                 } else if (rule.backsOut()) {
-                    if (!rule.matchesPrompt(node) || !standaloneModal(root, screen) || !safePromptPanel(root, null, rule)) continue;
+                    if (!standaloneModal(root, screen) || !safePromptPanel(root, null, rule)) continue;
                     click = null;
                 } else {
-                    if (!rule.matchesButton(node)) continue;
                     click = SplashSkipper.ruleClickTarget(node, rule);
                     if (click == null || click.getWindowId() != window || (!inPopup(root, click, screen, rule)
                             && (!rule.matchesLegacyTargetResource(node) || !inFloatingAd(root, click, screen, rule)))) continue;
                 }
                 if (hit != null && (!java.util.Objects.equals(hit.target, click) || !hit.rule.context.equals(rule.context)
                         || hit.rule.delayMs != rule.delayMs || hit.rule.gesture != rule.gesture
-                        || hit.rule.sequenceIndex != rule.sequenceIndex || hit.rule.times != rule.times)) return null;
+                        || hit.rule.sequenceIndex != rule.sequenceIndex || hit.rule.times != rule.times)) {
+                    return noMatch(trace, SkipDiagnostics.Phase.AMBIGUOUS);
+                }
                 hit = new PopupMatch(rule, click);
             }
         }
+        if (hit == null) return noMatch(trace, candidate ? SkipDiagnostics.Phase.NO_RULE_MATCH : SkipDiagnostics.Phase.NO_READABLE_TARGET);
+        if (trace != null) trace.accept(SkipDiagnostics.Phase.TARGET_FOUND);
         return hit;
     }
 
     static PopupMatch findGenericAd(AccessibilityNodeInfo root, Rect screen) {
+        return findGenericAd(root, screen, UiDriver.walkComplete(root));
+    }
+
+    static PopupMatch findGenericAd(AccessibilityNodeInfo root, Rect screen, List<AccessibilityNodeInfo> nodes) {
         if (root == null || screen.isEmpty()) return null;
         String pkg = String.valueOf(root.getPackageName());
         if (CustomSkipRule.protectedPackage(pkg)) return null;
-        List<AccessibilityNodeInfo> nodes = UiDriver.walkComplete(root);
+        if (!safeWindow(nodes)) return null;
         Set<String> markers = new java.util.LinkedHashSet<>();
         for (AccessibilityNodeInfo node : nodes) {
             String label = label(node.getText()), description = label(node.getContentDescription());
             if (SplashSkipper.rewardAd(label) || SplashSkipper.rewardAd(description)) return null;
             if (!node.isVisibleToUser()) continue;
-            if (node.isEditable() && node.isFocused()) return null;
             if (node.getWindowId() != root.getWindowId() || !pkg.equals(String.valueOf(node.getPackageName()))) continue;
             if (AD_MARKERS.contains(label.toLowerCase(Locale.ROOT))) markers.add(label);
             if (AD_MARKERS.contains(description.toLowerCase(Locale.ROOT))) markers.add(description);
@@ -108,6 +124,18 @@ final class PopupMatch {
             }
         }
         return hit;
+    }
+
+    private static boolean safeWindow(List<AccessibilityNodeInfo> nodes) {
+        for (AccessibilityNodeInfo node : nodes) {
+            if (node.isVisibleToUser() && SplashSkipper.unsafeWindowNode(node, false)) return false;
+        }
+        return true;
+    }
+
+    private static PopupMatch noMatch(Consumer<SkipDiagnostics.Phase> trace, SkipDiagnostics.Phase phase) {
+        if (trace != null) trace.accept(phase);
+        return null;
     }
 
     private static String label(CharSequence value) { return value == null ? "" : value.toString().trim(); }
@@ -207,7 +235,10 @@ final class PopupMatch {
     }
 
     static boolean promptVisible(AccessibilityNodeInfo root, CustomSkipRule rule) {
-        List<AccessibilityNodeInfo> nodes = UiDriver.walkComplete(root);
+        return promptVisible(UiDriver.walkComplete(root), rule);
+    }
+
+    static boolean promptVisible(List<AccessibilityNodeInfo> nodes, CustomSkipRule rule) {
         return nodes.isEmpty() || nodes.stream().anyMatch(node -> node.isVisibleToUser() && rule.matchesPrompt(node));
     }
 }

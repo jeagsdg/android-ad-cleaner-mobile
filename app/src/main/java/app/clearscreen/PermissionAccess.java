@@ -58,13 +58,20 @@ final class PermissionAccess {
     static String hint(State state) {
         switch (state) {
             case READY: return "开始前可查看并调整本次清理范围。";
-            case DISCONNECTED: return "请稍等系统连接；若持续不可用，可在权限帮助中排查。";
+            case DISCONNECTED: return "请稍等系统连接。若持续未连接，先在无障碍设置中确认净屏开关，再查看本机的后台运行限制。";
             case UNKNOWN: return "请到系统无障碍设置中查看净屏服务，返回后会重新检查。";
-            default: return "首次清理前，需在系统设置中开启净屏服务。";
+            default: return "首次清理前，需在系统设置中选择「净屏」并确认授权。"
+                    + (family().equals("generic") ? "" : " 可在已安装或已下载的服务列表中查找。");
         }
     }
 
     static Destination openAccessibility(Context context, Launcher launcher) {
+        if (!family().equals("generic")) {
+            // OEM Settings can ignore the AOSP detail action and row extras.
+            if (tryStart(launcher, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))) return Destination.ACCESSIBILITY;
+            if (tryStart(launcher, new Intent(Settings.ACTION_SETTINGS))) return Destination.SETTINGS;
+            return Destination.UNAVAILABLE;
+        }
         // AOSP restricts this details action to system/installer callers. Some OEMs expose it.
         // Permission denial is expected: fall back to the public list, without private fragments.
         Intent details = new Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS")
@@ -96,6 +103,10 @@ final class PermissionAccess {
         return tryStart(launcher, new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
                 || openAppInfo(context, launcher);
     }
+    static boolean openPrivacySettings(Launcher launcher) {
+        return tryStart(launcher, new Intent(Settings.ACTION_PRIVACY_SETTINGS))
+                || tryStart(launcher, new Intent(Settings.ACTION_SETTINGS));
+    }
 
     static Boolean backgroundRestricted(Context context) {
         if (Build.VERSION.SDK_INT < 28) return null;
@@ -121,6 +132,11 @@ final class PermissionAccess {
         String brand = (Build.MANUFACTURER + " " + Build.BRAND).toLowerCase(Locale.ROOT);
         if (brand.matches(".*(oppo|oplus|oneplus|realme).*")) return "coloros";
         if (brand.matches(".*(xiaomi|redmi|poco).*")) return "xiaomi";
+        if (brand.contains("honor")) return "honor";
+        if (brand.matches(".*(vivo|iqoo).*")) return "vivo";
+        if (brand.contains("meizu")) return "meizu";
+        if (brand.contains("samsung")) return "samsung";
+        if (brand.contains("huawei")) return "huawei";
         return "generic";
     }
 
@@ -139,7 +155,7 @@ final class PermissionAccess {
                 + "请先确认安装包来源和你是否信任净屏。\n\nOPPO Find X8 Pro 的 ColorOS 16 系统帮助给出的路径为「应用详情 → 权限管理 → 右上角 ⋮ → 解除所有授权限制」。系统提示此操作不可撤销。解除后，返回无障碍设置手动开启净屏。\n\n其他版本请按本机系统帮助查看是否提供「允许受限制的设置」。若「权限管理」灰显或没有解除入口，请查看下方说明。";
         String base = prompt + "可打开下方应用详情，查看是否提供「允许受限制的设置」。只有你确认信任净屏后才允许。\n\n";
         if (family().equals("xiaomi")) return base
-                + "部分 MIUI / HyperOS 版本将入口放在「高级设置」中，不一定在右上角。若没有此入口，请查看下面的「没有解除入口」。";
+                + "在 MIUI / HyperOS 的应用信息中查看右上角菜单或「高级设置」。系统允许后，返回无障碍设置，在已安装或已下载的服务列表中选择净屏。";
         return base + "不同系统的入口和名称可能不同；有的位于右上角菜单，有的在「高级设置」，也可能完全不提供。未找到时请查看下面的「没有解除入口」。";
     }
 
@@ -147,6 +163,7 @@ final class PermissionAccess {
         JSONObject out = new JSONObject();
         try {
             out.put("accessibilityState", state(context).name());
+            out.put("settingsFamily", family());
             out.put("serviceComponent", component(context).flattenToString());
             // An OFF service does not prove restricted settings or a dangerous-app verdict.
             out.put("restrictionStatus", "not_determined");

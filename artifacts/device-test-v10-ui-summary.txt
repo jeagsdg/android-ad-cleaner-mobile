@@ -1,0 +1,15 @@
+ClearScreen 1.0.0 UI refinement checks
+Isolated emulators only; no physical phone operated.
+
+API 34 full release-ui: 13 assertions passed
+API 34 full feedback-privacy: 17 assertions passed
+API 34 full rule-preview: 9 assertions passed
+API 34 offline release-ui: 6 assertions passed
+API 34 offline feedback-privacy: 17 assertions passed
+API 35 full release-ui: 13 assertions passed
+
+Total: 75 instrumentation assertions, plus visible-control UI journeys at normal size and 320dp / 130% font.
+Full APK SHA-256: 3b38d84efe9b948b7eefd029b8c3107657bc5c7c19225f98f1a5cf1ecb392537
+Offline APK SHA-256: 1c8bec247857615a7c2d90707cb79b671c7821e7b71695bfc41df498facd9dca
+Both variants: 191 JVM tests passed; Lint reported no issues.
+Real-device startup ads, OEM Settings, background stability and hit rate remain pending.

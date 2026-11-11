@@ -3,6 +3,30 @@ def releaseProperties = new Properties()
 def releasePropertiesFile = rootProject.file('.local/signing.properties')
 if (releasePropertiesFile.exists()) releasePropertiesFile.withInputStream { releaseProperties.load(it) }
 def offlineOnly = providers.gradleProperty('offlineOnly').map { it.toBoolean() }.getOrElse(false)
+def coverageOutput = layout.buildDirectory.dir('generated/app-coverage/assets')
+def splashCatalog = layout.projectDirectory.file('src/main/assets/splash-rules.json')
+def popupCatalog = layout.projectDirectory.file('src/main/assets/popup-ad-rules.json')
+def generateAppCoverage = tasks.register('generateAppCoverage') {
+    inputs.files(splashCatalog, popupCatalog)
+    outputs.dir(coverageOutput)
+    doLast {
+        def packages = new TreeMap<String, Map>()
+        [[splashCatalog, 'splash'], [popupCatalog, 'popup']].each { catalog ->
+            def rules = new groovy.json.JsonSlurper().parse(catalog[0].asFile, 'UTF-8').rules
+            rules.each { rule ->
+                String pkg = rule['package']
+                def entry = packages.computeIfAbsent(pkg) {
+                    [package: pkg, name: '', splash: 0, popup: 0]
+                }
+                if (!entry.name && rule.name) entry.name = rule.name
+                entry[catalog[1]] = entry[catalog[1]] + 1
+            }
+        }
+        def output = coverageOutput.get().file('app-ad-coverage.json').asFile
+        output.parentFile.mkdirs()
+        output.setText(groovy.json.JsonOutput.toJson(packages.values()), 'UTF-8')
+    }
+}
 android {
     namespace 'app.clearscreen'
     compileSdk 35
@@ -10,13 +34,14 @@ android {
         applicationId 'app.clearscreen'
         minSdk 26
         targetSdk 35
-        versionCode 11
-        versionName '0.9.0'
+        versionCode 12
+        versionName '1.0.0'
         testInstrumentationRunner 'app.clearscreen.DeviceChecks'
         resValue 'bool', 'network_filter_available', offlineOnly ? 'false' : 'true'
     }
     sourceSets {
         main.java.srcDir(offlineOnly ? 'src/offline/java' : 'src/network/java')
+        main.assets.srcDir(coverageOutput)
         if (!offlineOnly) {
             debug.manifest.srcFile 'src/network/AndroidManifest.xml'
             release.manifest.srcFile 'src/network/AndroidManifest.xml'
@@ -34,6 +59,7 @@ android {
     }
     buildTypes { release { minifyEnabled false; if (releasePropertiesFile.exists()) signingConfig signingConfigs.localRelease } }
 }
+tasks.named('preBuild').configure { dependsOn(generateAppCoverage) }
 dependencies { testImplementation 'junit:junit:4.13.2'; testImplementation 'org.robolectric:robolectric:4.12.2' }
 tasks.withType(Test).configureEach {
     systemProperty 'clearscreen.artifacts', rootProject.file('artifacts').absolutePath

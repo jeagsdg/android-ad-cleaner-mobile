@@ -118,7 +118,7 @@ public class PermissionAccessTest {
                 PermissionAccess.component(context()).flattenToString());
         controller.resume();
         assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "开关已开启，服务未连接"));
-        assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "管理系统授权"));
+        assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "打开手机设置"));
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         service.onServiceConnected();
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
@@ -133,6 +133,41 @@ public class PermissionAccessTest {
         controller.pause().stop().destroy();
         service.onDestroy();
     }
+    @Test public void authorizationFromPermissionHelpReturnsToOriginWhenServiceConnects() {
+        ShadowBuild.setManufacturer("OPPO");
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        CleanerService service = null;
+        try {
+            MainActivity activity = controller.get();
+            activity.store.enableAdFeatures(false, true);
+            ScreenTest.clickFeature(activity, "应用内弹窗");
+            ScreenTest.clickFeature(activity, "继续授权");
+            ScreenTest.clickFeature(activity, "开启遇到问题");
+            ScreenTest.clickFeature(activity, "打开无障碍设置");
+
+            Intent settings = shadowOf(activity).getNextStartedActivity();
+            assertNotNull(settings);
+            assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, settings.getAction());
+            controller.pause();
+            Settings.Secure.putString(context().getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                    PermissionAccess.component(context()).flattenToString());
+            controller.resume();
+            assertEquals(PermissionAccess.State.DISCONNECTED, PermissionAccess.state(activity));
+            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "没有解除入口"));
+
+            service = Robolectric.buildService(CleanerService.class).create().get();
+            service.onServiceConnected();
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+
+            assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
+            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "应用内弹窗"));
+            assertFalse(service.busy);
+            assertEquals(0, activity.store.read("journal").length());
+        } finally {
+            controller.pause().stop().destroy();
+            if (service != null) service.onDestroy();
+        }
+    }
     @Test public void permissionHelpSurvivesRecreationAndBackReturnsToSetup() {
         ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
         MainActivity activity = controller.get();
@@ -144,7 +179,7 @@ public class PermissionAccessTest {
         MainActivity next = recreated.get();
         assertNotNull(ScreenTest.find(next.getWindow().getDecorView(), "没有解除入口"));
         next.onBackPressed();
-        assertNotNull(ScreenTest.find(next.getWindow().getDecorView(), "前往系统授权"));
+        assertNotNull(ScreenTest.find(next.getWindow().getDecorView(), "打开手机设置"));
         recreated.pause().stop().destroy();
     }
     @Test @Config(sdk = 34) public void colorOsNotificationGrantReturnsToAppInfoWithoutEnablingAccessibility() throws Exception {
@@ -157,7 +192,14 @@ public class PermissionAccessTest {
             MainActivity activity = controller.get();
             activity.accessibility();
             ScreenTest.find(activity.getWindow().getDecorView(), "开启遇到问题").performClick();
-            assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "申请过滤状态通知").performClick());
+            View requestButton = ScreenTest.find(activity.getWindow().getDecorView(), "申请过滤状态通知");
+            if (!activity.networkFilterAvailable()) {
+                assertNull(requestButton);
+                assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "使用网络过滤"));
+                return;
+            }
+            assertNotNull(requestButton);
+            assertTrue(requestButton.performClick());
             ShadowActivity shadow = shadowOf(activity);
             ShadowActivity.PermissionsRequest request = shadow.getLastRequestedPermission();
             assertEquals(MainActivity.COLOROS_FILTER_NOTIFICATIONS, request.requestCode);
@@ -186,7 +228,14 @@ public class PermissionAccessTest {
             MainActivity activity = controller.get();
             activity.accessibility();
             ScreenTest.find(activity.getWindow().getDecorView(), "开启遇到问题").performClick();
-            ScreenTest.find(activity.getWindow().getDecorView(), "申请过滤状态通知").performClick();
+            View requestButton = ScreenTest.find(activity.getWindow().getDecorView(), "申请过滤状态通知");
+            if (!activity.networkFilterAvailable()) {
+                assertNull(requestButton);
+                assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "打开净屏应用详情"));
+                return;
+            }
+            assertNotNull(requestButton);
+            requestButton.performClick();
             activity.onRequestPermissionsResult(MainActivity.COLOROS_FILTER_NOTIFICATIONS,
                     new String[]{notificationPermission}, new int[]{PackageManager.PERMISSION_DENIED});
 
@@ -211,7 +260,14 @@ public class PermissionAccessTest {
         try {
             MainActivity activity = controller.get();
             activity.showPage(6);
-            assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "管理过滤通知").performClick());
+            View manageButton = ScreenTest.find(activity.getWindow().getDecorView(), "管理过滤通知");
+            if (!activity.networkFilterAvailable()) {
+                assertNull(manageButton);
+                assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "纯离线版"));
+                return;
+            }
+            assertNotNull(manageButton);
+            assertTrue(manageButton.performClick());
             ShadowActivity shadow = shadowOf(activity);
             ShadowActivity.PermissionsRequest request = shadow.getLastRequestedPermission();
             assertEquals(MainActivity.FILTER_NOTIFICATIONS, request.requestCode);
