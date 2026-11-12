@@ -15807,6 +15807,224 @@
       "matchDelay": 800
     },
     {
+      "package": "com.infothinker.gzmetro",
+      "name": "广州地铁",
+      "groupKey": -90,
+      "ruleIndex": 82,
+      "selector": "ImageView[id=\"com.infothinker.gzmetro:id/img_splash\"][visibleToUser=true] < RelativeLayout[clickable=false] > @LinearLayout[id=\"com.infothinker.gzmetro:id/btn_skip_ad\"][text=null][desc=null][clickable=true] > TextView[id=null][text=\"跳过\"][clickable=false][childCount=0] + TextView[id=\"com.infothinker.gzmetro:id/tv_time_count\"][text!=null][clickable=false][childCount=0]",
+      "snapshots": [],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.infothinker.gzmetro:id/img_splash"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "visibleToUser",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "RelativeLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    false
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "LinearLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.infothinker.gzmetro:id/btn_skip_ad"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "desc",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    false
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.infothinker.gzmetro:id/tv_time_count"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "!=",
+                    null
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    false
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "<",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ],
+          [
+            "+",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 2
+      },
+      "activityIds": [
+        "com.infothinker.gzmetro.ActivityAgent"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [],
+      "requiredSelectors": [],
+      "reference": {
+        "versionName": "6.3.28",
+        "apkLayout": {
+          "store": "https://app.cdo.oppomobile.com/home/detail?app_id=2331062",
+          "url": "https://storedl1.nearme.com.cn/apk/202609/19/3f6775946a9d2c132e10ffdda4b095f9.apk",
+          "apkSha256": "8c67585a21870b0441c8241c68dff786e1eaf3728689e4b44228663ea8beec45",
+          "path": "res/layout/activity_splash.xml",
+          "layoutSha256": "6658f7080538f23290cc1fab8c6486f3afad90bebb3166983110a686a21bf989"
+        }
+      },
+      "exactActivity": true
+    },
+    {
       "package": "com.hihonor.appmarket",
       "name": "荣耀应用市场",
       "groupKey": 0,

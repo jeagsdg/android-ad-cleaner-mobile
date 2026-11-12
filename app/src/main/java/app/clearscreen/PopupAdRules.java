@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-/** Packaged in-app ad dismissals evaluated as bounded predicates and native clicks. */
+/** Packaged in-app ad dismissals evaluated as bounded predicates and native actions. */
 final class PopupAdRules {
     private static final Pattern PROTECTED_ACTIVITY = Pattern.compile(
             "checkout|payment|payactivity|wallet|privacy|permission|password|login|logon|sign.?in|"
@@ -67,6 +67,8 @@ final class PopupAdRules {
 
         int maxPerVisit() { return entry.optInt("maxPerVisit", 3); }
 
+        boolean pageDown() { return entry.optBoolean("pageDown"); }
+
         boolean matchesTarget(AccessibilityNodeInfo node) {
             return SplashRules.targetMatches(pkg, node, target, true);
         }
@@ -91,10 +93,12 @@ final class PopupAdRules {
     static final class Match {
         final Rule rule;
         final AccessibilityNodeInfo target;
+        final AccessibilityNodeInfo anchor;
 
-        Match(Rule rule, AccessibilityNodeInfo target) {
+        Match(Rule rule, AccessibilityNodeInfo target, AccessibilityNodeInfo anchor) {
             this.rule = rule;
             this.target = target;
+            this.anchor = anchor;
         }
     }
 
@@ -141,12 +145,14 @@ final class PopupAdRules {
             Boolean requirementsPresent = null;
             for (AccessibilityNodeInfo node : nodes) {
                 if (!node.isEnabled() || !rule.matchesTarget(node)) continue;
-                AccessibilityNodeInfo click = clickTarget(root, node, pkg, screen);
-                if (click == null) continue;
+                AccessibilityNodeInfo target = rule.pageDown() ? ShortDramaAd.target(root, node, screen, nodes)
+                        : clickTarget(root, node, pkg, screen);
+                if (target == null) continue;
                 if (requirementsPresent == null) requirementsPresent = rule.requirementsPresent(nodes);
                 if (!requirementsPresent) break;
-                if (hit != null && !hit.target.equals(click)) return null;
-                if (hit == null) hit = new Match(rule, click);
+                AccessibilityNodeInfo anchor = rule.pageDown() ? node : target;
+                if (hit != null && (!hit.target.equals(target) || !hit.anchor.equals(anchor))) return null;
+                if (hit == null) hit = new Match(rule, target, anchor);
             }
         }
         return hit != null && safePage(nodes, hit) ? hit : null;

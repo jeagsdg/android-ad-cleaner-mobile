@@ -24,6 +24,26 @@ public class UiDriverTest {
     AccessibilityNodeInfo row(String label,int y,boolean checked){AccessibilityNodeInfo row=node("","android.widget.LinearLayout",new Rect(0,y,800,y+100));AccessibilityNodeInfo title=node(label,"android.widget.TextView",new Rect(20,y+20,500,y+80));AccessibilityNodeInfo toggle=node("","android.widget.Switch",new Rect(600,y+20,740,y+80));toggle.setCheckable(true);toggle.setClickable(true);toggle.setChecked(checked);shadowOf(row).addChild(title);shadowOf(row).addChild(toggle);shadowOf(service.root).addChild(row);return toggle;}
     @Test public void selectsOnlyUniqueNamedSwitch()throws Exception{row("自动更新",100,true);AccessibilityNodeInfo target=row("个性化推荐",220,true);UiDriver.Found f=driver.find("个性化推荐");assertNotNull(f);assertEquals(target,f.node);assertTrue(f.checked);assertNull(driver.find("不存在"));}
     @Test public void duplicateLabelsStopInsteadOfGuessing()throws Exception{row("个性化推荐",100,true);row("个性化推荐",220,true);try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("不唯一"));}}
+    @Test public void missingChildCannotMakeAnotherToggleLookUnique() throws Exception {
+        String label = "个性化推荐";
+        AccessibilityNodeInfo duplicate = row(label, 100, true);
+        AccessibilityNodeInfo original = row(label, 220, false);
+        java.util.List<AccessibilityNodeInfo> children = ReflectionHelpers.getField(shadowOf(service.root), "children");
+        AccessibilityNodeInfo originalRow = children.set(1, null);
+        assertEquals(2, service.root.getChildCount());
+        assertNull(service.root.getChild(1));
+
+        UiDriver.Halt failure = assertThrows(UiDriver.Halt.class, () -> driver.findExact(label));
+        assertEquals("tree_incomplete", failure.reason);
+        assertTrue(failure.retryable);
+        assertTrue(duplicate.isChecked());
+        assertFalse(original.isChecked());
+        assertTrue(shadowOf(duplicate).getPerformedActions().isEmpty());
+        assertTrue(shadowOf(original).getPerformedActions().isEmpty());
+
+        children.set(1, originalRow);
+        assertEquals("ambiguous", assertThrows(UiDriver.Halt.class, () -> driver.findExact(label)).reason);
+    }
     @Test public void disabledSwitchCannotBeChanged()throws Exception{row("个性化推荐",100,true).setEnabled(false);try{driver.find("个性化推荐");fail();}catch(UiDriver.Halt e){assertTrue(e.getMessage().contains("不可操作"));}}
     @Test public void clippedSwitchIsReadAgainAfterLayoutSettles()throws Exception{
         AccessibilityNodeInfo target=row("个性化推荐",100,true);

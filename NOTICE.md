@@ -14,7 +14,7 @@ MIT，Copyright (c) 2024 ganlinte。固定订阅 v72，提交 `4746d192b4c57a4b6
 
 ## 公开控件快照
 
-净屏依据公开 Android 无障碍快照独立编写部分规则。仓库与 APK 保留选中的控件条件、快照链接、应用版本和快照压缩包 SHA-256。 [开屏样本](vendor/gkd-splash-reference/startup-samples.json) · [应用内样本](vendor/gkd-splash-reference/popup-samples.json)
+净屏依据公开 Android 无障碍快照与公开安装包的布局独立编写部分规则。仓库与 APK 保留选中的控件条件、证据链接、应用版本和源文件 SHA-256。 [开屏样本](vendor/gkd-splash-reference/startup-samples.json) · [应用内样本](vendor/gkd-splash-reference/popup-samples.json)
 
 ## Block List Project
 
@@ -22,6 +22,6 @@ Unlicense，固定提交 `ee3bdbaddf49c756cf3340bb2e6a9dee5282d1c6`。网络过�
 
 ## 实现参考
 
-净屏使用独立的规则存储、匹配和执行流程。公开资料用于核对可导入的规则格式与无障碍匹配行为。 [兼容规则格式说明](https://juejin.cn/post/6938590373740544007) · [无障碍匹配原理](https://www.cnblogs.com/Cl0ud/p/17684204.html)
+净屏使用独立的规则存储、匹配和执行流程。公开资料用于核对无障碍匹配行为。 [无障碍匹配原理](https://www.cnblogs.com/Cl0ud/p/17684204.html)
 
 支持作者页面的赞赏图片经授权随本项目分发。派生版本发布时请替换或移除。

@@ -491,7 +491,15 @@ def import_reviewed_samples(path):
             raise ValueError(f'Invalid reviewed popup evidence in {package}')
         nodes = selector['path']
         target = selector['target']
-        if not guaranteed(nodes[target], lambda f, o, v: (f, o, v) == ('clickable', '=', True)) or not any(
+        page_down = sample.get('pageDown') is True
+        if page_down:
+            if (package != 'com.phoenix.read'
+                    or activity != 'com.dragon.read.component.shortvideo.impl.ShortSeriesActivity'
+                    or sample.get('exactActivity') is not True
+                    or not guaranteed(nodes[target], lambda f, o, v: (f, o, v) == ('text', '=', '上滑继续观看短剧'))
+                    or not any(guaranteed(node, text_test(AD_WORDS)) for node in nodes)):
+                raise ValueError(f'Reviewed page turn requires the exact short-drama advertisement in {package}')
+        elif not guaranteed(nodes[target], lambda f, o, v: (f, o, v) == ('clickable', '=', True)) or not any(
             i != target and guaranteed(node, lambda f, o, v: f == 'id' and o == '='
                 and isinstance(v, str) and v.startswith(package + ':id/'))
             for i, node in enumerate(nodes)
@@ -505,6 +513,8 @@ def import_reviewed_samples(path):
         )
         if sample.get('exactActivity') is True:
             entry['exactActivity'] = True
+        if page_down:
+            entry['pageDown'] = True
         entries.append(entry)
     return entries
 

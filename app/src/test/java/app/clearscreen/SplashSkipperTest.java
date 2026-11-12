@@ -25,6 +25,7 @@ import org.robolectric.annotation.Implements;
 import org.robolectric.annotation.LooperMode;
 import org.robolectric.shadow.api.Shadow;
 import org.robolectric.shadows.ShadowAccessibilityService;
+import org.robolectric.util.ReflectionHelpers;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -90,6 +91,51 @@ public class SplashSkipperTest {
         assertInitialPopupRootRetry(PopupRootChange.STILL_MISSING);
     }
 
+    @Test public void partiallyReadPopupWaitsForOneCompleteTreeInTheSameWindow() {
+        assertPartialPopupTreeRetry(false);
+        assertPartialPopupTreeRetry(true);
+    }
+
+    private static void assertPartialPopupTreeRetry(boolean recovers) {
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        ActiveRootService shadowService = Shadow.extract(service);
+        Store store = new Store(service);
+        store.setSplashEnabled(false);
+        store.setPopupEnabled(true);
+        store.setSkipToastEnabled(false);
+        Point display = new Point();
+        service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(display);
+        Rect screen = new Rect(0, 0, display.x, display.y);
+        AccessibilityWindowInfo window = windowOnDisplay(42, Display.DEFAULT_DISPLAY);
+        AccessibilityNodeInfo partial = windowNode("", screen, window);
+        AccessibilityNodeInfo full = windowNode("", screen, window);
+        AccessibilityNodeInfo partialButton = addGenericPopup(partial, display, window);
+        AccessibilityNodeInfo fullButton = addGenericPopup(full, display, window);
+        shadowOf(partialButton).setOnPerformActionListener((action, args) -> false);
+        shadowOf(fullButton).setOnPerformActionListener((action, args) -> false);
+        List<AccessibilityNodeInfo> children = ReflectionHelpers.getField(shadowOf(partial), "children");
+        children.add(null);
+        assertNull(partial.getChild(partial.getChildCount() - 1));
+
+        SplashSkipper skipper = new SplashSkipper(service);
+        try {
+            shadowService.activeRoot = () -> partial;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, PKG, window.getId());
+            AtomicInteger reads = new AtomicInteger();
+            shadowService.activeRoot = () -> reads.getAndIncrement() == 0 || !recovers ? partial : full;
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+            assertTrue(shadowOf(partialButton).getPerformedActions().isEmpty());
+            if (recovers) {
+                assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), shadowOf(fullButton).getPerformedActions());
+            } else {
+                assertEquals(2, reads.get());
+                assertTrue(shadowOf(fullButton).getPerformedActions().isEmpty());
+            }
+        } finally {
+            skipper.close();
+        }
+    }
+
     @Test public void genericPopupRootRetryDoesNotSurviveInputOrAWindowChange() {
         assertInitialPopupRootRetry(PopupRootChange.USER_CLICK);
         assertInitialPopupRootRetry(PopupRootChange.NEW_WINDOW);
@@ -97,7 +143,12 @@ public class SplashSkipperTest {
         assertInitialPopupRootRetry(PopupRootChange.MISMATCH);
     }
 
-    private enum PopupRootChange { RECOVERED, STILL_MISSING, USER_CLICK, NEW_WINDOW, NEW_PACKAGE, MISMATCH }
+    @Test @Config(sdk = 34)
+    public void scrollingCancelsTheQueuedPopupRootRetry() {
+        assertInitialPopupRootRetry(PopupRootChange.USER_SCROLL);
+    }
+
+    private enum PopupRootChange { RECOVERED, STILL_MISSING, USER_CLICK, USER_SCROLL, NEW_WINDOW, NEW_PACKAGE, MISMATCH }
 
     private static void assertInitialPopupRootRetry(PopupRootChange change) {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
@@ -131,6 +182,9 @@ public class SplashSkipperTest {
 
             if (change == PopupRootChange.USER_CLICK) {
                 sendWindowEvent(skipper, AccessibilityEvent.TYPE_VIEW_CLICKED, PKG, window.getId());
+            }
+            if (change == PopupRootChange.USER_SCROLL) {
+                sendWindowEvent(skipper, AccessibilityEvent.TYPE_VIEW_SCROLLED, PKG, window.getId());
             }
             if (change == PopupRootChange.NEW_WINDOW || change == PopupRootChange.NEW_PACKAGE) {
                 String pkg = change == PopupRootChange.NEW_PACKAGE ? "another.app" : PKG;
@@ -358,7 +412,7 @@ public class SplashSkipperTest {
     }
 
     @Test public void delayedLaunchWindowCanConfirmAfterPollingEnds() {
-        assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), clicksAfterDelayedWindow(42, 42, 550, 0, false));
+        assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), clicksAfterDelayedWindow(42, 42, 550, 0, null));
     }
 
     @Test public void previewReadsAControlDrawnWithoutAnotherAccessibilityEvent() {
@@ -512,7 +566,16 @@ public class SplashSkipperTest {
         }
     }
 
+    @Test public void partialReadbackCannotCountTheAdAsGone() throws Exception {
+        assertDismissalAfterClick(true, true, true);
+        assertDismissalAfterClick(false, true, true);
+    }
+
     private static void assertDismissalAfterClick(boolean splash, boolean ownClick) throws Exception {
+        assertDismissalAfterClick(splash, ownClick, false);
+    }
+
+    private static void assertDismissalAfterClick(boolean splash, boolean ownClick, boolean partialReadback) throws Exception {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         ActiveRootService shadowService = Shadow.extract(service);
         Store store = new Store(service);
@@ -538,6 +601,11 @@ public class SplashSkipperTest {
         shadowOf(panel).addChild(button);
         shadowOf(button).setOnPerformActionListener((action, args) -> true);
         AccessibilityNodeInfo content = node("普通内容", screen);
+        if (partialReadback) {
+            shadowOf(content).addChild(node("普通标题", screen));
+            List<AccessibilityNodeInfo> children = ReflectionHelpers.getField(shadowOf(content), "children");
+            children.add(null);
+        }
         SplashSkipper skipper = new SplashSkipper(service);
         try {
             shadowService.activeRoot = () -> root;
@@ -552,8 +620,9 @@ public class SplashSkipperTest {
             clicked.recycle();
             shadowService.activeRoot = () -> content;
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-            assertEquals(ownClick ? 1 : 0, splash ? store.splashCount() : store.popupCount());
-            assertEquals(ownClick, store.read(splash ? "splash-history" : "popup-history")
+            boolean confirmed = ownClick && !partialReadback;
+            assertEquals(confirmed ? 1 : 0, splash ? store.splashCount() : store.popupCount());
+            assertEquals(confirmed, store.read(splash ? "splash-history" : "popup-history")
                     .getJSONObject(0).getBoolean("confirmed"));
         } finally {
             skipper.close();
@@ -561,18 +630,24 @@ public class SplashSkipperTest {
     }
 
     @Test public void delayedContentNeedsAFreshSignalForTheSameWindow() {
-        assertTrue(clicksAfterDelayedWindow(null, 42, 550, 0, false).isEmpty());
-        assertTrue(clicksAfterDelayedWindow(42, 43, 550, 0, false).isEmpty());
-        assertTrue(clicksAfterDelayedWindow(42, 42, 1_500, 0, false).isEmpty());
-        assertTrue(clicksAfterDelayedWindow(42, 42, 550, 0, true).isEmpty());
+        assertTrue(clicksAfterDelayedWindow(null, 42, 550, 0, null).isEmpty());
+        assertTrue(clicksAfterDelayedWindow(42, 43, 550, 0, null).isEmpty());
+        assertTrue(clicksAfterDelayedWindow(42, 42, 1_500, 0, null).isEmpty());
+        assertTrue(clicksAfterDelayedWindow(42, 42, 550, 0, AccessibilityEvent.TYPE_VIEW_CLICKED).isEmpty());
     }
 
     @Test public void delayedWindowDoesNotRestartLaunchDeadline() {
-        assertTrue(clicksAfterDelayedWindow(42, 42, 550, SplashSkipper.WINDOW_MS - 450, false).isEmpty());
+        assertTrue(clicksAfterDelayedWindow(42, 42, 550, SplashSkipper.WINDOW_MS - 450, null).isEmpty());
+    }
+
+    @Test @Config(sdk = 34)
+    public void scrollInThePendingLaunchWindowCancelsTheQueuedDismissal() {
+        assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), clicksAfterDelayedWindow(42, 42, 550, 0, null));
+        assertTrue(clicksAfterDelayedWindow(42, 42, 550, 0, AccessibilityEvent.TYPE_VIEW_SCROLLED).isEmpty());
     }
 
     private static List<Integer> clicksAfterDelayedWindow(Integer stateWindow, int rootWindow,
-                                                          long rootDelay, long buttonDelay, boolean userClicked) {
+                                                          long rootDelay, long buttonDelay, Integer inputType) {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         ActiveRootService shadowService = Shadow.extract(service);
         Store store = new Store(service);
@@ -593,7 +668,7 @@ public class SplashSkipperTest {
             if (stateWindow != null)
                 sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, PKG, stateWindow);
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(rootDelay));
-            if (userClicked) sendWindowEvent(skipper, AccessibilityEvent.TYPE_VIEW_CLICKED, PKG, rootWindow);
+            if (inputType != null) sendWindowEvent(skipper, inputType, PKG, rootWindow);
             shadowService.activeRoot = () -> root;
             sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, PKG, rootWindow);
             if (buttonDelay > 0) {

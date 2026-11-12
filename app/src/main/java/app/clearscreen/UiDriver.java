@@ -176,8 +176,11 @@ public final class UiDriver {
         return ordered;
     }
     static String fingerprint(AccessibilityNodeInfo root){
-        if(root==null)return "";StringBuilder value=new StringBuilder().append(root.getWindowId()).append(':').append(root.getPackageName());
-        for(AccessibilityNodeInfo node:walk(root))if(node.isVisibleToUser())value.append('|').append(text(node)).append(':').append(node.getViewIdResourceName()).append(':').append(node.isChecked()).append(':').append(node.getChildCount());
+        return root==null?"":fingerprint(root,walk(root));
+    }
+    private static String fingerprint(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){
+        StringBuilder value=new StringBuilder().append(root.getWindowId()).append(':').append(root.getPackageName());
+        for(AccessibilityNodeInfo node:nodes)if(node.isVisibleToUser())value.append('|').append(text(node)).append(':').append(node.getViewIdResourceName()).append(':').append(node.isChecked()).append(':').append(node.getChildCount());
         return value.toString();
     }
     private static String viewport(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){
@@ -321,7 +324,7 @@ public final class UiDriver {
     static List<AccessibilityNodeInfo> walk(AccessibilityNodeInfo root){
         return walk(root,false);
     }
-    /** An empty result means the root is missing or the tree exceeds the traversal budget. */
+    /** An empty result means a declared node is unreadable or the traversal budget is exceeded. */
     static List<AccessibilityNodeInfo> walkComplete(AccessibilityNodeInfo root){
         return walk(root,true);
     }
@@ -346,6 +349,7 @@ public final class UiDriver {
             for(int i=0;i<children;i++){
                 AccessibilityNodeInfo child=node.getChild(i);
                 if(child!=null)pending.add(child);
+                else if(requireComplete)return Collections.emptyList();
             }
         }
         return nodes;
@@ -373,7 +377,10 @@ public final class UiDriver {
             }
             if(hits.size()>1)throw new Halt("入口有多个匹配，未操作",false,false,"ambiguous");
             if(hits.size()==1){
-                if(!fingerprint(r).equals(fingerprint(root())))throw new Halt("入口已变化，可重新检查",false,true,"entry_changed");
+                String before=fingerprint(r,nodes);
+                AccessibilityNodeInfo current=root();
+                if(!before.equals(fingerprint(current,complete(current))))
+                    throw new Halt("入口已变化，可重新检查",false,true,"entry_changed");
                 AccessibilityNodeInfo entry=hits.get(0);
                 requireActionWindow(entry);
                 return entry.performAction(AccessibilityNodeInfo.ACTION_CLICK);
@@ -492,12 +499,16 @@ public final class UiDriver {
     boolean confirmDisable(String label)throws Halt{
         AccessibilityNodeInfo r=activeRoot();boolean title=false;List<AccessibilityNodeInfo> buttons=new ArrayList<>();
         String wanted="确定关闭"+label;
-        for(AccessibilityNodeInfo n:complete(r)){if(!n.isVisibleToUser())continue;if(toggle(n))return false;
+        List<AccessibilityNodeInfo> nodes=complete(r);
+        for(AccessibilityNodeInfo n:nodes){if(!n.isVisibleToUser())continue;if(toggle(n))return false;
             String t=text(n).replaceAll("[「」“”\"？?\\s]","");
             if(t.equals(wanted)||t.equals(wanted+"吗"))title=true;
             if(text(n).equals("确定")&&String.valueOf(n.getClassName()).endsWith("Button")&&n.isClickable()&&n.isEnabled())buttons.add(n);
         }
-        if(!title||buttons.size()!=1||!fingerprint(r).equals(fingerprint(activeRoot())))return false;
+        if(!title||buttons.size()!=1)return false;
+        String before=fingerprint(r,nodes);
+        AccessibilityNodeInfo current=activeRoot();
+        if(!before.equals(fingerprint(current,complete(current))))return false;
         AccessibilityNodeInfo button=buttons.get(0);
         requireActionWindow(button);
         return button.performAction(AccessibilityNodeInfo.ACTION_CLICK);

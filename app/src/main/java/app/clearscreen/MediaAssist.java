@@ -72,7 +72,9 @@ final class MediaAssist {
     }
 
     private static boolean hasOtherControl(AccessibilityNodeInfo node) {
-        for (AccessibilityNodeInfo child : UiDriver.walk(node)) {
+        List<AccessibilityNodeInfo> children = UiDriver.walkComplete(node);
+        if (children.isEmpty()) return true;
+        for (AccessibilityNodeInfo child : children) {
             if (!child.equals(node) && child.isVisibleToUser() && (child.isClickable() || child.isEditable() || child.isCheckable())) return true;
         }
         return false;

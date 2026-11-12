@@ -67,6 +67,7 @@ final class SplashSkipper {
     private long deadline, foregroundVisit, nextPopupClick, nextGenericProbe, popupDue, userInteraction;
     private long scanAt=Long.MAX_VALUE, nextSplashProbe, lastSplashProbe;
     private long activitySince;
+    private long lastPageDownVisit=-1;
     private long pauseUntil, nextPopupProbe, nextPreviewProbe, previewDue=Long.MAX_VALUE, lastHotSplash;
     private boolean exactActivitySplash;
     private int gesturesInFlight, activityWindow=-1;
@@ -421,6 +422,7 @@ final class SplashSkipper {
         return defaultPopupAllowed()&&popupAds.hasRules(foreground,activity,activityAge(),this::catalogRuleAvailable);
     }
     private boolean catalogRuleAvailable(PopupAdRules.Rule rule){
+        if(rule.pageDown())return activeWindow>=0&&activityWindow==activeWindow&&lastPageDownVisit!=foregroundVisit;
         return !catalogUnconfirmed.contains(rule)&&catalogAttempts.getOrDefault(rule,0)<rule.maxPerVisit();
     }
     private long activityAge(){return SystemClock.elapsedRealtime()-activitySince;}
@@ -512,13 +514,7 @@ final class SplashSkipper {
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         if(root==null){
             if(checkSplash)note(SkipDiagnostics.Phase.WINDOW_UNAVAILABLE);
-            if(checkPopup&&popupRetries>0){popupRetries--;popupPending=true;}
-            else if(checkPopup&&!retryingPopupRoot&&activeWindow>=0&&pendingWindow==null
-                    &&(catalogPopupAllowed()||genericPopupAllowed())){
-                // A verified window may briefly have no root and emit no later content event.
-                popupRootRetryPending=true;
-                popupPending=true;
-            }
+            if(checkPopup)retryUnreadablePopup(retryingPopupRoot);
             if(checkMedia)mediaPending=false;
             schedule();return;
         }
@@ -557,9 +553,10 @@ final class SplashSkipper {
         }
         if(checkPopup){
             nextPopupProbe=now+POPUP_PROBE_INTERVAL_MS;
-            if(scanPopup(root,nodes))return;
+            if(nodes.isEmpty())retryUnreadablePopup(retryingPopupRoot);
+            else if(scanPopup(root,nodes))return;
+            else if(popupRetries>0){popupRetries--;popupPending=true;}
         }
-        if(checkPopup&&popupRetries>0){popupRetries--;popupPending=true;}
         if(checkMedia){
             mediaPending=false;
             nextMediaProbe=now+300;
@@ -570,6 +567,17 @@ final class SplashSkipper {
             }
         }
         schedule();
+    }
+    private void retryUnreadablePopup(boolean alreadyRetried){
+        if(popupRetries>0){
+            popupRetries--;
+            popupPending=true;
+        }else if(!alreadyRetried&&activeWindow>=0&&pendingWindow==null
+                &&(catalogPopupAllowed()||genericPopupAllowed())){
+            // A verified window may be temporarily unreadable without a later content event.
+            popupRootRetryPending=true;
+            popupPending=true;
+        }
     }
     private long popupReadyAt(){return Math.max(nextPopupProbe,Math.max(popupDue,nextPopupClick));}
     private String splashActivity(AccessibilityNodeInfo root){return root.getWindowId()==activityWindow?activity:"";}
@@ -719,13 +727,40 @@ final class SplashSkipper {
             if(belongsTo(root,foreground)&&root.getWindowId()==window){
                 PopupAdRules.Match current=popupAds.find(root,activity,screen(root),activityAge(),
                         UiDriver.walkComplete(root),this::catalogRuleAvailable);
-                if(current!=null&&current.rule==expected.rule&&current.target.equals(expected.target)){
-                    clickObservedPopup(current.target,current.rule);
+                if(current!=null&&current.rule==expected.rule&&current.target.equals(expected.target)
+                        &&current.anchor.equals(expected.anchor)&&(!current.rule.pageDown()||window==activityWindow)){
+                    if(current.rule.pageDown())pageDown(root,current.target);
+                    else clickObservedPopup(current.target,current.rule);
                     return;
                 }
             }
         }
         schedule();
+    }
+    private void pageDown(AccessibilityNodeInfo root,AccessibilityNodeInfo pager){
+        long visit=foregroundVisit,interaction=userInteraction;
+        String pkg=foreground;
+        ConfirmationWindow origin=new ConfirmationWindow(root,activityWindow,activity);
+        lastPageDownVisit=visit;
+        nextPopupClick=SystemClock.elapsedRealtime()+POPUP_COOLDOWN_MS;
+        if(!pager.performAction(ShortDramaAd.PAGE_DOWN)){
+            recordPopup(pkg,false);
+            schedule();
+            return;
+        }
+        popupVerifying=true;
+        main.postDelayed(()->{
+            if(closed)return;
+            boolean sameVisit=visit==foregroundVisit&&pkg.equals(foreground);
+            AccessibilityNodeInfo current=service.getRootInActiveWindow();
+            // The framework does not identify the caller of delayed scroll events.
+            boolean confirmed=sameVisit&&interaction==userInteraction&&pendingWindow==null
+                    &&activityWindow==origin.id&&activeWindow==origin.id&&activity.equals(origin.hostActivity)
+                    &&matchesWindow(current,pkg,origin.id)&&origin.matchesDisplayOf(current)
+                    &&ShortDramaAd.resumed(pager,screen(current),UiDriver.walkComplete(current));
+            if(sameVisit)finishPopupVerification();
+            recordPopup(pkg,confirmed);
+        },850);
     }
     private void finishGenericPopup(long visit,long interaction,int window,PopupMatch expected){
         if(visit!=foregroundVisit)return;

@@ -264,7 +264,7 @@ def import_rules(data):
 
 
 def import_reviewed_samples(path):
-    """Compile narrow selectors from manually inspected, public startup snapshots."""
+    """Compile narrow selectors from reviewed startup snapshots or APK layouts."""
     entries = []
     for index, sample in enumerate(json.loads(path.read_text(encoding='utf-8'))):
         selector = compile_selector(sample['selector'])
@@ -353,13 +353,22 @@ def import_reviewed_samples(path):
             target, lambda field, op, value: (field, op, value) == ('childCount', '=', 0)
         ) or not (labelled_touch or baidu_touch)):
             raise ValueError(f'Reviewed touch control needs an identified leaf and visible ad anchor in {sample["package"]}')
+        reference = dict(versionName=sample['versionName'])
+        snapshots = []
+        if 'apkLayout' in sample:
+            if evidence != 'resource' or sample.get('exactActivity') is not True or sample.get('tap') is True:
+                raise ValueError(f'APK layout needs an exact page and native resource control in {sample["package"]}')
+            reference['apkLayout'] = sample['apkLayout']
+        else:
+            reference['snapshotSha256'] = sample['sha256']
+            snapshots.append(sample['snapshot'])
         origin = sample['upstream'] if taote_countdown else {'groupKey': -90, 'ruleIndex': index}
         entry = dict(
             package=sample['package'], name=sample['name'], **origin,
-            selector=sample['selector'], snapshots=[sample['snapshot']], evidence=evidence,
+            selector=sample['selector'], snapshots=snapshots, evidence=evidence,
             targetSelector=selector, activityIds=[sample['activity']], matchTime=10_000,
             requireClickable=not touch_only, required=required, requiredSelectors=anchors,
-            reference=dict(versionName=sample['versionName'], snapshotSha256=sample['sha256']),
+            reference=reference,
         )
         if sample.get('exactActivity') is True:
             entry['exactActivity'] = True

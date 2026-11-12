@@ -15,6 +15,7 @@ import android.content.res.XmlResourceParser;
 import android.os.Build;
 import android.os.Looper;
 import android.provider.Settings;
+import android.view.accessibility.AccessibilityEvent;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
@@ -58,6 +59,8 @@ public class AndroidCompatibilityTest {
             int required = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
                     | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
             assertEquals(required, flags & required);
+            int events = xml.getAttributeIntValue(ANDROID_NS, "accessibilityEventTypes", 0);
+            assertTrue((events & AccessibilityEvent.TYPE_VIEW_SCROLLED) != 0);
             assertEquals(Build.VERSION.SDK_INT >= 31,
                     xml.getAttributeValue(ANDROID_NS, "isAccessibilityTool") != null);
             assertFalse(xml.getAttributeBooleanValue(ANDROID_NS, "isAccessibilityTool", false));

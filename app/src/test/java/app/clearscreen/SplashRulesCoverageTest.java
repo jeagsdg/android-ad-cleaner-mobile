@@ -875,6 +875,51 @@ public class SplashRulesCoverageTest {
         assertNull(SplashSkipper.match(legacyRoot, rules, legacyActivity));
     }
 
+    @Test public void guangzhouMetroOnlyMatchesTheNativeSkipControlInTheStartupLayout() {
+        String pkg = "com.infothinker.gzmetro";
+        String activity = pkg + ".ActivityAgent";
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo layout = add(root, node(pkg, "android.widget.RelativeLayout", null, false, SCREEN));
+        AccessibilityNodeInfo image = add(layout,
+                node(pkg, "android.widget.ImageView", pkg + ":id/img_splash", true, SCREEN));
+        AccessibilityNodeInfo skip = add(layout, button(pkg, "android.widget.LinearLayout", pkg + ":id/btn_skip_ad"));
+        AccessibilityNodeInfo label = add(skip, node(pkg, "android.widget.TextView", null, false, CORNER));
+        label.setText("跳过");
+        AccessibilityNodeInfo timer = add(skip,
+                node(pkg, "android.widget.TextView", pkg + ":id/tv_time_count", false, CORNER));
+        timer.setText("3");
+
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, skip, 9999));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertFalse(rules.matches(pkg, activity, image));
+        assertFalse(rules.matches(pkg, activity, label));
+        assertNull(SplashSkipper.match(root));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".TestActivityAgent"));
+        assertNull(SplashSkipper.match(root, rules, "org.gioneco.zyhmetrosdk.mvvm.view.QRCodeActivity"));
+
+        image.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        image.setVisibleToUser(true);
+        image.setViewIdResourceName(pkg + ":id/img_splash_gone");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        image.setViewIdResourceName(pkg + ":id/img_splash");
+        timer.setText(null);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        timer.setText("3");
+        label.setText("查看详情");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        label.setText("跳过");
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setClickable(true);
+        skip.setBoundsInScreen(new Rect(400, 900, 600, 980));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setBoundsInScreen(CORNER);
+        add(skip, button(pkg, "android.widget.ImageView", pkg + ":id/iv_ad_close"));
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
     private static AccessibilityNodeInfo frame(String pkg, String id) {
         return node(pkg, "android.widget.FrameLayout", id, false, SCREEN);
     }
