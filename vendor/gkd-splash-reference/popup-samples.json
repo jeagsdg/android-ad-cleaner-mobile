@@ -308,5 +308,38 @@
     "sha256": "32dc14d4f1caea134dec048ddbfb491f9a944b4e9211ca0f0cc3b0e900a1d289",
     "selector": "FrameLayout[id=\"com.kugou.android:id/rdl\"] > ViewGroup[childCount=2] > ImageView[id=\"com.kugou.android:id/f29\"] + @FrameLayout[id=\"com.kugou.android:id/egj\"][clickable=true][childCount=1] >2 ImageView[id=\"com.kugou.android:id/gxc\"][childCount=0]",
     "group": "个人页会员推广横幅"
+  },
+  {
+    "package": "com.sf.activity",
+    "name": "顺丰速运",
+    "activity": "com.sf.activity.MainActivity",
+    "versionName": "9.71.0",
+    "snapshot": "https://i.gkd.li/i/17869485",
+    "sha256": "10ceb4cfb261a9e66148fe1b13407ba8426b2135caf5d07d0e7e7689fdbf101c",
+    "selector": "FrameLayout[id=\"com.sf.activity:id/rnRootLayout\"][childCount=1] >4 ViewGroup[id=\"FullScreenPage\"][clickable=false][childCount=1] >3 ViewGroup[id=null][clickable=false][childCount=2] > Button[id=null][text=null][desc=null||desc=\"\"][clickable=true][childCount=1] + @Button[id=\"BmsAdDialogViewCloseButton\"][text=null][desc=null||desc=\"\"][clickable=true][childCount=1]",
+    "group": "首页会员推广弹窗",
+    "exactActivity": true
+  },
+  {
+    "package": "com.sina.weibo",
+    "name": "微博",
+    "activity": "com.sina.weibo.feed.DetailWeiboActivity",
+    "versionName": "13.12.0",
+    "snapshot": "https://i.gkd.li/import/13635551",
+    "sha256": "a8edde876d4b18ec3849c7ddfb420b91f4ab9b8af3d830900eacce15d15c8b58",
+    "selector": "ImageView[id=\"com.sina.weibo:id/left_img_ad_tag\"][clickable=false][childCount=0] <1 LinearLayout[id=\"com.sina.weibo:id/left_img_ad_container\"][childCount=1] <3 FrameLayout[id=\"com.sina.weibo:id/left_video_container\"][childCount=3] + LinearLayout[id=null][clickable=false][childCount=3] >2 @ImageView[id=\"com.sina.weibo:id/close\"][text=null][desc=null][clickable=true][childCount=0] <1 RelativeLayout[id=null][clickable=false][childCount=1] +2 RelativeLayout[id=\"com.sina.weibo:id/desc_container\"][childCount=2] > ImageView[id=\"com.sina.weibo:id/ad_tag\"][clickable=false][childCount=0]",
+    "group": "博文与评论间的视频广告卡片",
+    "exactActivity": true
+  },
+  {
+    "package": "com.sina.weibo",
+    "name": "微博",
+    "activity": "com.sina.weibo.feed.DetailWeiboActivity",
+    "versionName": "13.9.4",
+    "snapshot": "https://i.gkd.li/import/12673043",
+    "sha256": "7a43b5a1fe71dd238aff4bee710f399fa29399117acc693ff5226037eefda310",
+    "selector": "ImageView[id=\"com.sina.weibo:id/left_img_ad_tag\"][clickable=false][childCount=0] <1 LinearLayout[id=\"com.sina.weibo:id/left_img_ad_container\"][childCount=1] <3 FrameLayout[id=\"com.sina.weibo:id/left_img_container\"][childCount=3] + LinearLayout[id=null][clickable=false][childCount=3] >2 @ImageView[id=\"com.sina.weibo:id/close\"][text=null][desc=null][clickable=true][childCount=0] <1 RelativeLayout[id=null][clickable=false][childCount=1] +2 RelativeLayout[id=\"com.sina.weibo:id/desc_container\"][childCount=2] > ImageView[id=\"com.sina.weibo:id/ad_tag\"][clickable=false][childCount=0]",
+    "group": "博文与评论间的图片广告卡片",
+    "exactActivity": true
   }
 ]

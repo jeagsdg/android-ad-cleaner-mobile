@@ -497,12 +497,15 @@ def import_reviewed_samples(path):
             for i, node in enumerate(nodes)
         ):
             raise ValueError(f'Reviewed popup requires a clickable target and an app-specific anchor in {package}')
-        entries.append(dict(
+        entry = dict(
             package=package, name=sample['name'], group=sample['group'],
             activityIds=[activity], maxPerVisit=1, evidence='reviewed-ad-path',
             snapshots=[sample['snapshot']], selector=sample['selector'], targetSelector=selector,
             required=[], reference=dict(versionName=sample['versionName'], snapshotSha256=sample['sha256']),
-        ))
+        )
+        if sample.get('exactActivity') is True:
+            entry['exactActivity'] = True
+        entries.append(entry)
     return entries
 
 

@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
 
 /** Evaluates the fixed predicates compiled from the pinned MIT splash groups. */
 final class SplashRules {
-    enum Action { CLICK, TAP }
+    enum Action { CLICK, TAP, CLICK_LOWER_LEFT }
 
     static final SplashRules EMPTY = new SplashRules(new JSONObject());
     private static final int MAX_DISTANCE = 12;
@@ -77,32 +77,41 @@ final class SplashRules {
     }
 
     Prepared prepare(String pkg, String activity, long elapsedMs, List<AccessibilityNodeInfo> nodes) {
+        return prepare(pkg, activity, elapsedMs, nodes, false);
+    }
+
+    Prepared prepare(String pkg, String activity, long elapsedMs, List<AccessibilityNodeInfo> nodes,
+                     boolean exactActivityOnly) {
         List<JSONObject> available = byPackage.get(pkg);
         List<JSONObject> active = Collections.emptyList();
         if (available != null) {
             active = new ArrayList<>(available.size());
             for (JSONObject rule : available) {
-                if (elapsedMs < rule.optInt("matchTime", Integer.MAX_VALUE) && activityMatches(activity, rule)) active.add(rule);
+                if (exactActivityOnly && !rule.optBoolean("exactActivity")) continue;
+                if (inMatchWindow(rule, elapsedMs) && activityMatches(activity, rule)) active.add(rule);
             }
         }
-        return new Prepared(pkg, active, nodes);
+        return new Prepared(pkg, active, nodes, !exactActivityOnly);
     }
 
     final class Prepared {
         private final String pkg;
         private final List<JSONObject> active;
         private final List<AccessibilityNodeInfo> nodes;
+        private final boolean includeSdk;
         private final Map<JSONObject, Boolean> requirements = new IdentityHashMap<>();
 
-        Prepared(String pkg, List<JSONObject> active, List<AccessibilityNodeInfo> nodes) {
+        Prepared(String pkg, List<JSONObject> active, List<AccessibilityNodeInfo> nodes, boolean includeSdk) {
             this.pkg = pkg;
             this.active = active;
             this.nodes = nodes;
+            this.includeSdk = includeSdk;
         }
 
         Action action(AccessibilityNodeInfo node, String label) {
             String id = node.getViewIdResourceName();
-            if (id != null && (sdkResources.contains(resourceName(id)) || (clickableSdkIds.contains(id) && node.isClickable()))) {
+            if (includeSdk && id != null
+                    && (sdkResources.contains(resourceName(id)) || (clickableSdkIds.contains(id) && node.isClickable()))) {
                 return Action.CLICK;
             }
             for (JSONObject rule : active) {
@@ -120,6 +129,7 @@ final class SplashRules {
                     } else if (!skipLabel) continue;
                 }
                 if (targetMatches(pkg, node, rule.optJSONObject("targetSelector")) && requirementsPresent(node, rule)) {
+                    if (rule.optBoolean("lowerLeftAdControl")) return Action.CLICK_LOWER_LEFT;
                     return rule.optBoolean("tap") ? Action.TAP : Action.CLICK;
                 }
             }
@@ -137,7 +147,7 @@ final class SplashRules {
     SkipDiagnostics.Phase explainMiss(String pkg, String activity, long elapsedMs, int window,
                                       List<AccessibilityNodeInfo> nodes) {
         for (JSONObject rule : byPackage.getOrDefault(pkg, Collections.emptyList())) {
-            if (elapsedMs >= rule.optInt("matchTime", Integer.MAX_VALUE)) continue;
+            if (!inMatchWindow(rule, elapsedMs)) continue;
             JSONArray required = rule.optJSONArray("required");
             boolean wrongActivity = !activityMatches(activity, rule);
             if (!wrongActivity && (required == null || required.length() == 0)) continue;
@@ -150,19 +160,23 @@ final class SplashRules {
         return null;
     }
 
+    private static boolean inMatchWindow(JSONObject rule, long elapsedMs) {
+        return elapsedMs >= rule.optInt("matchDelay") && elapsedMs < rule.optInt("matchTime", Integer.MAX_VALUE);
+    }
+
     static boolean activityMatches(String activity, JSONObject rule) {
         JSONArray included = rule.optJSONArray("activityIds");
         JSONArray excluded = rule.optJSONArray("excludeActivityIds");
         if ((included == null || included.length() == 0) && (excluded == null || excluded.length() == 0)) return true;
-        if (activity == null || activity.isEmpty() || startsWithAny(activity, excluded)) return false;
-        return included == null || included.length() == 0 || startsWithAny(activity, included);
+        if (activity == null || activity.isEmpty() || matchesAny(activity, excluded, false)) return false;
+        return included == null || included.length() == 0 || matchesAny(activity, included, rule.optBoolean("exactActivity"));
     }
 
-    private static boolean startsWithAny(String value, JSONArray prefixes) {
-        if (prefixes == null) return false;
-        for (int i = 0; i < prefixes.length(); i++) {
-            String prefix = prefixes.optString(i);
-            if (!prefix.isEmpty() && value.startsWith(prefix)) return true;
+    private static boolean matchesAny(String value, JSONArray activities, boolean exact) {
+        if (activities == null) return false;
+        for (int i = 0; i < activities.length(); i++) {
+            String activity = activities.optString(i);
+            if (!activity.isEmpty() && (exact ? value.equals(activity) : value.startsWith(activity))) return true;
         }
         return false;
     }

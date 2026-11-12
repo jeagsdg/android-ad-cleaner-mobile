@@ -71,6 +71,13 @@ final class PopupAdRules {
             return SplashRules.targetMatches(pkg, node, target, true);
         }
 
+        private boolean isReviewedWeiboVideoCard() {
+            JSONArray snapshots = entry.optJSONArray("snapshots");
+            return "com.sina.weibo".equals(pkg) && entry.optBoolean("exactActivity")
+                    && snapshots != null && snapshots.length() == 1
+                    && "https://i.gkd.li/import/13635551".equals(snapshots.optString(0));
+        }
+
         boolean requirementsPresent(List<AccessibilityNodeInfo> nodes) {
             if (requirements == null) return true;
             for (int i = 0; i < requirements.length(); i++) {
@@ -142,7 +149,7 @@ final class PopupAdRules {
                 if (hit == null) hit = new Match(rule, click);
             }
         }
-        return hit != null && safePage(nodes) ? hit : null;
+        return hit != null && safePage(nodes, hit) ? hit : null;
     }
 
     boolean visible(AccessibilityNodeInfo root, String activity, Rule rule) {
@@ -174,14 +181,38 @@ final class PopupAdRules {
         return SplashSkipper.safeClickTarget(click) ? click : null;
     }
 
-    private static boolean safePage(List<AccessibilityNodeInfo> nodes) {
+    private static boolean safePage(List<AccessibilityNodeInfo> nodes, Match hit) {
         for (AccessibilityNodeInfo node : nodes) {
             if (!node.isVisibleToUser()) continue;
             if (SplashSkipper.unsafeWindowNode(node, false)) return false;
             String text = label(node.getText()), desc = label(node.getContentDescription());
-            if (CustomSkipRule.sensitiveText(text) || CustomSkipRule.sensitiveText(desc)) return false;
+            if (CustomSkipRule.sensitiveText(text)) return false;
+            if (CustomSkipRule.sensitiveText(desc) && !isWeiboNewsDescription(node, desc, hit)) return false;
         }
         return true;
+    }
+
+    private static boolean isWeiboNewsDescription(AccessibilityNodeInfo node, String desc, Match hit) {
+        if (!hit.rule.isReviewedWeiboVideoCard() || node.getWindowId() != hit.target.getWindowId()
+                || !"com.sina.weibo".equals(String.valueOf(node.getPackageName()))
+                || !"com.sina.weibo:id/tweet_message".equals(node.getViewIdResourceName())
+                || !"android.view.View".equals(String.valueOf(node.getClassName()))
+                || node.getChildCount() != 0 || node.isClickable() || node.isLongClickable() || node.isCheckable()
+                || node.isEditable() || node.isFocusable() || node.isFocused() || node.isAccessibilityFocused()) {
+            return false;
+        }
+        AccessibilityNodeInfo parent = node.getParent();
+        if (parent == null || !"com.sina.weibo:id/weibo_content".equals(parent.getViewIdResourceName())) return false;
+        Rect article = new Rect();
+        Rect close = new Rect();
+        node.getBoundsInScreen(article);
+        hit.target.getBoundsInScreen(close);
+        if (article.isEmpty() || Rect.intersects(article, close)) return false;
+
+        // The reviewed post mentions Alipay in two app-development statements.
+        String remaining = desc.replace("支付宝也将全面启动鸿蒙原生应用开发了", "")
+                .replace("支付宝将基于HarmonyOS NEXT版本开发应用", "");
+        return !remaining.equals(desc) && !CustomSkipRule.sensitiveText(remaining);
     }
 
     private static String label(CharSequence value) {

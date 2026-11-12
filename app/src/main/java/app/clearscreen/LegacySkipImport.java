@@ -17,7 +17,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-/** Converts per-app Li Tiaotiao rules or an export indexed by Java package-name hashes. */
+/** Imports compatible rules for one app or a list indexed by Java package-name hashes. */
 final class LegacySkipImport {
     static final int MAX_INPUT_LENGTH = 500_000;
     private static final int MAX_BUNDLE_ENTRIES = 2_000;
@@ -57,11 +57,11 @@ final class LegacySkipImport {
             }
             reader.app(pkg, (JSONObject) document);
         } else {
-            throw new IllegalArgumentException("请选择单应用规则或李跳跳导出的规则列表");
+            throw new IllegalArgumentException("请粘贴单个应用的规则或多个应用的规则列表");
         }
         if (reader.rules.isEmpty()) {
             String reason = reader.notes.isEmpty() ? "" : "。" + reader.notes.iterator().next();
-            throw new IllegalArgumentException("没有可导入的李跳跳规则" + reason);
+            throw new IllegalArgumentException("没有可导入的规则" + reason);
         }
         return new Result(reader);
     }
@@ -130,7 +130,7 @@ final class LegacySkipImport {
             if (key.equals("filter_young_popups")) {
                 notes.add("青少年模式弹窗设置未迁移");
             } else if (!key.matches("keywords|keywords_append|popup_rules|delay|delay_popup|click_way|click_way_popup|search_times_popup|unite_popup_rules|ltt_service")) {
-                notes.add("部分李跳跳设置字段未迁移，请核对预览");
+                notes.add("部分设置未导入，请核对预览");
             }
         }
         if (source.has("ltt_service")) {
@@ -317,14 +317,14 @@ final class LegacySkipImport {
     }
 
     private static Object readJson(String input) {
-        if (input.indexOf('\0') >= 0) throw new IllegalArgumentException("李跳跳规则包含无效字符");
+        if (input.indexOf('\0') >= 0) throw new IllegalArgumentException("规则包含无效字符");
         try {
             JSONTokener reader = new JSONTokener(input);
             Object value = reader.nextValue();
-            if (reader.nextClean() != 0) throw new IllegalArgumentException("请粘贴完整的李跳跳 JSON 规则");
+            if (reader.nextClean() != 0) throw new IllegalArgumentException("请粘贴一份完整的 JSON 规则");
             return value;
         } catch (JSONException | StackOverflowError e) {
-            throw new IllegalArgumentException("李跳跳规则 JSON 无法读取", e);
+            throw new IllegalArgumentException("无法读取规则，请检查 JSON 格式", e);
         }
     }
 

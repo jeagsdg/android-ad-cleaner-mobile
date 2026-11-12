@@ -30,6 +30,7 @@ public class SplashRulesCoverageTest {
 
         assertFalse(rules.matches(pkg, activity, wrongSlot));
         assertTrue(rules.matches(pkg, activity, skip, 9999));
+        assertNull(rules.prepare(pkg, activity, 9999, null, true).action(skip, ""));
         assertFalse(rules.matches(pkg, activity, skip, 10000));
         assertFalse(rules.matches(pkg, pkg + ".view.feed.TestActivity", skip));
         assertFalse(rules.matches(pkg, "", skip));
@@ -396,6 +397,482 @@ public class SplashRulesCoverageTest {
         badge.setVisibleToUser(true);
         playCard.setViewIdResourceName(null);
         assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void taoteOnlySkipsTheCountdownNextToTheReviewedSplashImage() {
+        // Public snapshot 12774851 has a full-screen promotion and a separate clickable countdown.
+        String pkg = "com.taobao.litetao";
+        String activity = "com.taobao.ltao.maintab.MainFrameActivity";
+        Rect countdownBounds = new Rect(840, 59, 1035, 128);
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo container = add(root, frame(pkg, pkg + ":id/root_layout"));
+        AccessibilityNodeInfo image = add(container, node(pkg, "android.widget.ImageView", null, true,
+                new Rect(0, 0, 1080, 2356)));
+        AccessibilityNodeInfo countdown = add(container, node(pkg, "android.widget.TextView", null, true,
+                countdownBounds));
+
+        for (String label : new String[]{"还剩1秒", "还剩2秒", "还剩3秒"}) {
+            countdown.setText(label);
+            assertEquals(countdown, SplashSkipper.match(root, rules, activity));
+        }
+        assertFalse(rules.matches(pkg, activity, image));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, countdown, 9999));
+        assertNull(rules.action(pkg, activity, countdown, 10000));
+        assertNull(SplashSkipper.match(root));
+        assertNull(SplashSkipper.match(root, rules, "com.taobao.ltao.maintab.OtherActivity"));
+        assertFalse(rules.matches("other.app", activity, countdown));
+
+        for (String label : new String[]{"还剩4秒", "还剩A秒", "还剩3秒再开启"}) {
+            countdown.setText(label);
+            assertNull(SplashSkipper.match(root, rules, activity));
+        }
+        countdown.setText("还剩3秒");
+        image.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        image.setClickable(true);
+        countdown.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        countdown.setClickable(true);
+        countdown.setBoundsInScreen(new Rect(430, 820, 650, 900));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        countdown.setBoundsInScreen(countdownBounds);
+        add(container, frame(pkg, null));
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void oopzSelectsTheClickableCountdownSiblingOnlyWithTheReviewedAdPrompts() {
+        // Public snapshot 21202366 has a readable countdown and a separate native click target.
+        String pkg = "com.weilaishanhai.oopz";
+        String activity = pkg + ".MainActivity";
+        Rect screen = new Rect(0, 0, 1280, 2772);
+        Rect skipBounds = new Rect(1045, 175, 1237, 261);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo ad = add(root, node(pkg, "android.widget.FrameLayout", null, true, screen));
+        add(ad, node(pkg, "android.view.View", null, false, new Rect())).setVisibleToUser(false);
+        add(ad, node(pkg, "android.widget.ImageView", null, false, screen));
+        AccessibilityNodeInfo prompts = add(ad, node(pkg, "android.widget.RelativeLayout", null, false, screen));
+        add(prompts, node(pkg, "android.widget.FrameLayout", null, true, new Rect(448, 1783, 832, 2167)));
+        AccessibilityNodeInfo shake = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(386, 2201, 893, 2272)));
+        shake.setText("摇动手机 或 点击图标");
+        AccessibilityNodeInfo details = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(322, 2289, 958, 2360)));
+        details.setText("跳转至详情页或第三方应用");
+        AccessibilityNodeInfo unrelated = add(ad, node(pkg, "android.widget.TextView", null, true, skipBounds));
+        add(ad, node(pkg, "android.widget.TextView", null, false, new Rect(384, 160, 896, 378)));
+        AccessibilityNodeInfo row = add(ad, node(pkg, "android.widget.FrameLayout", null, false, skipBounds));
+        AccessibilityNodeInfo countdown = add(row, node(pkg, "android.widget.TextView", null, false, skipBounds));
+        AccessibilityNodeInfo skip = add(row, node(pkg, "android.widget.TextView", null, true, skipBounds));
+        add(ad, node(pkg, "android.widget.ImageView", null, false, new Rect(1115, 2688, 1241, 2733)));
+
+        for (String label : new String[]{"跳过 1", "跳过 2", "跳过 3"}) {
+            countdown.setText(label);
+            assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        }
+        assertNull(SplashSkipper.match(root));
+        assertFalse(rules.matches(pkg, activity, unrelated));
+        assertFalse(rules.matches(pkg, activity, countdown));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, skip, 9999));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".OtherActivity"));
+        assertFalse(rules.matches("other.app", activity, skip));
+
+        skip.setContentDescription("查看详情");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setContentDescription(null);
+        countdown.setText("跳过 4");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        countdown.setText("跳过 3");
+        shake.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        shake.setVisibleToUser(true);
+        details.setText("查看详情");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void upupooOnlySkipsTheReviewedNativeControlBesideTheAdBadge() {
+        // Public snapshot 14052232 shows 跳过 at the bounds of the unlabeled native View.
+        String pkg = "com.upupoo.apu.mobile";
+        String activity = pkg + ".MainActivity";
+        Rect screen = new Rect(0, 0, 1080, 2340);
+        Rect adBounds = new Rect(0, 0, 1080, 2088);
+        Rect skipBounds = new Rect(912, 132, 1032, 252);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo container = add(root, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        AccessibilityNodeInfo layout = container;
+        for (int depth = 0; depth < 3; depth++) {
+            layout = add(layout, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        }
+        AccessibilityNodeInfo ad = add(layout, node(pkg, "android.widget.FrameLayout", null, true, adBounds));
+        ad.setContentDescription("root:root:0:0");
+        add(ad, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        AccessibilityNodeInfo overlay = add(ad, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        AccessibilityNodeInfo inset = add(overlay, node(pkg, "android.widget.LinearLayout", null, false, adBounds));
+        AccessibilityNodeInfo prompts = add(inset, node(pkg, "android.widget.LinearLayout", null, false, adBounds));
+        add(prompts, node(pkg, "android.widget.LinearLayout", null, true, new Rect(375, 1150, 705, 1480)));
+        AccessibilityNodeInfo shake = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(274, 1492, 806, 1557)));
+        shake.setText("扭动手机 或 点击图标");
+        AccessibilityNodeInfo details = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(288, 1557, 792, 1608)));
+        details.setText("跳转至详情页或第三方应用");
+        AccessibilityNodeInfo skip = add(container, node(pkg, "android.view.View", null, true, skipBounds));
+        AccessibilityNodeInfo badge = add(container, node(pkg, "android.widget.TextView", null, true,
+                new Rect(60, 1926, 156, 1968)));
+        AccessibilityNodeInfo unrelated = add(root, node(pkg, "android.view.View", null, true, skipBounds));
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, skip, 9999));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".OtherActivity"));
+        assertFalse(rules.matches("other.app", activity, skip));
+        assertFalse(rules.matches(pkg, activity, unrelated));
+
+        badge.setClassName("android.view.View");
+        badge.setBoundsInScreen(skipBounds);
+        assertFalse(rules.matches(pkg, activity, badge));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setClassName("android.widget.TextView");
+
+        // The earlier 4.2.0 sample has a separate clickable ImageView for muting the ad.
+        skip.setClassName("android.widget.ImageView");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setClassName("android.view.View");
+
+        ad.setContentDescription("ordinary content");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        ad.setContentDescription("root:root:0:0");
+        shake.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        shake.setVisibleToUser(true);
+        details.setText(null);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        details.setText("跳转至详情页或第三方应用");
+
+        skip.setBoundsInScreen(new Rect(480, 780, 600, 900));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setBoundsInScreen(skipBounds);
+        add(container, node(pkg, "android.widget.ImageView", null, true, new Rect(48, 48, 138, 138)));
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void upupooVideoSplashUsesTheNativeSkipBetweenMuteAndTheAdBadge() {
+        // Snapshot 13830230 adds a separate mute button to the 4.2.0 video ad.
+        String pkg = "com.upupoo.apu.mobile";
+        String activity = pkg + ".MainActivity";
+        Rect screen = new Rect(0, 0, 1080, 2340);
+        Rect adBounds = new Rect(0, 0, 1080, 2088);
+        Rect skipBounds = new Rect(912, 48, 1032, 168);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo panel = add(root, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        AccessibilityNodeInfo wrapper = panel;
+        for (int depth = 0; depth < 3; depth++) {
+            wrapper = add(wrapper, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        }
+        AccessibilityNodeInfo ad = add(wrapper, node(pkg, "android.widget.FrameLayout", null, true, adBounds));
+        ad.setContentDescription("root:root:0:0");
+        AccessibilityNodeInfo overlay = add(ad, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        for (int index = 0; index < 3; index++) {
+            add(ad, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        }
+        AccessibilityNodeInfo inset = add(overlay, node(pkg, "android.widget.LinearLayout", null, false, adBounds));
+        AccessibilityNodeInfo prompts = add(inset, node(pkg, "android.widget.LinearLayout", null, false, adBounds));
+        add(prompts, node(pkg, "android.widget.LinearLayout", null, true, new Rect(375, 1376, 705, 1706)));
+        AccessibilityNodeInfo shake = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(282, 1718, 798, 1791)));
+        shake.setText("扭动手机 或 点击图标");
+        AccessibilityNodeInfo details = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(288, 1791, 792, 1848)));
+        details.setText("跳转至详情页或第三方应用");
+        AccessibilityNodeInfo mute = add(panel, node(pkg, "android.widget.ImageView", null, true,
+                new Rect(48, 48, 138, 138)));
+        AccessibilityNodeInfo skip = add(panel, node(pkg, "android.view.View", null, true, skipBounds));
+        AccessibilityNodeInfo badge = add(panel, node(pkg, "android.widget.TextView", null, true,
+                new Rect(60, 1926, 156, 1968)));
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, skip, 9999));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertNull(SplashSkipper.match(root, rules, activity + "Other"));
+        assertFalse(rules.matches(pkg, activity, mute));
+        assertFalse(rules.matches(pkg, activity, badge));
+
+        badge.setClassName("android.view.View");
+        badge.setBoundsInScreen(skipBounds);
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setClassName("android.widget.TextView");
+        skip.setClickable(true);
+        mute.setClassName("android.view.View");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        mute.setClassName("android.widget.ImageView");
+
+        shake.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        shake.setVisibleToUser(true);
+        details.setText("查看详情");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        details.setText("跳转至详情页或第三方应用");
+        skip.setBoundsInScreen(new Rect(480, 780, 600, 900));
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void cellularZChoosesTheNativeSkipInsteadOfTheAdjacentMuteControl() {
+        // Public snapshot 13978978 places the unlabeled skip at the right and mute at the left.
+        String pkg = "make.more.r2d2.cellular_z";
+        String activity = pkg + ".activity.SplashGMActivity";
+        Rect skipBounds = new Rect(937, 149, 1039, 251);
+        AccessibilityNodeInfo root = frame(pkg, null);
+        String splashId = pkg + ":id/splash_container";
+        AccessibilityNodeInfo splash = add(root, frame(pkg, splashId));
+        AccessibilityNodeInfo content = add(splash, frame(pkg, null));
+        add(content, frame(pkg, null)).setVisibleToUser(false);
+        AccessibilityNodeInfo panel = add(content, frame(pkg, null));
+        AccessibilityNodeInfo wrapper = panel;
+        for (int depth = 0; depth < 3; depth++) wrapper = add(wrapper, frame(pkg, null));
+        AccessibilityNodeInfo ad = add(wrapper, node(pkg, "android.widget.FrameLayout", null, true, SCREEN));
+        ad.setContentDescription("root:root:0:0");
+        AccessibilityNodeInfo overlay = add(ad, frame(pkg, null));
+        add(ad, frame(pkg, null));
+        add(ad, frame(pkg, null));
+        add(ad, frame(pkg, null));
+        AccessibilityNodeInfo inset = add(overlay, node(pkg, "android.widget.LinearLayout", null, false, SCREEN));
+        AccessibilityNodeInfo prompts = add(inset, node(pkg, "android.widget.LinearLayout", null, false, SCREEN));
+        add(prompts, node(pkg, "android.widget.LinearLayout", null, true, new Rect(400, 1807, 681, 2088)));
+        AccessibilityNodeInfo shake = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(324, 2098, 757, 2153)));
+        shake.setText("扭动手机 或 点击图标");
+        AccessibilityNodeInfo details = add(prompts, node(pkg, "android.widget.TextView", null, false,
+                new Rect(330, 2153, 750, 2196)));
+        details.setText("跳转至详情页或第三方应用");
+        AccessibilityNodeInfo mute = add(panel, node(pkg, "android.widget.ImageView", null, true,
+                new Rect(41, 149, 117, 225)));
+        AccessibilityNodeInfo skip = add(panel, node(pkg, "android.view.View", null, true, skipBounds));
+        AccessibilityNodeInfo badge = add(panel, node(pkg, "android.widget.TextView", null, true,
+                new Rect(51, 2262, 133, 2298)));
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, skip, 9999));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertFalse(rules.matches(pkg, activity, mute));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".activity.MainActivity"));
+        assertFalse(rules.matches("other.app", activity, skip));
+
+        badge.setClassName("android.view.View");
+        badge.setBoundsInScreen(skipBounds);
+        skip.setClickable(false);
+        assertFalse(rules.matches(pkg, activity, badge));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setClickable(true);
+        mute.setClassName("android.view.View");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        mute.setClassName("android.widget.ImageView");
+
+        skip.setBoundsInScreen(new Rect(480, 780, 600, 900));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setBoundsInScreen(skipBounds);
+        shake.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        shake.setVisibleToUser(true);
+        details.setText(null);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        details.setText("跳转至详情页或第三方应用");
+        splash.setViewIdResourceName(pkg + ":id/ordinary_content");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void weChatMiniAppOnlyTapsSkipInTheReviewedAdCapsuleAndExactActivity() {
+        // The reviewed plugin and regular mini-app snapshots have separate skip and exit controls.
+        String pkg = "com.tencent.mm";
+        String activity = pkg + ".plugin.appbrand.ui.AppBrandPluginUI";
+        String miniApp = pkg + ".plugin.appbrand.ui.AppBrandUI00";
+        Rect screen = new Rect(0, 0, 1260, 2800);
+        Rect capsuleBounds = new Rect(42, 153, 442, 265);
+        Rect skipBounds = new Rect(294, 174, 402, 244);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo adLayer = add(root, node(pkg, "android.widget.FrameLayout", null, false,
+                new Rect(0, 0, 1260, 2520)));
+        for (int index = 0; index < 5; index++) add(adLayer, frame(pkg, null));
+        AccessibilityNodeInfo capsule = add(adLayer, node(pkg, "android.widget.FrameLayout", null, false, capsuleBounds));
+        add(adLayer, frame(pkg, null));
+        add(capsule, node(pkg, "android.widget.TextView", null, false, capsuleBounds));
+        AccessibilityNodeInfo skipGroup = add(capsule, node(pkg, "android.widget.FrameLayout", null, false, capsuleBounds));
+        add(skipGroup, node(pkg, "android.widget.TextView", null, false, capsuleBounds));
+        AccessibilityNodeInfo skipWrapper = add(skipGroup, node(pkg, "android.widget.FrameLayout", null, false, skipBounds));
+        add(skipWrapper, node(pkg, "android.widget.TextView", null, false, skipBounds));
+        AccessibilityNodeInfo skipSlot = add(skipWrapper, node(pkg, "android.widget.FrameLayout", null, false, skipBounds));
+        AccessibilityNodeInfo skip = add(skipSlot, node(pkg, "android.widget.TextView", null, false, skipBounds));
+        skip.setText("跳过");
+        add(skipGroup, frame(pkg, null));
+        AccessibilityNodeInfo badgeGroup = add(capsule, frame(pkg, null));
+        add(badgeGroup, node(pkg, "android.widget.TextView", null, false, capsuleBounds));
+        AccessibilityNodeInfo badgeBody = add(badgeGroup, frame(pkg, null));
+        AccessibilityNodeInfo badgeSlot = add(badgeBody, frame(pkg, null));
+        AccessibilityNodeInfo badge = add(badgeSlot, node(pkg, "android.widget.TextView", null, false,
+                new Rect(84, 174, 182, 244)));
+        badge.setText("广告");
+        AccessibilityNodeInfo exit = add(root, node(pkg, "android.widget.ImageButton", pkg + ":id/gn", true,
+                new Rect(1064, 152, 1232, 264)));
+        exit.setContentDescription("关闭");
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.TAP, rules.action(pkg, activity, skip, 9999));
+        assertEquals(SplashRules.Action.TAP, rules.prepare(pkg, activity, 9999, null, true).action(skip, "跳过"));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertFalse(rules.matches(pkg, activity, exit));
+        assertNull(SplashSkipper.match(root, rules, activity + "00"));
+        assertNull(SplashSkipper.match(root, rules, miniApp, 799));
+        assertEquals(skip, SplashSkipper.match(root, rules, miniApp, 800));
+        assertEquals(SplashRules.Action.TAP, rules.prepare(pkg, miniApp, 800, null, true).action(skip, "跳过"));
+        assertNull(SplashSkipper.match(root, rules, miniApp, 10000));
+        assertNull(SplashSkipper.match(root, rules, miniApp.replace("00", "01"), 800));
+        assertFalse(rules.matches(pkg, miniApp, exit, 800));
+        assertFalse(rules.matches("other.app", activity, skip));
+
+        AccessibilityNodeInfo sdk = node(pkg, "android.widget.ImageView", pkg + ":id/tt_splash_skip_btn", true, CORNER);
+        assertEquals(SplashRules.Action.CLICK, rules.prepare(pkg, activity, 0, null).action(sdk, ""));
+        assertNull(rules.prepare(pkg, activity, 0, null, true).action(sdk, ""));
+
+        badge.setText("活动");
+        AccessibilityNodeInfo unrelated = add(root, node(pkg, "android.widget.TextView", null, false,
+                new Rect(45, 500, 120, 545)));
+        unrelated.setText("广告");
+        assertNull(rules.action(pkg, activity, skip, 0));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, miniApp, 800));
+        badge.setText("广告");
+        skip.setBoundsInScreen(new Rect(480, 780, 600, 900));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setBoundsInScreen(skipBounds);
+
+        AccessibilityNodeInfo consent = add(root, button(pkg, "android.widget.Button", null));
+        consent.setText("同意并继续");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        consent.setVisibleToUser(false);
+        AccessibilityNodeInfo edit = add(root, node(pkg, "android.widget.EditText", null, true,
+                new Rect(100, 350, 900, 460)));
+        edit.setEditable(true);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, miniApp, 800));
+    }
+
+    @Test public void doubanUsesTheNativeVideoSkipInsideItsStartupAd() {
+        // Snapshot 26569898 also has a full-screen View named skip that cannot close the ad.
+        String pkg = "com.douban.frodo";
+        String activity = pkg + ".activity.SplashActivity";
+        Rect screen = new Rect(0, 0, 1256, 2760);
+        Rect mediaBounds = new Rect(0, 0, 1256, 2346);
+        Rect skipBounds = new Rect(1003, 158, 1256, 242);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo splash = add(root, node(pkg, "android.widget.FrameLayout", pkg + ":id/splash", false, screen));
+        AccessibilityNodeInfo ad = add(splash, node(pkg, "android.view.ViewGroup", pkg + ":id/ad_parent", true, screen));
+        AccessibilityNodeInfo surface = add(ad, node(pkg, "android.view.View", pkg + ":id/skip", false, screen));
+        AccessibilityNodeInfo sdk = add(ad, node(pkg, "android.widget.FrameLayout", pkg + ":id/sdk_view", false, mediaBounds));
+        AccessibilityNodeInfo wrapper = add(sdk, node(pkg, "android.widget.FrameLayout", null, false, mediaBounds));
+        AccessibilityNodeInfo video = add(wrapper, node(pkg, "android.widget.FrameLayout", null, false, mediaBounds));
+        AccessibilityNodeInfo close = add(video, node(pkg, "android.widget.FrameLayout",
+                pkg + ":id/jad_video_skip_btn", true, skipBounds));
+        AccessibilityNodeInfo captionGroup = add(close, node(pkg, "android.widget.LinearLayout", null, false, skipBounds));
+        AccessibilityNodeInfo caption = add(captionGroup, node(pkg, "android.widget.TextView",
+                pkg + ":id/jad_tv_video_count", false, new Rect(1003, 158, 1203, 242)));
+        caption.setText("跳过 5");
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(close, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.CLICK, rules.action(pkg, activity, close, 9999));
+        assertNull(rules.action(pkg, activity, close, 10000));
+        assertNull(SplashSkipper.match(root, rules, activity + "Other"));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".activity.MainActivity"));
+        surface.setClickable(true);
+        assertFalse(rules.matches(pkg, activity, surface));
+        assertEquals(close, SplashSkipper.match(root, rules, activity));
+
+        ad.setViewIdResourceName(pkg + ":id/ordinary_content");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        ad.setViewIdResourceName(pkg + ":id/ad_parent");
+        caption.setText("去绑定邮箱");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        caption.setText("跳过 6");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        caption.setText("跳过 5");
+        caption.setClickable(true);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        caption.setClickable(false);
+        close.setBoundsInScreen(screen);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        close.setBoundsInScreen(skipBounds);
+
+        AccessibilityNodeInfo consent = add(root, node(pkg, "android.widget.Button", null, true,
+                new Rect(50, 850, 300, 950)));
+        consent.setText("同意用户协议");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void petmarvelVideoSplashUsesTheSmallLowerLeftSkipWithoutWideningOtherRules() {
+        // Snapshot 23600688 places the native skip above the lower-left ad badge and below mute.
+        String pkg = "com.mxchip.petmarvel";
+        String activity = pkg + ".start.LaunchNewActivity";
+        Rect screen = new Rect(0, 0, 2200, 2480);
+        Rect ad = new Rect(0, 0, 2200, 2066);
+        Rect skipBounds = new Rect(52, 1725, 182, 1855);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo container = add(root, node(pkg, "android.widget.FrameLayout", pkg + ":id/ad_content", false, ad));
+        AccessibilityNodeInfo outer = add(container, node(pkg, "android.widget.FrameLayout", null, false, ad));
+        add(outer, node(pkg, "android.view.View", null, false, new Rect())).setVisibleToUser(false);
+        AccessibilityNodeInfo controls = add(outer, node(pkg, "android.widget.FrameLayout", null, false, ad));
+        add(controls, node(pkg, "android.widget.FrameLayout", null, false, ad));
+        AccessibilityNodeInfo video = add(controls, node(pkg, "android.widget.FrameLayout", null, false, ad));
+        video.setContentDescription("NativeVideoAdView");
+        AccessibilityNodeInfo learnMore = add(video, node(pkg, "android.widget.TextView", null, false,
+                new Rect(939, 1767, 1359, 1816)));
+        learnMore.setText("扭一扭或点击了解更多");
+        AccessibilityNodeInfo mute = add(controls, node(pkg, "android.widget.ImageView", null, true,
+                new Rect(52, 176, 149, 273)));
+        AccessibilityNodeInfo skip = add(controls, node(pkg, "android.view.View", null, true, skipBounds));
+        AccessibilityNodeInfo badge = add(controls, node(pkg, "android.widget.TextView", null, true,
+                new Rect(65, 1890, 169, 1936)));
+
+        assertNull(SplashSkipper.match(root));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertEquals(SplashRules.Action.CLICK_LOWER_LEFT, rules.action(pkg, activity, skip, 9999));
+        assertNull(rules.action(pkg, activity, skip, 10000));
+        assertFalse(rules.matches(pkg, activity, mute));
+        assertFalse(rules.matches(pkg, activity, badge));
+        assertNull(SplashSkipper.match(root, rules, activity + "Other"));
+
+        skip.setBoundsInScreen(new Rect(52, 176, 182, 306));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setBoundsInScreen(new Rect(939, 1725, 1359, 1855));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setBoundsInScreen(skipBounds);
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setClickable(true);
+        learnMore.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        learnMore.setVisibleToUser(true);
+        video.setContentDescription("ordinary video");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        video.setContentDescription("NativeVideoAdView");
+        container.setViewIdResourceName(pkg + ":id/ordinary_content");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        container.setViewIdResourceName(pkg + ":id/ad_content");
+        AccessibilityNodeInfo input = add(root, node(pkg, "android.widget.EditText", null, false, skipBounds));
+        input.setEditable(true);
+        assertNull(SplashSkipper.match(root, rules, activity));
+
+        AccessibilityNodeInfo legacyRoot = node(pkg, "android.widget.FrameLayout", null, false, screen);
+        AccessibilityNodeInfo legacySkip = add(legacyRoot, node(pkg, "android.widget.TextView", pkg + ":id/tv_finish", true,
+                new Rect(1980, 90, 2140, 170)));
+        legacySkip.setText("跳过");
+        String legacyActivity = pkg + ".start.AdvertiseActivity";
+        assertEquals(legacySkip, SplashSkipper.match(legacyRoot, rules, legacyActivity));
+        legacySkip.setBoundsInScreen(skipBounds);
+        assertNull(SplashSkipper.match(legacyRoot, rules, legacyActivity));
     }
 
     private static AccessibilityNodeInfo frame(String pkg, String id) {

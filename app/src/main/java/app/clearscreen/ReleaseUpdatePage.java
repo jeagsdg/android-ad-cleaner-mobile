@@ -14,6 +14,7 @@ final class ReleaseUpdatePage {
     private final MainActivity screen;
     private final ReleaseApkDownload download;
     private ReleaseUpdates.Info release;
+    private ReleaseApkDownload.Status displayedDownload;
     private TextView statusText;
     private Button primary, cancel;
     private boolean preparing;
@@ -39,7 +40,7 @@ final class ReleaseUpdatePage {
         screen.space(controls, 12);
         primary = screen.button("下载更新", true, this::onPrimary);
         controls.addView(primary, new LinearLayout.LayoutParams(-1, -2));
-        cancel = screen.button("取消下载", false, this::cancel);
+        cancel = screen.button("取消下载", false, () -> {});
         LinearLayout.LayoutParams cancelLayout = new LinearLayout.LayoutParams(-1, -2);
         cancelLayout.topMargin = screen.dp(8);
         controls.addView(cancel, cancelLayout);
@@ -62,16 +63,28 @@ final class ReleaseUpdatePage {
     void refresh() {
         if (release == null) return;
         ReleaseApkDownload.Status status = download.status();
+        displayedDownload = status;
         ReleaseApkDownload.State state = state(status);
+        boolean newerDownload = status.versionCode > release.versionCode;
+        boolean installRestricted = state == ReleaseApkDownload.State.READY && download.isInstallRestricted();
         String label, detail;
         switch (state) {
             case DOWNLOADING:
                 label = "下载中";
                 detail = status.progress < 0 ? "正在下载安装包…" : "已下载 " + status.progress + "%";
                 break;
+            case PAUSED:
+                label = "下载已暂停";
+                detail = "可以检查网络，也可以取消后重试。";
+                break;
+            case PAUSED_WAITING_TO_RETRY:
+                label = "换个地址重试";
+                detail = "下载暂时中断，可以等待系统重试，或换个地址。";
+                break;
             case READY:
                 label = preparing ? "正在校验…" : "安装更新";
-                detail = "下载完成。请按手机提示安装。";
+                detail = installRestricted ? "设备设置禁止安装这次更新。安装包已保留。"
+                        : "下载完成。请按手机提示安装。";
                 break;
             case FAILED:
                 label = "重新下载";
@@ -79,29 +92,43 @@ final class ReleaseUpdatePage {
                 break;
             default:
                 label = "下载更新";
-                detail = "更新会保留设置和记录。";
+                detail = newerDownload ? "已有较新版本的下载。取消后可下载当前提供的版本。" : "更新会保留设置和记录。";
         }
         screen.updateText(primary, label);
         screen.updateText(statusText, detail);
-        primary.setEnabled(!preparing && state != ReleaseApkDownload.State.DOWNLOADING);
-        cancel.setVisibility(state == ReleaseApkDownload.State.DOWNLOADING ? View.VISIBLE : View.GONE);
+        boolean inProgress = state == ReleaseApkDownload.State.DOWNLOADING || state == ReleaseApkDownload.State.PAUSED;
+        primary.setEnabled(!preparing && !inProgress && !newerDownload && !installRestricted);
+        boolean canCancel = newerDownload || inProgress || state == ReleaseApkDownload.State.PAUSED_WAITING_TO_RETRY;
+        screen.updateText(cancel, newerDownload ? "取消较新下载" : "取消下载");
+        cancel.setOnClickListener(canCancel ? view -> cancel(status) : null);
+        cancel.setVisibility(canCancel ? View.VISIBLE : View.GONE);
     }
 
     private void onPrimary() {
-        if (release == null || preparing) return;
+        if (release == null || preparing || displayedDownload == null
+                || displayedDownload.versionCode > release.versionCode) return;
         try {
-            switch (state(download.status())) {
-                case IDLE:
-                    download.start(release);
-                    break;
-                case FAILED:
-                    download.retry(release);
-                    break;
-                case READY:
-                    install();
-                    break;
-                default:
-                    break;
+            if (state(displayedDownload) == ReleaseApkDownload.State.PAUSED_WAITING_TO_RETRY) {
+                download.retryPaused(release, displayedDownload);
+            } else {
+                ReleaseApkDownload.Status latest = download.status();
+                if (latest.versionCode > release.versionCode) {
+                    refresh();
+                    return;
+                }
+                switch (state(latest)) {
+                    case IDLE:
+                        download.start(release);
+                        break;
+                    case FAILED:
+                        download.retry(release);
+                        break;
+                    case READY:
+                        install();
+                        break;
+                    default:
+                        break;
+                }
             }
         } catch (IOException | RuntimeException failure) {
             screen.toast("暂时无法开始下载，请稍后重试");
@@ -109,13 +136,14 @@ final class ReleaseUpdatePage {
         refresh();
     }
 
-    private void cancel() {
-        try { download.cancel(); }
+    private void cancel(ReleaseApkDownload.Status displayed) {
+        try { download.cancel(displayed); }
         catch (IOException | RuntimeException failure) { screen.toast("暂时无法取消，请稍后重试"); }
         refresh();
     }
 
     private void install() {
+        if (download.isInstallRestricted()) return;
         if (!download.canInstall()) {
             new AlertDialog.Builder(screen).setTitle("允许净屏安装更新")
                     .setMessage("打开「允许来自此来源的应用」，返回净屏后再点「安装更新」。")
@@ -134,14 +162,18 @@ final class ReleaseUpdatePage {
             screen.runOnUiThread(() -> {
                 preparing = false;
                 if (!screen.isUpdatePageActive() || release == null || release.versionCode != version) return;
-                if (result == null) screen.toast("安装包校验未通过，请重新下载");
-                else launch(result, "暂时无法打开系统安装页面");
+                if (result != null) launch(result, "暂时无法打开系统安装页面");
+                else if (!download.isInstallRestricted()) screen.toast("安装包校验未通过，请重新下载");
                 refresh();
             });
         }, "clearscreen-verify-apk").start();
     }
 
     private void launch(Intent intent, String failureMessage) {
+        if (download.isInstallRestricted()) {
+            refresh();
+            return;
+        }
         try { screen.startActivity(intent); }
         catch (ActivityNotFoundException | SecurityException failure) { screen.toast(failureMessage); }
     }

@@ -1,6 +1,7 @@
 package app.clearscreen;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.*;
 import android.content.pm.PackageManager;
@@ -19,6 +20,7 @@ import org.robolectric.shadows.ShadowActivity;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowBuild;
 import org.robolectric.shadows.ShadowToast;
+import org.robolectric.shadows.ShadowVpnService;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -279,6 +281,128 @@ public class PermissionAccessTest {
             assertTrue(ScreenTest.find(activity.getWindow().getDecorView(), "管理过滤通知").performClick());
             assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, shadow.getNextStartedActivity().getAction());
             assertNull(AdFilterService.active);
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test @Config(sdk = 34) public void deniedNetworkNotificationManagementUsesSystemSettingsOnLaterTaps() {
+        new Store(context()).noteUpdateCheck(System.currentTimeMillis());
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(Manifest.permission.POST_NOTIFICATIONS);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            activity.showPage(6);
+            if (!activity.networkFilterAvailable()) return;
+            ShadowActivity shadow = shadowOf(activity);
+            ScreenTest.clickFeature(activity, "管理过滤通知");
+            ShadowActivity.PermissionsRequest first = shadow.getLastRequestedPermission();
+            assertNotNull(first);
+            assertEquals(MainActivity.FILTER_NOTIFICATIONS, first.requestCode);
+            activity.onRequestPermissionsResult(first.requestCode, new String[0], new int[0]);
+            assertNull(ShadowAlertDialog.getLatestAlertDialog());
+            assertNull(ShadowToast.getTextOfLatestToast());
+
+            ScreenTest.clickFeature(activity, "管理过滤通知");
+            ShadowActivity.PermissionsRequest denied = shadow.getLastRequestedPermission();
+            assertNotSame(first, denied);
+            assertArrayEquals(new String[]{Manifest.permission.POST_NOTIFICATIONS}, denied.requestedPermissions);
+            activity.onRequestPermissionsResult(denied.requestCode, denied.requestedPermissions,
+                    new int[]{PackageManager.PERMISSION_DENIED});
+            AlertDialog recovery = ShadowAlertDialog.getLatestAlertDialog();
+            assertNotNull(recovery);
+            assertEquals("打开系统通知设置", recovery.getButton(AlertDialog.BUTTON_POSITIVE).getText().toString());
+            recovery.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            Intent settings = shadow.getNextStartedActivity();
+            assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, settings.getAction());
+            assertEquals(activity.getPackageName(), settings.getStringExtra(Settings.EXTRA_APP_PACKAGE));
+
+            ScreenTest.clickFeature(activity, "管理过滤通知");
+            assertSame(denied, shadow.getLastRequestedPermission());
+            assertSame(recovery, ShadowAlertDialog.getLatestAlertDialog());
+            assertEquals(Settings.ACTION_APP_NOTIFICATION_SETTINGS, shadow.getNextStartedActivity().getAction());
+            assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService());
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test @Config(sdk = 34) public void interruptedNotificationRequestDoesNotStartNetworkFiltering() {
+        String notificationPermission = Manifest.permission.POST_NOTIFICATIONS;
+        shadowOf(RuntimeEnvironment.getApplication()).denyPermissions(notificationPermission);
+        ShadowVpnService.setPrepareResult(null);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            activity.showPage(6);
+            View start = ScreenTest.find(activity.getWindow().getDecorView(), "开启网络过滤");
+            if (!activity.networkFilterAvailable()) {
+                assertNull(start);
+                return;
+            }
+            assertNotNull(start);
+            assertTrue(start.performClick());
+            ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            ShadowActivity.PermissionsRequest request = shadowOf(activity).getLastRequestedPermission();
+            assertNotNull(request);
+            assertEquals(MainActivity.START_FILTER_NOTIFICATIONS, request.requestCode);
+            assertArrayEquals(new String[]{notificationPermission}, request.requestedPermissions);
+
+            activity.onRequestPermissionsResult(request.requestCode, new String[0], new int[0]);
+            assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService());
+
+            assertTrue(start.performClick());
+            ShadowAlertDialog.getLatestAlertDialog().getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            activity.onRequestPermissionsResult(request.requestCode, request.requestedPermissions,
+                    new int[]{PackageManager.PERMISSION_DENIED});
+            Intent filter = shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService();
+            assertNotNull(filter);
+            assertEquals(new ComponentName(activity, AdFilterService.class), filter.getComponent());
+            assertEquals("start", filter.getAction());
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test @Config(sdk = {26, 34}) public void vpnConsentWaitsForResumeAndChecksAuthorizationAgain() {
+        new Store(context()).noteUpdateCheck(System.currentTimeMillis());
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            if (!activity.networkFilterAvailable()) return;
+            Intent consent = new Intent("app.clearscreen.test.VPN_CONSENT");
+            ShadowVpnService.setPrepareResult(consent);
+            activity.prepareFilter();
+            ShadowActivity.IntentForResult first = shadowOf(activity).getNextStartedActivityForResult();
+            assertNotNull(first);
+            assertEquals(consent.getAction(), first.intent.getAction());
+
+            controller.pause();
+            ShadowVpnService.setPrepareResult(null);
+            activity.onActivityResult(first.requestCode, Activity.RESULT_OK, null);
+            assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService());
+            ShadowVpnService.setPrepareResult(consent);
+            controller.resume().postResume();
+            assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService());
+            assertEquals("VPN 授权已失效，请重新开启网络过滤", ShadowToast.getTextOfLatestToast());
+
+            activity.prepareFilter();
+            ShadowActivity.IntentForResult second = shadowOf(activity).getNextStartedActivityForResult();
+            assertNotNull(second);
+            controller.pause();
+            ShadowVpnService.setPrepareResult(null);
+            activity.onActivityResult(second.requestCode, Activity.RESULT_OK, null);
+            assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService());
+            controller.resume().postResume();
+            Intent start = shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService();
+            assertNotNull(start);
+            assertEquals(new ComponentName(activity, AdFilterService.class), start.getComponent());
+            assertEquals("start", start.getAction());
+            controller.pause().resume().postResume();
+            assertNull(shadowOf(RuntimeEnvironment.getApplication()).getNextStartedService());
         } finally {
             controller.pause().stop().destroy();
         }

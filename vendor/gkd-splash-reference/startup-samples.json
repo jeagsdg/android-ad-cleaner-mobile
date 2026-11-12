@@ -802,5 +802,108 @@
     "requiredSelectors": [
       "TextView[id=null][text=\"广告\"][clickable=false][childCount=0]"
     ]
+  },
+  {
+    "package": "com.taobao.litetao",
+    "name": "淘特",
+    "activity": "com.taobao.ltao.maintab.MainFrameActivity",
+    "versionName": "6.10.0",
+    "snapshot": "https://i.gkd.li/import/12774851",
+    "sha256": "32c5f647bad30317a35ed809e40986b45c58268e66c67138ebb6103e62ba0184",
+    "upstream": {"groupKey": 0, "ruleIndex": 0},
+    "selector": "FrameLayout[id=\"com.taobao.litetao:id/root_layout\"][childCount=2][clickable=false] > ImageView[id=null][text=null][desc=null][clickable=true][childCount=0] + @TextView[id=null][desc=null][text=\"还剩1秒\"||text=\"还剩2秒\"||text=\"还剩3秒\"][clickable=true][childCount=0]",
+    "evidence": "label"
+  },
+  {
+    "package": "com.weilaishanhai.oopz",
+    "name": "Oopz",
+    "activity": "com.weilaishanhai.oopz.MainActivity",
+    "versionName": "1.0.4",
+    "snapshot": "https://i.gkd.li/i/21202366",
+    "sha256": "f09fcba59f1491cfccfe87ba5222aba7991d2911122acb6b0df3b403ec0cacb7",
+    "selector": "FrameLayout[id=null][clickable=true][childCount=7] > RelativeLayout[id=null][clickable=false][childCount=3] > TextView[id=null][text=\"摇动手机 或 点击图标\"][clickable=false][childCount=0] + TextView[id=null][text=\"跳转至详情页或第三方应用\"][clickable=false][childCount=0] <3 RelativeLayout[id=null][clickable=false][childCount=3] +3 FrameLayout[id=null][clickable=false][childCount=2] > TextView[id=null][text=\"跳过 1\"||text=\"跳过 2\"||text=\"跳过 3\"][clickable=false][childCount=0] + @TextView[id=null][text=null][desc=null][clickable=true][childCount=0]"
+  },
+  {
+    "package": "com.upupoo.apu.mobile",
+    "name": "UPUPOO动态壁纸",
+    "activity": "com.upupoo.apu.mobile.MainActivity",
+    "versionName": "4.3.0",
+    "snapshot": "https://i.gkd.li/import/14052232",
+    "sha256": "179ac2f898fe9b64257e49a73d4277bd964693b7865b89a92c7de634b09bbc3b",
+    "selector": "TextView[id=null][text=null][desc=null][clickable=true][childCount=0] - @android.view.View[id=null][text=null][desc=null][clickable=true][childCount=0] <2 FrameLayout[id=null][text=null][desc=null][clickable=false][childCount=3] >4 FrameLayout[id=null][desc=\"root:root:0:0\"][clickable=true][childCount=2] >2 LinearLayout[id=null][clickable=false][childCount=1] > LinearLayout[id=null][clickable=false][childCount=3] > TextView[id=null][text=\"扭动手机 或 点击图标\"][clickable=false][childCount=0] + TextView[id=null][text=\"跳转至详情页或第三方应用\"][clickable=false][childCount=0]"
+  },
+  {
+    "package": "make.more.r2d2.cellular_z",
+    "name": "Cellular-Z",
+    "activity": "make.more.r2d2.cellular_z.activity.SplashGMActivity",
+    "versionName": "6.4.2",
+    "snapshot": "https://i.gkd.li/import/13978978",
+    "sha256": "f8a29eff573eb0ea2413a2a3e9359706af00ec19da982e67591af2a4982f8372",
+    "selector": "FrameLayout[id=\"make.more.r2d2.cellular_z:id/splash_container\"][childCount=1] >3 ImageView[id=null][text=null][desc=null][clickable=true][childCount=0] + @android.view.View[id=null][text=null][desc=null][clickable=true][childCount=0] <3 FrameLayout[id=null][text=null][desc=null][clickable=false][childCount=4] >4 FrameLayout[id=null][desc=\"root:root:0:0\"][clickable=true][childCount=4] >3 LinearLayout[id=null][clickable=false][childCount=3] > TextView[id=null][text=\"扭动手机 或 点击图标\"][clickable=false][childCount=0] + TextView[id=null][text=\"跳转至详情页或第三方应用\"][clickable=false][childCount=0]"
+  },
+  {
+    "package": "com.tencent.mm",
+    "name": "微信",
+    "activity": "com.tencent.mm.plugin.appbrand.ui.AppBrandPluginUI",
+    "versionName": "8.0.77",
+    "snapshot": "https://i.gkd.li/i/32969391",
+    "sha256": "ecdbc32c6d56d72c3e97a12aefc8c54d1631aff0d2908456c04c620aad74efee",
+    "selector": "FrameLayout[id=null][clickable=false][childCount=7] > FrameLayout[id=null][clickable=false][childCount=3] >4 @TextView[id=null][text=\"跳过\"][desc=null][clickable=false][childCount=0] <1 FrameLayout[id=null][clickable=false][childCount=1] <2 FrameLayout[id=null][clickable=false][childCount=2] <2 FrameLayout[id=null][clickable=false][childCount=3] + FrameLayout[id=null][clickable=false][childCount=2] >3 TextView[id=null][text=\"广告\"][desc=null][clickable=false][childCount=0]",
+    "requiredSelectors": [
+      "TextView[id=null][text=\"广告\"][desc=null][clickable=false][childCount=0]"
+    ],
+    "exactActivity": true,
+    "tap": true,
+    "touchOnly": true
+  },
+  {
+    "package": "com.douban.frodo",
+    "name": "豆瓣",
+    "activity": "com.douban.frodo.activity.SplashActivity",
+    "versionName": "7.122.1",
+    "snapshot": "https://github.com/user-attachments/files/26569898/_SplashActivity-1775545409137.zip",
+    "sha256": "fa0eabdaf44e616e3c646852c4af4bc1655c4002abda053adf617d2837e72b97",
+    "selector": "FrameLayout[id=\"com.douban.frodo:id/splash\"][childCount=1] > ViewGroup[id=\"com.douban.frodo:id/ad_parent\"][clickable=true] > FrameLayout[id=\"com.douban.frodo:id/sdk_view\"][clickable=false] >3 @FrameLayout[id=\"com.douban.frodo:id/jad_video_skip_btn\"][text=null][desc=null][clickable=true][childCount=1] > LinearLayout[id=null][clickable=false][childCount=1] > TextView[id=\"com.douban.frodo:id/jad_tv_video_count\"][text=\"跳过 1\"||text=\"跳过 2\"||text=\"跳过 3\"||text=\"跳过 4\"||text=\"跳过 5\"][clickable=false][childCount=0]",
+    "evidence": "resource",
+    "exactActivity": true
+  },
+  {
+    "package": "com.upupoo.apu.mobile",
+    "name": "UPUPOO动态壁纸",
+    "activity": "com.upupoo.apu.mobile.MainActivity",
+    "versionName": "4.2.0",
+    "snapshot": "https://i.gkd.li/import/13830230",
+    "sha256": "58f206180765e223a1731dcc34cbb87f3af80300cb1a621694ef7fed830456f4",
+    "selector": "TextView[id=null][text=null][desc=null][clickable=true][childCount=0] - @android.view.View[id=null][text=null][desc=null][clickable=true][childCount=0] - ImageView[id=null][text=null][desc=null][clickable=true][childCount=0] <2 FrameLayout[id=null][text=null][desc=null][clickable=false][childCount=4] >4 FrameLayout[id=null][desc=\"root:root:0:0\"][clickable=true][childCount=4] >3 LinearLayout[id=null][clickable=false][childCount=3] > TextView[id=null][text=\"扭动手机 或 点击图标\"][clickable=false][childCount=0] + TextView[id=null][text=\"跳转至详情页或第三方应用\"][clickable=false][childCount=0]",
+    "exactActivity": true
+  },
+  {
+    "package": "com.mxchip.petmarvel",
+    "name": "滴宠生活",
+    "activity": "com.mxchip.petmarvel.start.LaunchNewActivity",
+    "versionName": "2.0.42",
+    "snapshot": "https://i.gkd.li/import/23600688",
+    "sha256": "de924a7880a795db28f5de57acd842cb2aeb8f0a486e048b0b51917241303f98",
+    "selector": "TextView[id=null][text=null][desc=null][clickable=true][childCount=0] - @android.view.View[id=null][text=null][desc=null][clickable=true][childCount=0] - ImageView[id=null][text=null][desc=null][clickable=true][childCount=0] <3 FrameLayout[id=null][clickable=false][childCount=5] <2 FrameLayout[id=null][clickable=false][childCount=2] < FrameLayout[id=\"com.mxchip.petmarvel:id/ad_content\"][clickable=false][childCount=1]",
+    "requiredSelectors": [
+      "FrameLayout[desc=\"NativeVideoAdView\"][clickable=false]",
+      "TextView[text=\"扭一扭或点击了解更多\"][clickable=false]"
+    ],
+    "exactActivity": true,
+    "lowerLeftAdControl": true
+  },
+  {
+    "package": "com.tencent.mm",
+    "name": "微信小程序",
+    "activity": "com.tencent.mm.plugin.appbrand.ui.AppBrandUI00",
+    "versionName": "8.0.40",
+    "snapshot": "https://i.gkd.li/import/12701979",
+    "sha256": "77099a6773be5c21884114f4bfa0517ea8a5f97f2f2ae632e22e80a73e3250a6",
+    "selector": "FrameLayout[id=null][clickable=false][childCount=7||childCount=9] > FrameLayout[id=null][clickable=false][childCount=3] >4 @TextView[id=null][text=\"跳过\"][desc=null][clickable=false][childCount=0] <1 FrameLayout[id=null][clickable=false][childCount=1] <2 FrameLayout[id=null][clickable=false][childCount=2] <2 FrameLayout[id=null][clickable=false][childCount=3] + FrameLayout[id=null][clickable=false][childCount=2] >3 TextView[id=null][text=\"广告\"][desc=null][clickable=false][childCount=0]",
+    "requiredSelectors": ["TextView[text=\"广告\"][clickable=false][childCount=0]"],
+    "exactActivity": true,
+    "tap": true,
+    "touchOnly": true,
+    "matchDelay": 800
   }
 ]

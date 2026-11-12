@@ -26,11 +26,13 @@ final class ReleaseUpdates {
         final int versionCode;
         final String versionName;
         final String notes;
+        final boolean preferApiDownload;
 
-        private Info(int versionCode, String versionName, String notes) {
+        private Info(int versionCode, String versionName, String notes, boolean preferApiDownload) {
             this.versionCode = versionCode;
             this.versionName = versionName;
             this.notes = notes;
+            this.preferApiDownload = preferApiDownload;
         }
 
         Uri rawDownloadUri() {
@@ -51,6 +53,10 @@ final class ReleaseUpdates {
     }
 
     static Info parse(String source) throws IOException {
+        return parse(source, false);
+    }
+
+    static Info parse(String source, boolean preferApiDownload) throws IOException {
         if (source == null || source.length() > MAX_FEED_BYTES) throw invalidFeed();
         Integer schema = null, versionCode = null;
         String versionName = null, notes = null;
@@ -89,7 +95,7 @@ final class ReleaseUpdates {
                 || notes.chars().anyMatch(c -> Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t')) {
             throw invalidFeed();
         }
-        return new Info(versionCode, versionName, notes);
+        return new Info(versionCode, versionName, notes, preferApiDownload);
     }
 
     private static int readInteger(JsonReader reader) throws IOException {

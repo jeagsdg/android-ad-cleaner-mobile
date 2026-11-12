@@ -5,7 +5,7 @@ import android.content.Intent;
 import java.io.IOException;
 
 final class ReleaseApkDownload {
-    enum State { IDLE, DOWNLOADING, READY, FAILED }
+    enum State { IDLE, DOWNLOADING, PAUSED, PAUSED_WAITING_TO_RETRY, READY, FAILED }
 
     static final class Status {
         final State state = State.IDLE;
@@ -24,7 +24,11 @@ final class ReleaseApkDownload {
 
     void retry(ReleaseUpdates.Info release) throws IOException { start(release); }
 
-    void cancel() throws IOException {}
+    void retryPaused(ReleaseUpdates.Info release, Status displayed) throws IOException { start(release); }
+
+    void cancel(Status displayed) throws IOException {}
+
+    boolean isInstallRestricted() { return false; }
 
     boolean canInstall() { return false; }
 

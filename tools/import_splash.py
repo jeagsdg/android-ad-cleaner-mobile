@@ -279,6 +279,7 @@ def import_reviewed_samples(path):
                     and value.startswith(sample['package'] + ':id/')
         )):
             raise ValueError(f'Reviewed resource requires an exact app ID in {sample["package"]}')
+        taote_countdown = False
         if evidence == 'label':
             def exact(node, field, value):
                 return guaranteed(node, lambda f, op, v: (f, op, v) == (field, '=', value))
@@ -300,10 +301,44 @@ def import_reviewed_samples(path):
                 and any(node['class'] == 'TextView' and exact(node, 'text', '跳过') for node in selector['path'])
                 and any(exact(anchor['path'][0], 'text', '广告') for anchor in required)
             )
-            if not (interstitial_close or camera_skip):
+            if ((sample['package'], sample['activity'])
+                    == ('com.taobao.litetao', 'com.taobao.ltao.maintab.MainFrameActivity')
+                    and sample.get('upstream') == {'groupKey': 0, 'ruleIndex': 0}
+                    and sample.get('tap') is not True and selector['target'] == 2
+                    and selector['relations'] == [['>', [1]], ['+', [1]]]):
+                layout, image, _ = selector['path']
+                taote_countdown = (
+                    layout['class'] == 'FrameLayout'
+                    and exact(layout, 'id', 'com.taobao.litetao:id/root_layout')
+                    and exact(layout, 'childCount', 2) and exact(layout, 'clickable', False)
+                    and image['class'] == 'ImageView'
+                    and all(exact(image, f, v) for f, v in (
+                        ('id', None), ('text', None), ('desc', None), ('clickable', True), ('childCount', 0)
+                    ))
+                    and target['class'] == 'TextView'
+                    and all(exact(target, f, v) for f, v in (
+                        ('id', None), ('desc', None), ('clickable', True), ('childCount', 0)
+                    ))
+                    and guaranteed(target, lambda f, op, v: (
+                        f == 'text' and op == '=' and v in ('还剩1秒', '还剩2秒', '还剩3秒')
+                    ))
+                )
+            if not (interstitial_close or camera_skip or taote_countdown):
                 raise ValueError(f'Reviewed label requires a verified ad control in {sample["package"]}')
         countdown_close = sample.get('adCountdownClose') is True
         touch_only = sample.get('touchOnly') is True
+        match_delay = sample.get('matchDelay', 0)
+        if type(match_delay) is not int or not 0 <= match_delay < 10_000:
+            raise ValueError(f'Invalid reviewed match delay in {sample["package"]}')
+        lower_left = sample.get('lowerLeftAdControl') is True
+        if lower_left and (evidence != 'structure' or sample.get('exactActivity') is not True
+                           or sample.get('tap') is True or touch_only or not required
+                           or not all(guaranteed(target, lambda f, op, v: (f, op, v) == (field, '=', value))
+                                      for field, value in (('clickable', True), ('childCount', 0)))
+                           or not any(i != selector['target'] and guaranteed(node, lambda f, op, v: (f, op, v) == (
+                               'id', '=', sample['package'] + ':id/ad_content'
+                           )) for i, node in enumerate(selector['path']))):
+            raise ValueError(f'Lower-left control needs a verified ad container, page and clickable leaf in {sample["package"]}')
         if countdown_close and (evidence != 'structure' or not required):
             raise ValueError(f'Countdown close needs a visible ad anchor in {sample["package"]}')
         labelled_touch = guaranteed(target, lambda field, op, value: field in ('text', 'desc') and (
@@ -318,17 +353,24 @@ def import_reviewed_samples(path):
             target, lambda field, op, value: (field, op, value) == ('childCount', '=', 0)
         ) or not (labelled_touch or baidu_touch)):
             raise ValueError(f'Reviewed touch control needs an identified leaf and visible ad anchor in {sample["package"]}')
+        origin = sample['upstream'] if taote_countdown else {'groupKey': -90, 'ruleIndex': index}
         entry = dict(
-            package=sample['package'], name=sample['name'], groupKey=-90, ruleIndex=index,
+            package=sample['package'], name=sample['name'], **origin,
             selector=sample['selector'], snapshots=[sample['snapshot']], evidence=evidence,
             targetSelector=selector, activityIds=[sample['activity']], matchTime=10_000,
             requireClickable=not touch_only, required=required, requiredSelectors=anchors,
             reference=dict(versionName=sample['versionName'], snapshotSha256=sample['sha256']),
         )
+        if sample.get('exactActivity') is True:
+            entry['exactActivity'] = True
         if sample.get('tap') is True:
             entry['tap'] = True
+        if match_delay:
+            entry['matchDelay'] = match_delay
         if countdown_close:
             entry['adCountdownClose'] = True
+        if lower_left:
+            entry['lowerLeftAdControl'] = True
         entries.append(entry)
     return entries
 

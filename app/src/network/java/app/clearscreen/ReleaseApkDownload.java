@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
+import android.os.UserManager;
 import android.provider.Settings;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,23 +29,25 @@ final class ReleaseApkDownload {
     private static final Object STATE_LOCK = new Object();
     private static final Object INSTALL_LOCK = new Object();
 
-    enum State { IDLE, DOWNLOADING, READY, FAILED }
+    enum State { IDLE, DOWNLOADING, PAUSED, PAUSED_WAITING_TO_RETRY, READY, FAILED }
 
     static final class Status {
         final State state;
+        private final long id;
         final int versionCode;
         final String versionName;
         final int progress;
 
-        Status(State state, int versionCode, String versionName, int progress) {
+        Status(State state, long id, int versionCode, String versionName, int progress) {
             this.state = state;
+            this.id = id;
             this.versionCode = versionCode;
             this.versionName = versionName;
             this.progress = progress;
         }
     }
 
-    private static final Status IDLE = new Status(State.IDLE, 0, "", -1);
+    private static final Status IDLE = new Status(State.IDLE, NO_DOWNLOAD, 0, "", -1);
     private final Context context;
     private final DownloadManager manager;
     private final SharedPreferences prefs;
@@ -71,7 +74,7 @@ final class ReleaseApkDownload {
     }
 
     private Status query(long id, int code, String name) {
-        Status failed = new Status(State.FAILED, code, name, -1);
+        Status failed = new Status(State.FAILED, id, code, name, -1);
         if (manager == null || prefs.getBoolean("invalid", false)) return failed;
         try (Cursor cursor = manager.query(new DownloadManager.Query().setFilterById(id))) {
             if (cursor == null || !cursor.moveToFirst()) return failed;
@@ -82,10 +85,16 @@ final class ReleaseApkDownload {
                 return failed;
             }
             int state = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS));
-            if (state == DownloadManager.STATUS_SUCCESSFUL) return new Status(State.READY, code, name, 100);
+            if (state == DownloadManager.STATUS_SUCCESSFUL) return new Status(State.READY, id, code, name, 100);
             if (state == DownloadManager.STATUS_FAILED) return failed;
             int progress = total > 0 && downloaded >= 0 ? (int) Math.min(100, downloaded * 100 / total) : -1;
-            return new Status(State.DOWNLOADING, code, name, progress);
+            if (state == DownloadManager.STATUS_PAUSED) {
+                int reason = cursor.getColumnIndex(DownloadManager.COLUMN_REASON);
+                State paused = reason >= 0 && cursor.getInt(reason) == DownloadManager.PAUSED_WAITING_TO_RETRY
+                        ? State.PAUSED_WAITING_TO_RETRY : State.PAUSED;
+                return new Status(paused, id, code, name, progress);
+            }
+            return new Status(State.DOWNLOADING, id, code, name, progress);
         } catch (RuntimeException failure) {
             return failed;
         }
@@ -97,25 +106,30 @@ final class ReleaseApkDownload {
     }
 
     void start(ReleaseUpdates.Info release) throws IOException {
-        enqueue(release, false);
+        enqueue(release, false, NO_DOWNLOAD);
     }
 
     void retry(ReleaseUpdates.Info release) throws IOException {
-        enqueue(release, true);
+        enqueue(release, true, NO_DOWNLOAD);
     }
 
-    private void enqueue(ReleaseUpdates.Info release, boolean retry) throws IOException {
+    void retryPaused(ReleaseUpdates.Info release, Status displayed) throws IOException {
+        if (displayed.state == State.PAUSED_WAITING_TO_RETRY) enqueue(release, true, displayed.id);
+    }
+
+    private void enqueue(ReleaseUpdates.Info release, boolean retry, long pausedId) throws IOException {
         synchronized (STATE_LOCK) {
             if (manager == null) throw new IOException("此设备没有可用的下载服务");
             long installed = installedVersion();
             if (installed < 0 || release.versionCode <= installed) throw new IOException("此更新版本已失效");
             Status previous = status();
-            long previousId = prefs.getLong("id", NO_DOWNLOAD);
-            if (previous.versionCode > release.versionCode) throw new IOException("已有较新的更新下载");
             boolean sameRelease = previous.versionCode == release.versionCode
                     && previous.versionName.equals(release.versionName);
+            if (pausedId != NO_DOWNLOAD && (!sameRelease || previous.id != pausedId
+                    || previous.state != State.PAUSED_WAITING_TO_RETRY)) return;
+            if (previous.versionCode > release.versionCode) throw new IOException("已有较新的更新下载");
             if (sameRelease && !retry && previous.state != State.FAILED) return;
-            boolean api = sameRelease && !prefs.getBoolean("api", false);
+            boolean api = sameRelease ? !prefs.getBoolean("api", false) : release.preferApiDownload;
             long id;
             try {
                 id = manager.enqueue(request(release, api));
@@ -123,15 +137,21 @@ final class ReleaseApkDownload {
                 throw new IOException("无法开始下载安装包", failure);
             }
             if (id < 0) throw new IOException("无法开始下载安装包");
+            // The old task can resume while DownloadManager enqueues the replacement.
+            if (pausedId != NO_DOWNLOAD
+                    && query(pausedId, previous.versionCode, previous.versionName).state != State.PAUSED_WAITING_TO_RETRY) {
+                discardQuietly(id);
+                return;
+            }
             if (!prefs.edit().clear().putLong("id", id).putBoolean("api", api)
                     .putInt("version-code", release.versionCode).putString("version-name", release.versionName)
                     .commit()) {
                 prefs.edit().clear().apply();
                 discardQuietly(id);
-                discardQuietly(previousId);
+                discardQuietly(previous.id);
                 throw new IOException("无法保存下载状态");
             }
-            discardQuietly(previousId);
+            discardQuietly(previous.id);
         }
     }
 
@@ -149,10 +169,10 @@ final class ReleaseApkDownload {
         return request;
     }
 
-    void cancel() throws IOException {
+    void cancel(Status displayed) throws IOException {
         synchronized (STATE_LOCK) {
             long id = prefs.getLong("id", NO_DOWNLOAD);
-            if (id < 0) return;
+            if (id < 0 || displayed.id != id) return;
             try {
                 discard(id);
             } catch (RuntimeException failure) {
@@ -160,6 +180,14 @@ final class ReleaseApkDownload {
             }
             if (!prefs.edit().clear().commit()) throw new IOException("无法清除下载状态");
         }
+    }
+
+    boolean isInstallRestricted() {
+        UserManager users = context.getSystemService(UserManager.class);
+        return users != null && (users.hasUserRestriction(UserManager.DISALLOW_INSTALL_APPS)
+                || users.hasUserRestriction(UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES)
+                || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                        && users.hasUserRestriction(UserManager.DISALLOW_INSTALL_UNKNOWN_SOURCES_GLOBALLY)));
     }
 
     boolean canInstall() {

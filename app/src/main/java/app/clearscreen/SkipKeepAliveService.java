@@ -13,7 +13,9 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 /** Optional, user-visible foreground service for the connected accessibility service. */
@@ -23,8 +25,18 @@ public final class SkipKeepAliveService extends Service {
     private static final String START = "app.clearscreen.SKIP_KEEP_ALIVE_START";
     private static final String STOP = "app.clearscreen.SKIP_KEEP_ALIVE_STOP";
     private static final int NOTIFICATION_ID = 40;
+    private static final long LEGACY_NOTIFICATION_CHECK_MS = 30_000;
     private static volatile boolean foreground;
 
+    private final Handler notificationHandler = new Handler(Looper.getMainLooper());
+    private final Runnable legacyNotificationCheck = new Runnable() {
+        @Override public void run() {
+            if (!running()) return;
+            if (notificationsAllowed(SkipKeepAliveService.this)) {
+                notificationHandler.postDelayed(this, LEGACY_NOTIFICATION_CHECK_MS);
+            } else stopRunning();
+        }
+    };
     private final BroadcastReceiver notificationChanges = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             if (!notificationsAllowed(context)) stopRunning();
@@ -91,9 +103,15 @@ public final class SkipKeepAliveService extends Service {
 
         try {
             // A queued foreground start must be acknowledged even if settings changed in the meantime.
-            if (!running()) showNotification();
-            if (eligible(this)) foreground = true;
-            else stopRunning();
+            boolean starting = !running();
+            if (starting) showNotification();
+            if (eligible(this)) {
+                foreground = true;
+                if (starting && Build.VERSION.SDK_INT < 28) {
+                    notificationHandler.removeCallbacks(legacyNotificationCheck);
+                    notificationHandler.postDelayed(legacyNotificationCheck, LEGACY_NOTIFICATION_CHECK_MS);
+                }
+            } else stopRunning();
         } catch (IllegalStateException | SecurityException e) {
             Log.w(TAG, "System declined foreground service start", e);
             stopRunning();
@@ -126,12 +144,14 @@ public final class SkipKeepAliveService extends Service {
 
     private void stopRunning() {
         foreground = false;
+        notificationHandler.removeCallbacks(legacyNotificationCheck);
         stopForeground(STOP_FOREGROUND_REMOVE);
         stopSelf();
     }
 
     @Override public void onDestroy() {
         foreground = false;
+        notificationHandler.removeCallbacks(legacyNotificationCheck);
         if (Build.VERSION.SDK_INT >= 28) unregisterReceiver(notificationChanges);
         super.onDestroy();
     }

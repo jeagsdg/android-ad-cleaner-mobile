@@ -21,9 +21,11 @@ public final class MainActivity extends Activity {
     static final int GREEN = 0xff16624c, MINT = 0xffe9f1e9, LIME = 0xffd9eea6;
     static final int SKIP_MANAGEMENT = 7, CUSTOM_RULES = 9, POPUP_MANAGEMENT = 10;
     static final int APP_ADS = 11, APP_AD_DETAIL = 12, UPDATE_PAGE = 13;
+    private static final int VPN_CONSENT = 41;
     static final int START_FILTER_NOTIFICATIONS = 42, FILTER_NOTIFICATIONS = 43;
     static final int KEEP_ALIVE_NOTIFICATIONS = 44;
     static final int COLOROS_FILTER_NOTIFICATIONS = 45;
+    private static final String FILTER_NOTIFICATION_PERMISSION_ANSWERED = "filter-notification-permission-answered";
     private static final long UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000L;
     private static final long UPDATE_RETRY_INTERVAL_MS = 60 * 60 * 1000L;
     private static final AtomicBoolean UPDATE_RUNNING = new AtomicBoolean();
@@ -48,7 +50,7 @@ public final class MainActivity extends Activity {
     ScrollView pageScroll;
     int renderedTab=-1;
     boolean shownKeepAliveEnabled;
-    private boolean inForeground, returningFromAuthorization;
+    private boolean inForeground, returningFromAuthorization, pendingFilterStart;
     private LinearLayout homeUpdateContainer;
     private ReleaseUpdates.Info shownRelease;
     private TextView updateCheckStatus;
@@ -86,6 +88,7 @@ public final class MainActivity extends Activity {
             updateParent = state.getInt("updateParent");
             onlyUnfinished = state.getBoolean("onlyUnfinished");
             returningFromAuthorization = state.getBoolean("returningFromAuthorization");
+            pendingFilterStart = state.getBoolean("pendingFilterStart");
         }
         render();
     }
@@ -100,6 +103,10 @@ public final class MainActivity extends Activity {
         permissionHandler.removeCallbacks(permissionRefresh);
         permissionHandler.postDelayed(permissionRefresh, 1000);
         if (store != null && store.updateChecksEnabled()) checkForUpdates(false);
+    }
+    @Override protected void onPostResume() {
+        super.onPostResume();
+        if (pendingFilterStart) startFilter();
     }
     @Override protected void onPause() {
         inForeground = false;
@@ -120,6 +127,7 @@ public final class MainActivity extends Activity {
         state.putInt("updateParent", updateParent);
         state.putBoolean("onlyUnfinished", onlyUnfinished);
         state.putBoolean("returningFromAuthorization", returningFromAuthorization);
+        state.putBoolean("pendingFilterStart", pendingFilterStart);
         appAdManagement.save(state);
         super.onSaveInstanceState(state);
     }
@@ -258,7 +266,11 @@ public final class MainActivity extends Activity {
         shell.setBackgroundColor(BG);
         shell.setOnApplyWindowInsetsListener((view, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {
-                Insets safe = insets.getInsets(WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                int types = WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                    types |= WindowInsets.Type.ime();
+                }
+                Insets safe = insets.getInsets(types);
                 view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
             } else view.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(),
                     insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
@@ -485,7 +497,7 @@ public final class MainActivity extends Activity {
         boolean active = splash && connected;
         updateText(homeSplashStatus, !splash ? "未开启" : !connected ? "还需在手机设置里开启"
                 : busy ? "清理期间暂停" : "已开启");
-        String buttonLabel = !splash ? "开启自动跳过" : !connected ? "打开手机设置" : "暂停自动跳过";
+        String buttonLabel = !splash ? "开启自动跳过" : !connected ? "打开手机设置" : "暂停开屏跳过";
         if (!buttonLabel.contentEquals(homeSplashButton.getText())) {
             homeSplashButton.setText(buttonLabel);
             homeSplashButton.setTextColor(active ? 0xffe5f1e8 : INK);
@@ -890,6 +902,9 @@ public final class MainActivity extends Activity {
         toggle.setTextSize(16);
         toggle.setMinHeight(dp(48));
         toggle.setSwitchPadding(dp(12));
+        int[][] states = {{android.R.attr.state_checked}, {}};
+        toggle.setThumbTintList(new android.content.res.ColorStateList(states, new int[]{GREEN, Color.WHITE}));
+        toggle.setTrackTintList(new android.content.res.ColorStateList(states, new int[]{0xffa6c9b6, 0xffaeb7ae}));
         toggle.setPaddingRelative(0, dp(8), 0, dp(8));
         toggle.setGravity(Gravity.CENTER_VERTICAL);
         toggle.setChecked(enabled);
@@ -1028,13 +1043,13 @@ public final class MainActivity extends Activity {
     }
     void permissionSetup() {
         PermissionAccess.State state = PermissionAccess.state(this);
-        header("", "开启净屏服务", "在手机设置里找到「净屏」，打开开关，再返回这里。");
+        header("", "无障碍授权", "");
         LinearLayout status = card(body);
         status.addView(bold(PermissionAccess.title(state), 18, GREEN));
         space(status, 10);
         paragraph(status, PermissionAccess.hint(state));
         space(status, 12);
-        paragraph(status, "授权后，净屏可读取并操作屏幕控件，用于你发起的设置清理，以及单独开启的开屏、弹窗和原图辅助功能。你可以随时在系统设置撤销授权。");
+        paragraph(status, "授权后，净屏可读取并操作屏幕控件，用于你发起的设置清理和你开启的开屏跳过、弹窗处理及原图辅助。可随时在系统设置撤销授权。");
         String primaryAction = state == PermissionAccess.State.READY ? "完成" : "打开手机设置";
         action(status, primaryAction, true,
                 () -> { if (PermissionAccess.state(this) == PermissionAccess.State.READY) backToParentPage();
@@ -1042,12 +1057,7 @@ public final class MainActivity extends Activity {
         if (state == PermissionAccess.State.READY) action(status, "管理系统授权", false, this::openAccessibilitySettings);
         action(status, "开启遇到问题", false, () -> { tab = 5; render(); });
 
-        LinearLayout usage = card(body);
-        usage.addView(bold("如何开启", 17, INK));
-        space(usage, 10);
-        paragraph(usage, "在系统的无障碍设置中找到「净屏」，开启服务后返回。入口可能位于「已下载的应用」或「已安装的服务」。网络过滤无需此权限。");
-        if (state == PermissionAccess.State.OFF && PermissionAccess.family().equals("coloros"))
-            paragraph(usage, "如果系统拒绝向净屏授予访问权限，点上方「开启遇到问题」查看 ColorOS 的处理路径。");
+        if (networkFilterAvailable()) paragraph(body, "只使用网络过滤时，无需此权限。");
     }
     void openAccessibilitySettings() {
         boolean waiting = PermissionAccess.state(this) != PermissionAccess.State.READY;
@@ -1176,6 +1186,7 @@ public final class MainActivity extends Activity {
         store.noteUpdateAttempt(now);
         refreshUpdateCheckStatus();
         if (manual) toast("正在检查更新");
+        View manualRequestPage = manual ? body : null;
         Store updateStore = store;
         new Thread(() -> {
             ReleaseUpdates.Info release = null;
@@ -1187,20 +1198,20 @@ public final class MainActivity extends Activity {
             catch (java.io.IOException | SecurityException ignored) { }
             finally { UPDATE_RUNNING.set(false); }
             ReleaseUpdates.Info result = release;
-            runOnUiThread(() -> {
-                MainActivity active = updateScreen.get();
-                if (active != null) {
-                    active.refreshUpdateCheckStatus();
-                    active.refreshUpdateNotice();
-                    if (active.tab == UPDATE_PAGE && result != null) active.render();
-                }
-                if (!manual || !inForeground || isFinishing() || isDestroyed()) return;
-                ReleaseUpdates.Info newer = newerRelease(result);
-                if (result == null) toast("暂时无法读取 GitHub 版本，请稍后重试");
-                else if (newer == null) toast("已是当前发布版本");
-                else showAvailableRelease();
-            });
+            runOnUiThread(() -> applyUpdateCheckResult(manualRequestPage, result));
         }, "clearscreen-update").start();
+    }
+    void applyUpdateCheckResult(View manualRequestPage, ReleaseUpdates.Info result) {
+        MainActivity active = updateScreen.get();
+        if (active != null) {
+            active.refreshUpdateCheckStatus();
+            active.refreshUpdateNotice();
+            if (active.tab == UPDATE_PAGE && result != null) active.render();
+        }
+        if (manualRequestPage == null || manualRequestPage != body || !inForeground || isFinishing() || isDestroyed()) return;
+        if (result == null) toast("暂时无法读取 GitHub 版本，请稍后重试");
+        else if (newerRelease(result) == null) toast("已是当前发布版本");
+        else showAvailableRelease();
     }
     private static boolean withinUpdateInterval(long now, long last, long interval) {
         return last > 0 && last <= now && now - last < interval;
@@ -1232,6 +1243,12 @@ public final class MainActivity extends Activity {
         filterButton=button("开启网络过滤",true,this::toggleFilter);LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,-2);params.topMargin=dp(14);status.addView(filterButton,params);refreshFilter();
         LinearLayout recovery=card(body);recovery.addView(bold("拦截记录与放行",18,INK));space(recovery,8);
         paragraph(recovery,"如果应用加载异常，可先停止过滤，再按需放行完整域名。");
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) {
+            paragraph(recovery, "停止过滤后仍无法联网？请在手机设置中搜索「VPN」，找到净屏并关闭「始终开启的 VPN」和「无 VPN 时阻止连接」。");
+            linkAction(recovery, "打开系统 VPN 设置", () -> {
+                if (!PermissionAccess.openVpnSettings(this::startActivity)) toast("请打开手机设置并搜索「VPN」");
+            });
+        }
         linkAction(recovery,"最近拦截与放行",this::blockedDomains);linkAction(recovery,"管理放行列表",this::allowedDomains);
         linkAction(recovery, "自定义拦截域名（" + filterStore.customHosts().size() + "）", this::customBlockDomains);
         linkAction(recovery, "绕过网络过滤的应用（" + filterStore.bypassedApps().size() + "）", this::filterAppExceptions);
@@ -1249,8 +1266,9 @@ public final class MainActivity extends Activity {
                 .setPositiveButton("继续",(d,w)->requestFilterNotifications(true)).setNegativeButton("取消",null).show();
     }
     void requestFilterNotifications(boolean startAfter) {
-        if(!networkFilterAvailable())return;
-        if (PermissionAccess.needsNotificationPermission(this)) {
+        if (!networkFilterAvailable()) return;
+        if (PermissionAccess.needsNotificationPermission(this)
+                && !getPreferences(MODE_PRIVATE).getBoolean(FILTER_NOTIFICATION_PERMISSION_ANSWERED, false)) {
             requestPermissions(new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
                     startAfter ? START_FILTER_NOTIFICATIONS : FILTER_NOTIFICATIONS);
         } else if (startAfter) prepareFilter();
@@ -1268,10 +1286,20 @@ public final class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] grants) {
         super.onRequestPermissionsResult(request, permissions, grants);
         boolean allowed = grants.length > 0 && grants[0] == android.content.pm.PackageManager.PERMISSION_GRANTED;
-        if (request == START_FILTER_NOTIFICATIONS) prepareFilter();
-        else if (request == FILTER_NOTIFICATIONS)
-            toast(allowed ? "过滤状态通知已允许" : "通知权限未开启，可在系统通知设置中管理");
-        else if (request == COLOROS_FILTER_NOTIFICATIONS && tab == 5) {
+        if (request == START_FILTER_NOTIFICATIONS || request == FILTER_NOTIFICATIONS) {
+            if (permissions.length == 0 || grants.length == 0) return;
+            SharedPreferences preferences = getPreferences(MODE_PRIVATE);
+            boolean firstAnswer = !preferences.getBoolean(FILTER_NOTIFICATION_PERMISSION_ANSWERED, false);
+            if (firstAnswer) preferences.edit().putBoolean(FILTER_NOTIFICATION_PERMISSION_ANSWERED, true).apply();
+            if (request == START_FILTER_NOTIFICATIONS) prepareFilter();
+            else if (allowed) toast("过滤状态通知已允许");
+            else if (firstAnswer && tab == 6) new AlertDialog.Builder(this).setTitle("过滤状态通知未开启")
+                    .setMessage("如需显示过滤状态，可在系统通知设置中开启。")
+                    .setPositiveButton("打开系统通知设置", (dialog, which) -> openNotificationSettings())
+                    .setNegativeButton("稍后", null).show();
+            return;
+        }
+        if (request == COLOROS_FILTER_NOTIFICATIONS && tab == 5) {
             render();
             if (allowed) toast("过滤状态通知已允许，可重新检查应用详情里的权限管理");
             else new AlertDialog.Builder(this).setTitle("过滤状态通知未开启")
@@ -1285,15 +1313,32 @@ public final class MainActivity extends Activity {
             } else toast("开启前台保活需要通知权限，可在系统通知设置中开启");
         }
     }
-    void prepareFilter(){
-        if(!networkFilterAvailable())return;
-        try{Intent intent=android.net.VpnService.prepare(this);if(intent==null)startFilter();else startActivityForResult(intent,41);}catch(Exception e){toast("此设备无法打开 VPN 授权，请检查系统或工作资料限制");}
-    }
-    void startFilter() {
+    void prepareFilter() {
         if (!networkFilterAvailable()) return;
-        Intent intent = new Intent(this, AdFilterService.class).setAction("start");
         try {
-            ForegroundServices.start(this, intent);
+            Intent consent = android.net.VpnService.prepare(this);
+            if (consent == null) startFilter();
+            else startActivityForResult(consent, VPN_CONSENT);
+        } catch (RuntimeException failure) {
+            toast("此设备无法打开 VPN 授权，请检查系统或工作资料限制");
+        }
+    }
+    private void startFilter() {
+        if (!networkFilterAvailable() || isFinishing() || isDestroyed()) return;
+        if (!inForeground) {
+            pendingFilterStart = true;
+            return;
+        }
+        pendingFilterStart = false;
+        try {
+            if (android.net.VpnService.prepare(this) != null) {
+                toast("VPN 授权已失效，请重新开启网络过滤");
+                return;
+            }
+            // Consent can change before service dispatch. Start from the visible activity so
+            // the service can recheck it and stop safely if it cannot enter the foreground.
+            if (startService(new Intent(this, AdFilterService.class).setAction("start")) == null)
+                toast("系统未允许启动网络过滤，请保持净屏在前台重试");
         } catch (RuntimeException failure) {
             toast("系统未允许启动网络过滤，请保持净屏在前台重试");
         }
@@ -2021,7 +2066,14 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        if(request==41){if(result==RESULT_OK)startFilter();else toast("未开启 VPN，网络设置未改变");return;}
+        if (request == VPN_CONSENT) {
+            if (result == RESULT_OK) startFilter();
+            else {
+                pendingFilterStart = false;
+                toast("未开启 VPN，网络设置未改变");
+            }
+            return;
+        }
         String report = request == 20 ? pendingDiagnosticReport : null;
         if (request == 20) pendingDiagnosticReport = null;
         if ((request != 19 && request != 20 && request != 21 && request!=22) || result != RESULT_OK || data == null || data.getData() == null) return;

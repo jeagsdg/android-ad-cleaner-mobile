@@ -550,8 +550,13 @@ public class DeviceChecks extends Instrumentation {
                 return started.get();
             }), "preview starts on the service main thread after pending actions finish");
             launchSplashFixture(service, "ad");
-            require(waitUntil(() -> RulePreview.LOCAL.summary(true).contains("规则匹配通过")),
-                    "preview observes the actual target");
+            java.util.concurrent.atomic.AtomicReference<String> report = new java.util.concurrent.atomic.AtomicReference<>("");
+            boolean matched = waitUntil(() -> {
+                runOnMainSync(() -> report.set(RulePreview.LOCAL.summary(true)));
+                return report.get().contains("规则匹配通过");
+            });
+            require(matched, "preview observes the actual target: " + report.get()
+                    + "\nfixture button visible: " + fixtureShows(service, "跳过 5"));
             Thread.sleep(700);
             require(fixtureShows(service, "跳过 5") && store.splashCount() == before,
                     "preview leaves matched ad visible and counters unchanged");
@@ -569,14 +574,22 @@ public class DeviceChecks extends Instrumentation {
     }
 
     private void launchSplashFixture(CleanerService service, String mode) throws Exception {
+        showNetScreen(service);
+        Thread.sleep(300);
+        openSplashFixture(mode);
+    }
+
+    private void showNetScreen(CleanerService service) throws InterruptedException {
         Context context = getTargetContext();
         context.startActivity(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         require(waitUntil(() -> {
             AccessibilityNodeInfo root = service.getRootInActiveWindow();
             return root != null && context.getPackageName().equals(String.valueOf(root.getPackageName()));
         }), "net screen active before launching fixture");
-        Thread.sleep(300);
-        context.startActivity(new Intent().setClassName(FIXTURE_PACKAGE, FIXTURE_PACKAGE + ".SplashActivity")
+    }
+
+    private void openSplashFixture(String mode) {
+        getTargetContext().startActivity(new Intent().setClassName(FIXTURE_PACKAGE, FIXTURE_PACKAGE + ".SplashActivity")
                 .putExtra("mode", mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
     }
 
@@ -620,8 +633,11 @@ public class DeviceChecks extends Instrumentation {
         String packageName = context.getPackageName();
         SharedPreferences preferences = context.getSharedPreferences("local-ledger", Context.MODE_PRIVATE);
         String previous = preferences.getString("public-release-info", null);
+        boolean hadDownloadSource = preferences.contains("public-release-download-via-api");
+        boolean previousDownloadSource = preferences.getBoolean("public-release-download-via-api", false);
         boolean hadUpdateChoice = preferences.contains("update-checks");
         boolean updateChoice = preferences.getBoolean("update-checks", false);
+        boolean hadUpdateCheck = preferences.contains("last-update-success");
         long previousCheck = store.lastUpdateCheck();
         String testNotes = "只用于验证本地更新提示。";
         ReleaseUpdates.Info release = ReleaseUpdates.parse(new JSONObject().put("schema", 1)
@@ -643,6 +659,8 @@ public class DeviceChecks extends Instrumentation {
                 require(waitUntil(() -> appNode(service, testNotes) != null), "version notes visible before download");
                 require(waitUntil(() -> appNode(service, "下载更新") != null),
                         "download needs a separate action");
+                require(appNode(service, "在 GitHub 给净屏点 Star") != null,
+                        "optional project support is visible alongside the download button");
                 AccessibilityNodeInfo later = appNode(service, "返回首页");
                 require(later != null && later.performAction(AccessibilityNodeInfo.ACTION_CLICK), "dismiss version notes");
                 require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "returned to home");
@@ -654,9 +672,13 @@ public class DeviceChecks extends Instrumentation {
                 require(waitUntil(() -> appNode(service, "开启网络过滤") != null), "network controls visible");
             }
         } finally {
-            SharedPreferences.Editor editor = preferences.edit().putLong("last-update-check", previousCheck);
+            SharedPreferences.Editor editor = preferences.edit();
+            if (hadUpdateCheck) editor.putLong("last-update-success", previousCheck);
+            else editor.remove("last-update-success");
             if (previous == null) editor.remove("public-release-info");
             else editor.putString("public-release-info", previous);
+            if (hadDownloadSource) editor.putBoolean("public-release-download-via-api", previousDownloadSource);
+            else editor.remove("public-release-download-via-api");
             if (hadUpdateChoice) editor.putBoolean("update-checks", updateChoice);
             else editor.remove("update-checks");
             editor.apply();
@@ -699,31 +721,50 @@ public class DeviceChecks extends Instrumentation {
     void splashChecks(Store store,CleanerService service)throws Exception{
         store.setSplashEnabled(true);store.setSplashExcluded(Collections.emptySet());long count=store.splashCount();
         long expected=count;
+        String appPackage = getTargetContext().getPackageName();
         for(String mode:new String[]{"plain","consent","editable","ad","sdk","multilingual"}){
-            getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            long until=SystemClock.uptimeMillis()+6000;
-            while(SystemClock.uptimeMillis()<until){
-                AccessibilityNodeInfo root=service.getRootInActiveWindow();
-                if(root!=null&&getTargetContext().getPackageName().equals(String.valueOf(root.getPackageName())))break;
-                Thread.sleep(100);
-            }
-            require(SystemClock.uptimeMillis()<until,"净屏 is visible before launching "+mode);
-            Thread.sleep(500);
-            getTargetContext().startActivity(new Intent().setClassName("app.clearscreen.testfixture","app.clearscreen.testfixture.SplashActivity").putExtra("mode",mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));
-            boolean shouldDismiss=mode.equals("ad")||mode.equals("sdk")||mode.equals("multilingual");
-            boolean dismissed=waitForFixtureText(service,"已进入测试内容",shouldDismiss?7000:2400);
-            require(shouldDismiss==dismissed,"splash mode "+mode+" guarded correctly");
-            if(shouldDismiss){
-                expected++;
-                long confirmation=SystemClock.uptimeMillis()+4000;
-                while(store.splashCount()<expected&&SystemClock.uptimeMillis()<confirmation)Thread.sleep(100);
-                require(store.splashCount()==expected,"splash confirmed before leaving "+mode);
+            boolean returningFromFixture = !mode.equals("plain");
+            boolean shouldDismiss = mode.equals("ad") || mode.equals("sdk") || mode.equals("multilingual");
+            try {
+                if (returningFromFixture) runOnMainSync(() -> SkipDiagnostics.LOCAL.start(appPackage, -1));
+                showNetScreen(service);
+                if (returningFromFixture) {
+                    // A visible root can precede the service's acceptance of a new visit.
+                    require(waitUntil(() -> SkipDiagnostics.LOCAL.summary(true, true)
+                                    .startsWith("净屏开屏诊断\n" + SkipDiagnostics.Phase.EXCLUDED.label)),
+                            "service accepted NetScreen before " + mode + ": "
+                                    + SkipDiagnostics.LOCAL.summary(true, true));
+                }
+                runOnMainSync(() -> SkipDiagnostics.LOCAL.start(FIXTURE_PACKAGE, store.packageVersion(FIXTURE_PACKAGE)));
+                openSplashFixture(mode);
+                if (!shouldDismiss) {
+                    require(waitForFixtureText(service, "跳过 5", 6000), "fixture displayed for " + mode);
+                    require(waitUntil(() -> SkipDiagnostics.LOCAL.summary(true, true).contains("\n观察开始 ")),
+                            "service observed the " + mode + " fixture before asserting it stays visible");
+                }
+                boolean dismissed=waitForFixtureText(service,"已进入测试内容",shouldDismiss?7000:2400);
+                require(shouldDismiss==dismissed,"splash mode "+mode+" guarded correctly"
+                        + (shouldDismiss==dismissed ? "" : "\n" + SkipDiagnostics.LOCAL.summary(true, true)));
+                if(shouldDismiss){
+                    expected++;
+                    long confirmation=SystemClock.uptimeMillis()+4000;
+                    while(store.splashCount()<expected&&SystemClock.uptimeMillis()<confirmation)Thread.sleep(100);
+                    require(store.splashCount()==expected,"splash confirmed before leaving "+mode
+                            + (store.splashCount()==expected ? "" : "\n" + SkipDiagnostics.LOCAL.summary(true, true)));
+                }
+            } finally {
+                runOnMainSync(SkipDiagnostics.LOCAL::clear);
             }
         }
         require(store.splashCount()==count+3,"only confirmed ad skips counted");
-        store.setSplashExcluded(Collections.singleton("app.clearscreen.testfixture"));getTargetContext().startActivity(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));Thread.sleep(900);
-        getTargetContext().startActivity(new Intent().setClassName("app.clearscreen.testfixture","app.clearscreen.testfixture.SplashActivity").putExtra("mode","ad").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK));Thread.sleep(1800);
-        require(store.splashCount()==count+3,"excluded application not clicked");store.setSplashEnabled(false);store.setSplashExcluded(Collections.emptySet());
+        store.setSplashExcluded(Collections.singleton(FIXTURE_PACKAGE));
+        launchSplashFixture(service, "ad");
+        require(waitForFixtureText(service, "跳过 5", 6000), "excluded fixture displayed");
+        Thread.sleep(1800);
+        require(fixtureShows(service, "跳过 5") && store.splashCount() == count + 3,
+                "excluded application not clicked");
+        store.setSplashEnabled(false);
+        store.setSplashExcluded(Collections.emptySet());
     }
     void shell(android.app.UiAutomation a,String command)throws Exception{try(ParcelFileDescriptor fd=a.executeShellCommand(command);java.io.FileInputStream in=new java.io.FileInputStream(fd.getFileDescriptor())){byte[] b=new byte[1024];while(in.read(b)!=-1){}}}
 }

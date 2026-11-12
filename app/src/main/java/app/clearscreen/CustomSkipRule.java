@@ -149,7 +149,7 @@ final class CustomSkipRule {
             throw new IllegalArgumentException("联合步骤和点击次数超出支持范围");
         }
         if (replaceDefaults && (!legacy || !SPLASH.equals(mode))) throw new IllegalArgumentException("仅开屏关键词可替换默认匹配");
-        if (legacy && !this.viewId.isEmpty()) throw new IllegalArgumentException("李跳跳规则使用独立的选择器字段");
+        if (legacy && !this.viewId.isEmpty()) throw new IllegalArgumentException("这条规则同时使用了两种控件匹配方式");
         legacyTarget = legacy && !backsOut() ? new LegacySelector(this.label) : null;
         legacyPrompt = legacy && POPUP.equals(mode) ? new LegacySelector(this.context) : null;
     }

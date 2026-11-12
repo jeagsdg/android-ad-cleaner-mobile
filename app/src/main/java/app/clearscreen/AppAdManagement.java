@@ -55,7 +55,7 @@ final class AppAdManagement {
     }
 
     void list() {
-        screen.header("", "应用广告管理", "查看专属规则，设置排除项或诊断漏跳。");
+        screen.header("", "应用广告管理", "搜索应用，设置它的广告处理方式。");
         Map<String, Coverage> coverage = coverage();
         if (coverage == null) return;
 
@@ -174,42 +174,36 @@ final class AppAdManagement {
         boolean knownInstalled = launchable || screen.store.packageVersion(selected) >= 0;
         Coverage entry = coverage.get(selected);
         String appName = label(coverage, installed, selected);
-        screen.header("应用广告管理", appName, selected);
-
-        LinearLayout builtIn = screen.card(screen.body);
-        builtIn.addView(screen.bold("内置规则", 18, MainActivity.INK));
-        screen.space(builtIn, 8);
+        screen.header("", appName, "");
         boolean protectedApp = CustomSkipRule.protectedPackage(selected);
-        screen.paragraph(builtIn, protectedApp ? "此应用属于受保护范围。"
-                : entry == null ? "可尝试通用识别，也可以添加本机规则。"
-                : "开屏 " + entry.splash + " 条 · 应用内 " + entry.popup + " 条。命中取决于广告样式和应用版本。");
-        if (!knownInstalled) {
-            screen.paragraph(builtIn, "这台设备暂未检测到此应用。");
+        if (!knownInstalled || protectedApp) {
+            showBuiltInRules(entry, protectedApp, knownInstalled);
             return;
         }
-        if (protectedApp) return;
 
         LinearLayout controls = screen.card(screen.body);
         controls.addView(screen.bold("此应用的处理偏好", 18, MainActivity.INK));
         boolean paused = screen.store.splashExcluded().contains(selected);
-        screen.historyToggle(controls, "暂停此应用的开屏和弹窗处理", paused, checked -> {
+        screen.historyToggle(controls, "暂停开屏和弹窗", paused, checked -> {
             saveExclusion(null, checked);
             screen.render();
         });
         if (!paused) {
-            screen.historyToggle(controls, "允许此应用跳过开屏广告",
+            screen.historyToggle(controls, "允许跳过开屏广告",
                     !screen.store.skipExcluded(CustomSkipRule.SPLASH).contains(selected),
                     checked -> saveExclusion(CustomSkipRule.SPLASH, !checked));
-            screen.historyToggle(controls, "允许此应用关闭广告弹窗",
+            screen.historyToggle(controls, "允许关闭广告弹窗",
                     !screen.store.skipExcluded(CustomSkipRule.POPUP).contains(selected),
                     checked -> saveExclusion(CustomSkipRule.POPUP, !checked));
+            screen.space(controls, 8);
+            screen.paragraph(controls, "全局开屏跳过" + (screen.store.splashEnabled() ? "已开启" : "未开启")
+                    + " · 弹窗处理" + (screen.store.popupEnabled() ? "已开启" : "未开启"));
+            if (!screen.store.splashEnabled()) screen.linkAction(controls, "开启开屏跳过", screen::toggleSplash);
+            if (!screen.store.popupEnabled()) screen.linkAction(controls, "开启弹窗处理", screen::togglePopup);
+            if (CleanerService.get() == null) screen.linkAction(controls, "连接无障碍服务", screen::accessibility);
+        } else {
+            screen.paragraph(controls, "关闭暂停开关即可恢复此应用的广告处理。");
         }
-        screen.space(controls, 8);
-        screen.paragraph(controls, "全局开屏跳过" + (screen.store.splashEnabled() ? "已开启" : "未开启")
-                + " · 弹窗处理" + (screen.store.popupEnabled() ? "已开启" : "未开启"));
-        if (!screen.store.splashEnabled()) screen.linkAction(controls, "开启开屏跳过", screen::toggleSplash);
-        if (!screen.store.popupEnabled()) screen.linkAction(controls, "开启弹窗处理", screen::togglePopup);
-        if (CleanerService.get() == null) screen.linkAction(controls, "连接无障碍服务", screen::accessibility);
         if (screen.networkFilterAvailable()) {
             Set<String> bypass = screen.filterStore.bypassedApps();
             screen.historyToggle(controls, "绕过网络过滤", bypass.contains(selected), checked -> {
@@ -222,12 +216,24 @@ final class AppAdManagement {
                     : "此设置在下次开启时生效。修改后，请停止并重新开启网络过滤。");
         }
 
+        showBuiltInRules(entry, false, true);
         LinearLayout tools = screen.card(screen.body);
         tools.addView(screen.bold("诊断与规则", 18, MainActivity.INK));
         screen.linkAction(tools, "开屏漏跳诊断", () -> screen.launchDiagnostics(selected, appName));
         screen.linkAction(tools, "为此应用添加规则", () -> screen.addRuleForApp(selected));
         screen.linkAction(tools, "管理自定义规则", screen::openCustomRules);
         if (launchable) screen.linkAction(tools, "打开应用", () -> screen.openInstalledApp(selected));
+    }
+
+    private void showBuiltInRules(Coverage entry, boolean protectedApp, boolean knownInstalled) {
+        LinearLayout builtIn = screen.card(screen.body);
+        builtIn.addView(screen.bold("内置规则", 18, MainActivity.INK));
+        screen.space(builtIn, 8);
+        screen.paragraph(builtIn, protectedApp ? "此应用属于受保护范围。"
+                : entry == null ? "可尝试通用识别，也可以添加本机规则。"
+                : "开屏 " + entry.splash + " 条 · 应用内 " + entry.popup + " 条。命中取决于广告样式和应用版本。");
+        if (!knownInstalled) screen.paragraph(builtIn, "这台设备暂未检测到此应用。");
+        builtIn.addView(screen.text(selected, 14, MainActivity.MUTED));
     }
 
     private void saveExclusion(String mode, boolean excluded) {

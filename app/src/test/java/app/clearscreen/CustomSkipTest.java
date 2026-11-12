@@ -29,6 +29,16 @@ public class CustomSkipTest {
         assertThrows(IllegalArgumentException.class, () -> new CustomSkipRule(PKG, "", "popup", "", "同意", PROMPT));
     }
 
+    @Test public void restoreReportsConflictingControlMatchesInPlainLanguage() {
+        String backup = """
+                {"schemaVersion":1,"rules":[{"package":"test.app","mode":"splash",
+                 "viewId":"test.app:id/skip","label":"=跳过广告","legacy":true}]}
+                """;
+        IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
+                () -> CustomSkipRule.parse(backup));
+        assertEquals("第 1 条规则：这条规则同时使用了两种控件匹配方式", error.getMessage());
+    }
+
     @Test public void rejectedRuleBatchLeavesPreviousRulesAndHistorySeparate() {
         Store first = new Store(RuntimeEnvironment.getApplication());
         Store second = new Store(RuntimeEnvironment.getApplication());

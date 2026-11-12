@@ -57,11 +57,10 @@ final class PermissionAccess {
 
     static String hint(State state) {
         switch (state) {
-            case READY: return "开始前可查看并调整本次清理范围。";
+            case READY: return "已连接。返回刚才的页面继续。";
             case DISCONNECTED: return "请稍等系统连接。若持续未连接，先在无障碍设置中确认净屏开关，再查看本机的后台运行限制。";
             case UNKNOWN: return "请到系统无障碍设置中查看净屏服务，返回后会重新检查。";
-            default: return "首次清理前，需在系统设置中选择「净屏」并确认授权。"
-                    + (family().equals("generic") ? "" : " 可在已安装或已下载的服务列表中查找。");
+            default: return "在无障碍设置中找到「净屏」，打开开关后返回。入口可能在「已下载的应用」或「已安装的服务」里。";
         }
     }
 
@@ -107,6 +106,11 @@ final class PermissionAccess {
     }
     static boolean openPrivacySettings(Launcher launcher) {
         return tryStart(launcher, new Intent(Settings.ACTION_PRIVACY_SETTINGS))
+                || tryStart(launcher, new Intent(Settings.ACTION_SETTINGS));
+    }
+
+    static boolean openVpnSettings(Launcher launcher) {
+        return tryStart(launcher, new Intent(Settings.ACTION_VPN_SETTINGS))
                 || tryStart(launcher, new Intent(Settings.ACTION_SETTINGS));
     }
 

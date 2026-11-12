@@ -20,7 +20,7 @@ final class ReleaseUpdateTransport {
 
     static ReleaseUpdates.Info fetch(int maxBytes) throws IOException {
         try {
-            return ReleaseUpdates.parse(read(API_URL, "application/vnd.github.raw+json", maxBytes));
+            return ReleaseUpdates.parse(read(API_URL, "application/vnd.github.raw+json", maxBytes), true);
         } catch (IOException apiFailure) {
             try {
                 return ReleaseUpdates.parse(read(RAW_URL, "text/plain", maxBytes));

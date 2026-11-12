@@ -4,7 +4,7 @@ import android.graphics.Rect;
 import android.view.accessibility.AccessibilityNodeInfo;
 import java.util.regex.Pattern;
 
-/** Matches the documented Li Tiaotiao selector forms against an actual node. */
+/** Matches compatible selectors against an accessibility node. */
 final class LegacySelector {
     private static final Pattern BOUNDS_PREFIX = Pattern.compile("-?[0-9]+(?: *, *-?[0-9]+){2} *,.*");
     private static final Pattern IMPORT_BOUNDS = Pattern.compile("-?[0-9]{1,5}(?: *, *-?[0-9]{1,5}){3}(?: *, *[01])?");

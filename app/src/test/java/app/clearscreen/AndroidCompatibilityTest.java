@@ -6,12 +6,14 @@ import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.content.res.XmlResourceParser;
 import android.os.Build;
+import android.os.Looper;
 import android.provider.Settings;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -20,7 +22,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.android.controller.ActivityController;
+import org.robolectric.shadows.ShadowVpnService;
 import org.xmlpull.v1.XmlPullParser;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,6 +88,38 @@ public class AndroidCompatibilityTest {
         assertFalse(SkipKeepAliveService.notificationsAllowed(app));
     }
 
+    @Test @Config(sdk = 26)
+    public void legacyKeepAliveStopsWhenNotificationsAreDisabledWithoutReturningToTheApp() {
+        Application app = RuntimeEnvironment.getApplication();
+        Store store = new Store(app);
+        store.setSplashEnabled(true);
+        store.setSkipKeepAliveEnabled(true);
+        CleanerService cleaner = Robolectric.buildService(CleanerService.class).create().get();
+        SkipKeepAliveService keepAlive = Robolectric.buildService(SkipKeepAliveService.class).create().get();
+        try {
+            cleaner.onServiceConnected();
+            Intent start = shadowOf(app).getNextStartedService();
+            assertNotNull(start);
+            assertEquals(new ComponentName(app, SkipKeepAliveService.class), start.getComponent());
+            keepAlive.onStartCommand(start, 0, 1);
+            assertTrue(SkipKeepAliveService.running());
+            assertNotNull(shadowOf(keepAlive).getLastForegroundNotification());
+
+            NotificationManager manager = keepAlive.getSystemService(NotificationManager.class);
+            shadowOf(manager).setNotificationsEnabled(false);
+            assertTrue(SkipKeepAliveService.running());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(30));
+
+            assertFalse(SkipKeepAliveService.running());
+            assertTrue(shadowOf(keepAlive).isForegroundStopped());
+            assertTrue(shadowOf(keepAlive).isStoppedBySelf());
+            assertTrue(store.skipKeepAliveEnabled());
+        } finally {
+            keepAlive.onDestroy();
+            cleaner.onDestroy();
+        }
+    }
+
     @Test @Config(sdk = {24, 25})
     public void nougatUsesTheLegacyForegroundNotificationAndSettingsEntry() throws Exception {
         Application app = RuntimeEnvironment.getApplication();
@@ -105,7 +141,8 @@ public class AndroidCompatibilityTest {
             activity.openNotificationSettings();
             assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                     shadowOf(activity).getNextStartedActivity().getAction());
-            activity.startFilter();
+            ShadowVpnService.setPrepareResult(null);
+            activity.prepareFilter();
             Intent filter = shadowOf(app).getNextStartedService();
             if (activity.networkFilterAvailable()) {
                 assertNotNull(filter);
@@ -131,5 +168,37 @@ public class AndroidCompatibilityTest {
         } finally {
             controller.pause().stop().destroy();
         }
+    }
+
+    @Test @Config(sdk = {24, 26, 28})
+    public void legacyVpnRecoveryIsAvailableOnlyInTheFullEditionOnOlderAndroid() {
+        Application app = RuntimeEnvironment.getApplication();
+        new Store(app).noteUpdateCheck(System.currentTimeMillis());
+        Intent network = new Intent(app, MainActivity.class).putExtra("tab", 6);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class, network).setup();
+        try {
+            MainActivity activity = controller.get();
+            String label = "打开系统 VPN 设置";
+            boolean legacyFull = activity.networkFilterAvailable() && Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1;
+            assertEquals(legacyFull, ScreenTest.find(activity.getWindow().getDecorView(), label) != null);
+            if (legacyFull) {
+                ScreenTest.clickFeature(activity, label);
+                assertEquals(Settings.ACTION_VPN_SETTINGS, shadowOf(activity).getNextStartedActivity().getAction());
+            }
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test @Config(sdk = 26)
+    public void legacyVpnSettingsFallsBackToSystemSettingsWhenDirectEntryIsUnavailable() {
+        List<Intent> destinations = new ArrayList<>();
+        assertTrue(PermissionAccess.openVpnSettings(intent -> {
+            destinations.add(intent);
+            if (Settings.ACTION_VPN_SETTINGS.equals(intent.getAction())) throw new ActivityNotFoundException();
+        }));
+        assertEquals(2, destinations.size());
+        assertEquals(Settings.ACTION_VPN_SETTINGS, destinations.get(0).getAction());
+        assertEquals(Settings.ACTION_SETTINGS, destinations.get(1).getAction());
     }
 }

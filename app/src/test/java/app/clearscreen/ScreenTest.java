@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.res.Configuration;
 import android.graphics.*;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
 import android.view.*;
@@ -17,6 +18,7 @@ import org.robolectric.*;
 import org.robolectric.annotation.*;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.shadows.ShadowAlertDialog;
+import org.robolectric.util.ReflectionHelpers;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -122,6 +124,47 @@ public class ScreenTest {
         assertNotNull(find(activity.getWindow().getDecorView(), "打开手机设置"));
         activity.onBackPressed();
         assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
+    }
+    @Test @Config(qualifiers="zh-rCN-w320dp-h720dp-xhdpi")
+    public void narrowAuthorizationShowsInstructionsAndPrimaryActionOnFirstScreen() throws Exception {
+        new Store(RuntimeEnvironment.getApplication()).noteUpdateCheck(System.currentTimeMillis());
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = withLargeText(controller);
+            activity.accessibility();
+            capture(activity, "v10-authorization-compact-320dp-font130.png", 640, 1440);
+            assertNotNull(find(activity.body, "无障碍授权"));
+            assertNotNull(find(activity.body, "在无障碍设置中找到「净屏」，打开开关后返回。入口可能在「已下载的应用」或「已安装的服务」里。"));
+            View settings = find(activity.body, "打开手机设置");
+            assertNotNull(settings);
+            Rect visible = new Rect();
+            assertTrue(settings.getGlobalVisibleRect(visible));
+            assertEquals(settings.getHeight(), visible.height());
+            assertTrue(settings.getHeight() >= activity.dp(48));
+            assertEquals(activity.networkFilterAvailable(), find(activity.body, "只使用网络过滤时，无需此权限。") != null);
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test public void homePauseOnlyStopsSplashSkipping() {
+        Context context = RuntimeEnvironment.getApplication();
+        Store store = new Store(context);
+        store.noteUpdateCheck(System.currentTimeMillis());
+        store.enableAdFeatures(true, true);
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        service.onServiceConnected();
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            clickFeature(activity, "暂停开屏跳过");
+            assertFalse(store.splashEnabled());
+            assertTrue(store.popupEnabled());
+            assertNotNull(find(activity.body, "开启自动跳过"));
+        } finally {
+            controller.pause().stop().destroy();
+            service.onDestroy();
+        }
     }
     @Test public void historyShowsAnUnsentChangeWithoutARecoveryAction() {
         ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
@@ -234,6 +277,93 @@ public class ScreenTest {
             controller.pause().stop().destroy();
         }
     }
+    @Test @Config(qualifiers="zh-rCN-w320dp-h720dp-xhdpi")
+    public void narrowAppDetailPutsPauseFirstAndKeepsIndividualChoices() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        PackageInfo installed = new PackageInfo();
+        installed.packageName = "tv.danmaku.bili";
+        shadowOf(context.getPackageManager()).installPackage(installed);
+        Store store = new Store(context);
+        store.noteUpdateCheck(System.currentTimeMillis());
+        store.setSkipExcluded(CustomSkipRule.POPUP, java.util.Set.of(installed.packageName));
+        Bundle state = new Bundle();
+        state.putInt("tab", MainActivity.APP_AD_DETAIL);
+        state.putString("appAdSelected", installed.packageName);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup(state);
+        try {
+            MainActivity activity = withLargeText(controller);
+            capture(activity, "v10-app-ad-controls-320dp-font130.png", 640, 1440);
+            Switch pause = (Switch) find(activity.body, "暂停开屏和弹窗");
+            assertNotNull(pause);
+            Rect visible = new Rect();
+            assertTrue(pause.getGlobalVisibleRect(visible));
+            assertEquals(pause.getHeight(), visible.height());
+            assertFalse(((Switch) find(activity.body, "允许关闭广告弹窗")).isChecked());
+            pause.performClick();
+            assertTrue(store.splashExcluded().contains(installed.packageName));
+            assertNull(find(activity.body, "允许跳过开屏广告"));
+            assertNull(find(activity.body, "开启开屏跳过"));
+            assertNull(find(activity.body, "连接无障碍服务"));
+            capture(activity, "v10-app-ad-paused-320dp-font130.png", 640, 1440);
+            Switch pausedControl = (Switch) find(activity.body, "暂停开屏和弹窗");
+            assertTrue(pausedControl.isChecked());
+            pausedControl.performClick();
+            assertFalse(store.splashExcluded().contains(installed.packageName));
+            assertFalse(((Switch) find(activity.body, "允许关闭广告弹窗")).isChecked());
+            assertTrue(store.skipExcluded(CustomSkipRule.POPUP).contains(installed.packageName));
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    @Test @Config(sdk = 34)
+    public void edgeToEdgeSearchViewportFitsTheKeyboardAndRestoresSystemInsets() {
+        new Store(RuntimeEnvironment.getApplication()).noteUpdateCheck(System.currentTimeMillis());
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        int originalSdk = Build.VERSION.SDK_INT;
+        try {
+            MainActivity activity = controller.get();
+            activity.showPage(MainActivity.APP_ADS);
+            WindowInsets bars = new WindowInsets.Builder()
+                    .setInsets(WindowInsets.Type.statusBars(), Insets.of(0, 32, 0, 0))
+                    .setInsets(WindowInsets.Type.navigationBars(), Insets.of(0, 0, 0, 24))
+                    .setInsets(WindowInsets.Type.displayCutout(), Insets.of(12, 44, 16, 0))
+                    .build();
+            WindowInsets keyboard = new WindowInsets.Builder(bars)
+                    .setInsets(WindowInsets.Type.ime(), Insets.of(0, 0, 0, 320))
+                    .setVisible(WindowInsets.Type.ime(), true)
+                    .build();
+            Runnable layout = () -> {
+                activity.shell.measure(View.MeasureSpec.makeMeasureSpec(640, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(1000, View.MeasureSpec.EXACTLY));
+                activity.shell.layout(0, 0, 640, 1000);
+            };
+
+            activity.shell.dispatchApplyWindowInsets(keyboard);
+            layout.run();
+            assertEquals(24, activity.shell.getPaddingBottom());
+            int originalHeight = activity.pageScroll.getHeight();
+            assertTrue(originalHeight > 296);
+
+            // Supply synthetic insets to the API 35 branch with the cached API 34 framework.
+            ReflectionHelpers.setStaticField(Build.VERSION.class, "SDK_INT", Build.VERSION_CODES.VANILLA_ICE_CREAM);
+            activity.shell.dispatchApplyWindowInsets(keyboard);
+            layout.run();
+            assertEquals(12, activity.shell.getPaddingLeft());
+            assertEquals(44, activity.shell.getPaddingTop());
+            assertEquals(16, activity.shell.getPaddingRight());
+            assertEquals(320, activity.shell.getPaddingBottom());
+            assertEquals(originalHeight - (320 - 24), activity.pageScroll.getHeight());
+
+            activity.shell.dispatchApplyWindowInsets(bars);
+            layout.run();
+            assertEquals(24, activity.shell.getPaddingBottom());
+            assertEquals(originalHeight, activity.pageScroll.getHeight());
+        } finally {
+            ReflectionHelpers.setStaticField(Build.VERSION.class, "SDK_INT", originalSdk);
+            controller.pause().stop().destroy();
+        }
+    }
+
     @Test @Config(qualifiers="zh-rCN-w360dp-h780dp-xhdpi")
     public void sameNameUpdateOffersAnInAppDownloadAndOptionalStar() throws Exception {
         Context context = RuntimeEnvironment.getApplication();
@@ -291,6 +421,43 @@ public class ScreenTest {
             controller.pause().stop().destroy();
         }
     }
+    @Test public void manualUpdateResultOpensDetailsOnlyFromItsOriginalPageVisit() throws Exception {
+        Context context = RuntimeEnvironment.getApplication();
+        Store store = new Store(context);
+        store.noteUpdateCheck(System.currentTimeMillis());
+        long installed = store.packageVersion(context.getPackageName());
+        assertTrue(installed >= 0);
+        ReleaseUpdates.Info release = ReleaseUpdates.parse(new org.json.JSONObject().put("schema", 1)
+                .put("versionCode", installed + 1).put("versionName", "1.0.0").put("notes", "测试更新").toString());
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
+        try {
+            MainActivity activity = controller.get();
+            if (!activity.networkFilterAvailable()) return;
+            clickFeature(activity, "使用说明");
+            View oldRequestPage = activity.body;
+            clickFeature(activity, "返回首页");
+            clickFeature(activity, "使用说明");
+            View currentPage = activity.body;
+            store.cacheRelease(release);
+
+            activity.applyUpdateCheckResult(oldRequestPage, release);
+            assertSame(currentPage, activity.body);
+            assertNotNull(find(currentPage, "检查更新"));
+
+            activity.applyUpdateCheckResult(currentPage, release);
+            assertEquals(MainActivity.UPDATE_PAGE, activity.tab);
+            assertNotNull(find(activity.body, "下载更新"));
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+    private static MainActivity withLargeText(ActivityController<MainActivity> controller) {
+        Configuration larger = new Configuration(controller.get().getResources().getConfiguration());
+        larger.fontScale = 1.3f;
+        controller.configurationChange(larger);
+        return controller.get();
+    }
+
     private static void layoutAppList(ScrollView list) {
         int width = 822;
         int height = 1500;

@@ -16,6 +16,38 @@ public class SplashTest {
     @Before public void setup(){root=node("",false,new Rect(0,0,1080,2400));skip=node("跳过 5",true,new Rect(810,120,1030,220));shadowOf(root).addChild(skip);}
     void ad(){shadowOf(root).addChild(node("广告",false,new Rect(10,1800,80,1850)));}
     @Test public void genericSkipRequiresAdMarker(){assertNull(SplashSkipper.match(root));ad();assertEquals(skip,SplashSkipper.match(root));}
+    @Test public void genericSplashRecognizesTencentMapsCountdownBeforeSkip(){
+        // Snapshot 13400128 has an ad badge and a native skip separate from the ad and its CTA.
+        String pkg="com.tencent.map";
+        AccessibilityNodeInfo page=node("",false,new Rect(0,0,1080,2400));
+        AccessibilityNodeInfo panel=node("",false,new Rect(0,0,1080,2356));
+        AccessibilityNodeInfo image=node("",true,new Rect(0,0,1080,2356));
+        AccessibilityNodeInfo marker=node("广告",false,new Rect(708,99,807,149));
+        AccessibilityNodeInfo close=node("1 跳过",true,new Rect(843,85,1030,162));
+        AccessibilityNodeInfo promotion=node("立即查看",true,new Rect(330,1844,750,1993));
+        for(AccessibilityNodeInfo part:new AccessibilityNodeInfo[]{page,panel,image,marker,close,promotion}){
+            part.setPackageName(pkg);
+        }
+        image.setClassName("android.widget.ImageView");
+        image.setViewIdResourceName(pkg+":id/czz");
+        marker.setClassName("android.widget.TextView");
+        marker.setViewIdResourceName(pkg+":id/czu");
+        close.setClassName("android.widget.Button");
+        close.setViewIdResourceName(pkg+":id/czw");
+        promotion.setClassName("android.widget.TextView");
+        promotion.setViewIdResourceName(pkg+":id/czy");
+        shadowOf(page).addChild(panel);
+        for(AccessibilityNodeInfo child:new AccessibilityNodeInfo[]{image,marker,close,promotion}){
+            shadowOf(panel).addChild(child);
+        }
+
+        assertEquals(close,SplashSkipper.match(page));
+        marker.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(page));
+        marker.setVisibleToUser(true);
+        close.setEnabled(false);
+        assertNull(SplashSkipper.match(page));
+    }
     @Test public void genericSplashRecognizesVerifiedAdBadgesWithoutAppSpecificRules(){
         AccessibilityNodeInfo marker=node("",false,new Rect(10,1800,80,1850));
         shadowOf(root).addChild(marker);
