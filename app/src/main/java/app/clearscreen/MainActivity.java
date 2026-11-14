@@ -20,7 +20,7 @@ public final class MainActivity extends Activity {
     static final int BG = 0xfff5f6f0, INK = 0xff162e24, MUTED = 0xff51645a;
     static final int GREEN = 0xff16624c, MINT = 0xffe9f1e9, LIME = 0xffd9eea6;
     static final int SKIP_MANAGEMENT = 7, CUSTOM_RULES = 9, POPUP_MANAGEMENT = 10;
-    static final int APP_ADS = 11, APP_AD_DETAIL = 12, UPDATE_PAGE = 13;
+    static final int APP_ADS = 11, APP_AD_DETAIL = 12, UPDATE_PAGE = 13, ACCESSIBILITY_RECOVERY = 14;
     private static final int VPN_CONSENT = 41;
     static final int START_FILTER_NOTIFICATIONS = 42, FILTER_NOTIFICATIONS = 43;
     static final int KEEP_ALIVE_NOTIFICATIONS = 44;
@@ -36,6 +36,7 @@ public final class MainActivity extends Activity {
     int tab = 0;
     int permissionParent, rulesParent = SKIP_MANAGEMENT;
     private int appAdsParent, updateParent;
+    private int recoveryParent;
     boolean onlyUnfinished = false;
     final Handler permissionHandler = new Handler(Looper.getMainLooper());
     PermissionAccess.State lastPermissionState;
@@ -43,10 +44,12 @@ public final class MainActivity extends Activity {
     Button filterButton;
     TextView homeSplashStatus, homeSplashCount, homePopupStatus, homeCleanStatus;
     Button homeSplashButton, homeOpenApp;
+    Button homeRecovery;
     Button homePreviewStatus;
     FilterStore filterStore;
     private AppAdManagement appAdManagement;
     private ReleaseUpdatePage releaseUpdatePage;
+    private AccessibilityRecoveryPage recoveryPage;
     ScrollView pageScroll;
     int renderedTab=-1;
     boolean shownKeepAliveEnabled;
@@ -64,6 +67,7 @@ public final class MainActivity extends Activity {
                 if (tab == 4 || tab == SKIP_MANAGEMENT || tab == POPUP_MANAGEMENT) render();
             }
             if (tab == SKIP_MANAGEMENT && shownKeepAliveEnabled != store.skipKeepAliveEnabled()) render();
+            if (tab == ACCESSIBILITY_RECOVERY && recoveryPage.changed()) render();
             refreshFilter();
             refreshHome();
             if (adState != null) updateText(adState, adStatus(tab == SKIP_MANAGEMENT
@@ -80,12 +84,14 @@ public final class MainActivity extends Activity {
         filterStore = new FilterStore(this);
         appAdManagement = new AppAdManagement(this, state);
         releaseUpdatePage = new ReleaseUpdatePage(this);
+        recoveryPage = new AccessibilityRecoveryPage(this);
         tab = state != null ? state.getInt("tab") : getIntent().getIntExtra("tab", 0);
         if (state != null) {
             permissionParent = state.getInt("permissionParent");
             rulesParent = state.getInt("rulesParent", SKIP_MANAGEMENT);
             appAdsParent = state.getInt("appAdsParent");
             updateParent = state.getInt("updateParent");
+            recoveryParent = state.getInt("recoveryParent");
             onlyUnfinished = state.getBoolean("onlyUnfinished");
             returningFromAuthorization = state.getBoolean("returningFromAuthorization");
             pendingFilterStart = state.getBoolean("pendingFilterStart");
@@ -125,6 +131,7 @@ public final class MainActivity extends Activity {
         state.putInt("rulesParent", rulesParent);
         state.putInt("appAdsParent", appAdsParent);
         state.putInt("updateParent", updateParent);
+        state.putInt("recoveryParent", recoveryParent);
         state.putBoolean("onlyUnfinished", onlyUnfinished);
         state.putBoolean("returningFromAuthorization", returningFromAuthorization);
         state.putBoolean("pendingFilterStart", pendingFilterStart);
@@ -135,6 +142,7 @@ public final class MainActivity extends Activity {
         super.onNewIntent(intent);
         tab = intent.getIntExtra("tab", 1);
         if (tab == 1) onlyUnfinished = false;
+        if (tab == ACCESSIBILITY_RECOVERY) recoveryParent = 0;
         render();
     }
     int dp(float value) { return (int) (getResources().getDisplayMetrics().density * value + .5f); }
@@ -229,6 +237,10 @@ public final class MainActivity extends Activity {
         appAdsParent = tab;
         showPage(APP_ADS);
     }
+    private void openRecoveryPage() {
+        recoveryParent = tab;
+        showPage(ACCESSIBILITY_RECOVERY);
+    }
     void pageBackBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
@@ -238,6 +250,7 @@ public final class MainActivity extends Activity {
                 : tab == APP_AD_DETAIL ? "返回应用列表"
                 : tab == APP_ADS && appAdsParent == SKIP_MANAGEMENT ? "返回开屏管理"
                 : tab == UPDATE_PAGE && updateParent == 3 ? "返回使用说明"
+                : tab == ACCESSIBILITY_RECOVERY && recoveryParent == SKIP_MANAGEMENT ? "返回开屏管理"
                 : tab == 4 && permissionParent != 0 ? "返回上页" : "返回首页";
         Button back = button(label, false, this::backToParentPage);
         back.setTextColor(INK);
@@ -256,11 +269,12 @@ public final class MainActivity extends Activity {
         return getResources().getConfiguration().screenWidthDp >= 640 ? dp(560) : -1;
     }
     void render() {
+        if (tab == ACCESSIBILITY_RECOVERY && !AccessibilityRecovery.supported()) tab = 0;
         int restoreY=pageScroll!=null&&renderedTab==tab?pageScroll.getScrollY():0;
         renderedTab=tab;
         syncSystemBack();
         filterStatus=null;filterCounter=null;filterButton=null;keepAliveStatus=null;adState=null;
-        homeSplashStatus=null;homeSplashCount=null;homeSplashButton=null;homeOpenApp=null;homePopupStatus=null;homeCleanStatus=null;
+        homeSplashStatus=null;homeSplashCount=null;homeSplashButton=null;homeOpenApp=null;homePopupStatus=null;homeCleanStatus=null;homeRecovery=null;
         homeUpdateContainer=null;shownRelease=null;updateCheckStatus=null;homePreviewStatus=null;
         shell = column();
         shell.setBackgroundColor(BG);
@@ -292,6 +306,7 @@ public final class MainActivity extends Activity {
         else if (tab == SKIP_MANAGEMENT) splashPage(); else if (tab == POPUP_MANAGEMENT) popupPage();
         else if (tab == CUSTOM_RULES) customRulesPage();
         else if (tab == APP_ADS) appAdManagement.list(); else if (tab == APP_AD_DETAIL) appAdManagement.detail();
+        else if (tab == ACCESSIBILITY_RECOVERY) recoveryPage.render();
         else if (tab == UPDATE_PAGE && networkFilterAvailable()) releaseUpdatePage.render(newerRelease(store.cachedRelease()));
         else if(tab==8) supportPage(); else about();
         if(restoreY>0)scroll.post(()->scroll.scrollTo(0,restoreY));
@@ -300,7 +315,8 @@ public final class MainActivity extends Activity {
         boolean fromAppDetail = tab == APP_AD_DETAIL;
         if (tab == 4) returningFromAuthorization = false;
         tab = tab == 5 ? 4 : tab == 4 ? permissionParent : tab == CUSTOM_RULES ? rulesParent
-                : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent : 0;
+                : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent
+                : tab == ACCESSIBILITY_RECOVERY ? recoveryParent : 0;
         render();
         if (fromAppDetail) appAdManagement.restoreListPosition();
     }
@@ -369,6 +385,13 @@ public final class MainActivity extends Activity {
         manage.setTextSize(14);
         manage.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x28ffffff));
         splash.addView(manage, new LinearLayout.LayoutParams(-1, -2));
+        if (AccessibilityRecovery.supported()) {
+            homeRecovery = button("", false, this::openRecoveryPage);
+            homeRecovery.setTextColor(0xffe5f1e8);
+            homeRecovery.setTextSize(14);
+            homeRecovery.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x28ffffff));
+            splash.addView(homeRecovery, new LinearLayout.LayoutParams(-1, -2));
+        }
 
         homeUpdateContainer = column();
         body.addView(homeUpdateContainer);
@@ -510,6 +533,8 @@ public final class MainActivity extends Activity {
                 : connected ? "开启后，净屏会自动尝试跳过开屏广告。" : "点下方按钮，再在手机设置里开启「净屏」。";
         updateText(homeSplashCount, guidance);
         homeOpenApp.setVisibility(active && !busy && count == 0 ? View.VISIBLE : View.GONE);
+        if (homeRecovery != null) updateText(homeRecovery, SkipKeepAliveService.recoveryRunning()
+                ? "自动恢复无障碍已开启" : "无障碍掉线？自动恢复");
         updateText(homePopupStatus, !store.popupEnabled() ? "未开启"
                 : !connected ? "待连接无障碍" : busy ? "清理期间暂停" : "运行中 · 已确认 " + store.popupCount() + " 次");
         updateText(homeCleanStatus, busy ? "清理中 · 点此停止" : store.lastRun().isEmpty()
@@ -1065,7 +1090,7 @@ public final class MainActivity extends Activity {
         returningFromAuthorization = isAccessibilityPermissionPage() && waiting
                 && destination != PermissionAccess.Destination.UNAVAILABLE;
         if (destination == PermissionAccess.Destination.ACCESSIBILITY)
-            toast("请找到「净屏」并开启服务，完成后返回");
+            toast(waiting ? "请找到「净屏」并开启服务，完成后返回" : "请找到「净屏」管理服务");
         else if (destination == PermissionAccess.Destination.SETTINGS)
             toast("此系统未提供直达入口，请在设置中搜索「无障碍」，找到净屏");
         else if (destination == PermissionAccess.Destination.UNAVAILABLE)
@@ -1286,6 +1311,10 @@ public final class MainActivity extends Activity {
     @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] grants) {
         super.onRequestPermissionsResult(request, permissions, grants);
         boolean allowed = grants.length > 0 && grants[0] == android.content.pm.PackageManager.PERMISSION_GRANTED;
+        if (request == AccessibilityRecoveryPage.NOTIFICATION_PERMISSION) {
+            if (grants.length > 0 && tab == ACCESSIBILITY_RECOVERY) render();
+            return;
+        }
         if (request == START_FILTER_NOTIFICATIONS || request == FILTER_NOTIFICATIONS) {
             if (permissions.length == 0 || grants.length == 0) return;
             SharedPreferences preferences = getPreferences(MODE_PRIVATE);
@@ -1434,6 +1463,7 @@ public final class MainActivity extends Activity {
         paragraph(state,"已确认跳过 " + store.splashCount() + " 次。开始操作或进入授权页时暂停。");
         action(state,store.splashEnabled()?"关闭开屏跳过":"开启开屏跳过",true,this::toggleSplash);
         if (store.splashEnabled() && !connected) linkAction(state,"继续授权",this::accessibility);
+        if (AccessibilityRecovery.supported()) linkAction(state, "自动恢复无障碍", this::openRecoveryPage);
 
         LinearLayout options = card(body);
         options.addView(bold("应用与记录", 17, INK));
@@ -1464,6 +1494,7 @@ public final class MainActivity extends Activity {
         if (!SkipKeepAliveService.notificationsAllowed(this)) linkAction(keepAlive, "管理系统通知", this::openNotificationSettings);
         linkAction(keepAlive, "检查后台限制", this::backgroundHelp);
     }
+
     String adStatus(boolean enabled, boolean connected) {
         CleanerService service = CleanerService.get();
         return !enabled ? "未开启" : !connected ? "待连接无障碍"
@@ -1586,6 +1617,7 @@ public final class MainActivity extends Activity {
     }
     void setKeepAlive(boolean enabled) {
         store.setSkipKeepAliveEnabled(enabled);
+        if (!enabled) SkipKeepAliveService.stopRecovery();
         SkipKeepAliveService.sync(this);
         render();
     }

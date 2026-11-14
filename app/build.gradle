@@ -34,8 +34,8 @@ android {
         applicationId 'app.clearscreen'
         minSdk 24
         targetSdk 35
-        versionCode 16
-        versionName '1.0.0'
+        versionCode 17
+        versionName '1.0.1'
         testInstrumentationRunner 'app.clearscreen.DeviceChecks'
         resValue 'bool', 'network_filter_available', offlineOnly ? 'false' : 'true'
     }

@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" tools:ignore="ProtectedPermissions"/>
     <queries>
         <intent><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent>
         <package android:name="com.android.browser"/>
@@ -57,7 +58,7 @@
         </service>
         <service android:name=".SkipKeepAliveService" android:exported="false" android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="User-enabled foreground support for active accessibility-based ad skipping, with a visible notification and stop control"/>
+                android:value="User-enabled foreground support for accessibility-based ad skipping and optional Xiaomi accessibility recovery, with a visible notification and stop control"/>
         </service>
         <service android:name=".ChannelObserver" android:label="净屏 · 营销渠道检查" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" android:enabled="@bool/notification_channels_available" android:exported="true"><intent-filter><action android:name="android.service.notification.NotificationListenerService"/></intent-filter></service>
     </application>
