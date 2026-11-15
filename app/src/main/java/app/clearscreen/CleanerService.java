@@ -20,6 +20,7 @@ public final class CleanerService extends AccessibilityService {
     private volatile String stopReason;
     private volatile boolean returnToResults;
     private volatile UiDriver.Foreground taskForeground;
+    private volatile SystemCleanPreview systemPreview;
     private int resultTab=1;
     private final ExecutorService worker=Executors.newSingleThreadExecutor();
     private final Handler main=new Handler(Looper.getMainLooper());
@@ -45,13 +46,80 @@ public final class CleanerService extends AccessibilityService {
     public synchronized void clean(List<Rule> rules){startClean(rules,RunMode.NEW);}
     public synchronized void resume(List<Rule> rules){startClean(rules,RunMode.RESUME);}
     public synchronized void retry(List<Rule> rules){startClean(rules,RunMode.RETRY);}
+    SystemCleanPreview systemPreview() { return systemPreview; }
+
+    synchronized void previewClean(List<Rule> rules) {
+        if (busy || rules.isEmpty()) return;
+        List<Rule> selected = new ArrayList<>(rules);
+        systemPreview = null;
+        resultTab = MainActivity.SYSTEM_CLEAN_PREVIEW;
+        start(() -> runPreview(selected));
+    }
+
+    private void runPreview(List<Rule> rules) {
+        Store store = new Store(this);
+        Policy policy = store.policy();
+        List<SystemCleanPreview.Entry> entries = new ArrayList<>();
+        int total = rules.stream().mapToInt(rule -> rule.targets.size()).sum();
+        for (Rule rule : rules) {
+            UiDriver ui = null;
+            for (String target : rule.targets) {
+                if (stopReason != null) break;
+                note("读取开关 " + (entries.size() + 1) + " / " + total + " · " + target);
+                try {
+                    checkPolicy(rule, target, policy);
+                    UiDriver.Found found = null;
+                    if (ui != null) {
+                        ui.nextTarget();
+                        ui.top();
+                        found = ui.find(target);
+                    }
+                    if (ui == null || (found == null && rule.routes.size() > 1)) {
+                        JSONArray attempts = ui == null ? null : ui.attempts();
+                        ui = driver(taskForeground);
+                        ui.openForTarget(rule, target, attempts);
+                        found = ui.find(target);
+                    }
+                    if (found == null) throw new UiDriver.Halt("未找到这个开关，暂时跳过");
+                    Rule pinned = ui.pinnedRule();
+                    checkPolicy(pinned, found.label, policy);
+                    entries.add(SystemCleanPreview.Entry.verified(store, rule, target, pinned, found,
+                            ui.routeName(), policy.desired(found.label)));
+                } catch (UiDriver.Halt failure) {
+                    entries.add(SystemCleanPreview.Entry.unavailable(rule, target, failure.getMessage()));
+                    if (failure.terminal) pauseFor(failure);
+                    if (!failure.reason.equals("protected")) ui = null;
+                }
+            }
+            if (stopReason != null) break;
+        }
+        systemPreview = new SystemCleanPreview(entries, total - entries.size(), stopReason == null ? "" : stopReason);
+    }
+
+    synchronized boolean applyPreview(SystemCleanPreview preview, List<SystemCleanPreview.Entry> chosen) {
+        if (busy || get() != this || preview == null || preview != systemPreview || chosen.isEmpty()) return false;
+        Map<String, SystemCleanPreview.Entry> approvals = new LinkedHashMap<>();
+        Map<Rule, List<String>> targetsByRule = new LinkedHashMap<>();
+        for (SystemCleanPreview.Entry item : chosen) {
+            if (!preview.entries.contains(item) || !item.needsChange() || approvals.put(item.key(), item) != null)
+                return false;
+            targetsByRule.computeIfAbsent(item.rule, key -> new ArrayList<>()).add(item.target);
+        }
+        List<Rule> selected = new ArrayList<>();
+        targetsByRule.forEach((rule, targets) -> selected.add(rule.onlyTargets(targets)));
+        systemPreview = null;
+        resultTab = 1;
+        start(() -> runClean(selected, RunMode.NEW, approvals));
+        return true;
+    }
+
     private void startClean(List<Rule> rules,RunMode mode){
         if(busy||rules.isEmpty())return;
         List<Rule> selected=new ArrayList<>(rules);
         resultTab=1;
-        start(()->runClean(selected,mode));
+        start(()->runClean(selected,mode,Collections.emptyMap()));
     }
-    private void runClean(List<Rule> rules,RunMode mode)throws JSONException{
+    private void runClean(List<Rule> rules,RunMode mode,Map<String, SystemCleanPreview.Entry> approvals)throws JSONException{
         Store store=new Store(this);
         Policy policy=store.policy();
         JSONArray results=new JSONArray();
@@ -64,6 +132,8 @@ public final class CleanerService extends AccessibilityService {
         if(mode==RunMode.NEW){
             for(Rule rule:rules)for(String label:rule.targets){
                 JSONObject item=scanItem(rule,label);
+                SystemCleanPreview.Entry approved = approvals.get(SystemCleanPreview.Entry.key(rule.id, label));
+                if (approved != null) put(item, "previewApproval", approved.approval());
                 status(item,"queued","queued","此开关尚未检查",false);
                 results.put(item);
             }
@@ -90,7 +160,7 @@ public final class CleanerService extends AccessibilityService {
             if(item==null||scanRuleId(item).isEmpty())continue;
             String state=item.optString("status");
             if(state.equals("changed")||state.equals("already")||state.equals("restored"))completed++;
-            else if(unfinished(item)||state.equals("blocked"))remaining++;
+            else if(unfinished(item)||state.equals("blocked")||state.equals("stale_preview"))remaining++;
         }
         String summary="已核验 "+completed+" 项 · 未完成 "+remaining+" 项";
         String outcome=stopReason!=null?stopReason:"本轮清理结束"+(retried>0?"，已自动补查 "+retried+" 项":"");
@@ -121,8 +191,14 @@ public final class CleanerService extends AccessibilityService {
                     "checking","正在重新读取目标设置",false);
             upsertCheckpoint(results,item);
             store.save("scan",results);
+            JSONObject approval = item.optJSONObject("previewApproval");
             try{
                 checkPolicy(rule,label,policy);
+                SystemCleanPreview.Entry approved = approval == null ? null : SystemCleanPreview.Entry.readApproval(rule, label, approval);
+                if (approved != null) {
+                    validateRecordedRoute(store, approved.pinnedRule, approved.routeStamp);
+                    ui = null;
+                }
                 JSONObject unresolved=journalToVerify(store,rule,label,item);
                 if(item.optString("status").equals("restored"))continue;
                 if(unresolved!=null){
@@ -147,13 +223,19 @@ public final class CleanerService extends AccessibilityService {
                 if(ui==null||(found==null&&rule.routes.size()>1)){
                     JSONArray priorRoutes=ui==null?item.optJSONArray("attempts"):ui.attempts();
                     ui=driver(foreground);
-                    ui.openForTarget(rule,label,priorRoutes);
+                    ui.openForTarget(approved == null ? rule : approved.pinnedRule,label,priorRoutes);
                     found=ui.find(label);
                 }
                 if(found==null)throw new UiDriver.Halt("未识别目标开关，未操作",false,true,"target_missing");
+                if (approved != null) approved.verifyTarget(found, policy.desired(found.label));
                 inspectTarget(store,policy,ui,found,pass,item,results);
             }catch(UiDriver.Halt e){
                 if(e.reason.equals("consent"))groupBlock=e;
+                if (approval != null && !e.terminal && (e.reason.equals("target_missing")
+                        || e.reason.equals("entry_unavailable") || e.reason.equals("package_unavailable")
+                        || e.reason.equals("no_route"))) {
+                    e = new UiDriver.Halt("预览的设置已变更或无法进入，请重新检查", false, false, "preview_changed");
+                }
                 handleCleanHalt(store,item,e);
             }finally{
                 if(ui!=null)recordRoute(item,ui);
@@ -208,6 +290,8 @@ public final class CleanerService extends AccessibilityService {
         if(prepared||(!notApplied&&state.equals("verify"))||halt.reason.equals("journal_ambiguous"))state="verify";
         else if(halt.terminal)state="checking";
         else if(halt.reason.equals("protected"))state="blocked";
+        else if(halt.reason.equals("preview_changed")||halt.reason.equals("build_changed")
+                ||halt.reason.equals("package_changed"))state="stale_preview";
         else if(halt.reason.equals("target_missing"))state="missing";
         else if(halt.reason.equals("consent")||halt.reason.equals("entry_unavailable")||
                 halt.reason.equals("package_unavailable")||halt.reason.equals("no_route"))state="skipped";

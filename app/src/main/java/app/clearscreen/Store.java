@@ -40,7 +40,9 @@ public final class Store {
         SharedPreferences data=prefs();
         String saved=data.getString("public-release-info","");
         if(saved.isEmpty())return null;
-        try{return ReleaseUpdates.parse(saved,data.getBoolean("public-release-download-via-api",false));}
+        ReleaseUpdates.Source source=ReleaseUpdates.Source.restore(data.getString("public-release-source",""),
+                data.getBoolean("public-release-download-via-api",false));
+        try{return ReleaseUpdates.parse(saved,source);}
         catch(java.io.IOException ignored){return null;}
     }
     void cacheRelease(ReleaseUpdates.Info release){
@@ -50,7 +52,8 @@ public final class Store {
         CleanerService.put(info,"versionName",release.versionName);
         CleanerService.put(info,"notes",release.notes);
         prefs().edit().putString("public-release-info",info.toString())
-                .putBoolean("public-release-download-via-api",release.preferApiDownload).apply();
+                .putString("public-release-source",release.source.name())
+                .putBoolean("public-release-download-via-api",release.source==ReleaseUpdates.Source.API).apply();
     }
     boolean keepsSkipDetails(){
         SharedPreferences data=prefs();

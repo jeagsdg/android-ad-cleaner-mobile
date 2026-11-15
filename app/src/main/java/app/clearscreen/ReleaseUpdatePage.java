@@ -52,6 +52,10 @@ final class ReleaseUpdatePage {
             screen.space(details, 8);
             details.addView(screen.text(release.notes, 16, MainActivity.INK));
         }
+        LinearLayout fallback = screen.card(screen.body);
+        screen.linkAction(fallback, "在浏览器下载备用 ZIP",
+                () -> screen.openUpdateLink(ReleaseUpdates.archiveUri()));
+        screen.paragraph(fallback, "下载后解压 dist/" + release.apkName() + "，再打开 APK 安装。");
         screen.linkAction(screen.card(screen.body), "在 GitHub 给净屏点 Star",
                 () -> screen.openUpdateLink(ReleaseUpdates.repositoryUri()));
     }
@@ -88,7 +92,7 @@ final class ReleaseUpdatePage {
                 break;
             case FAILED:
                 label = "重新下载";
-                detail = "下载未完成。可以检查网络后重试。";
+                detail = "下载安装包失败，重试时会换用其他地址。";
                 break;
             default:
                 label = "下载更新";

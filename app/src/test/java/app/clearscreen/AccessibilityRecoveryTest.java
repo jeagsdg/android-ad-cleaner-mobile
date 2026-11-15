@@ -68,14 +68,17 @@ public class AccessibilityRecoveryTest {
         assertTrue(SkipKeepAliveService.recoveryRunning());
     }
 
-    @Test public void enabledButDisconnectedIsNotToggled() {
+    @Test public void enabledButDisconnectedWaitsAndReportsFailureIfSystemDoesNotReconnect() {
         startRecovery();
         String before = enabledServices();
         cleaner.onUnbind(new Intent());
         poll();
+        assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
+                SkipKeepAliveService.recoveryConnection());
         poll();
         assertEquals(before, enabledServices());
-        assertTrue(SkipKeepAliveService.recoveryRunning());
+        assertFalse(SkipKeepAliveService.recoveryRunning());
+        assertTrue(SkipKeepAliveService.recoveryFailed());
     }
 
     @Test public void stopsAfterUnconfirmedRestoreWithoutRetrying() {

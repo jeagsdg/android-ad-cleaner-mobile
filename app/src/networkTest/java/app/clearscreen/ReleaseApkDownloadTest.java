@@ -25,6 +25,8 @@ import android.view.View;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.Robolectric;
@@ -199,6 +201,45 @@ public class ReleaseApkDownloadTest {
         download.retry(cached);
         assertNull(manager.getRequest(apiId));
         assertEquals(cached.rawDownloadUri(), shadowOf(manager.getRequest(downloadId())).getUri());
+    }
+
+    @Test public void failedDirectRoutesReachTheVerifiedArchiveAndKeepItAcrossControllers() throws Exception {
+        ShadowEnvironment.setExternalStorageState(Environment.MEDIA_MOUNTED);
+        String packageName = app.getPackageName();
+        shadowOf(app.getPackageManager()).installPackage(packageInfo(packageName, 18, "1.0.2", "aa"));
+        ReleaseUpdates.Info release = release();
+        AtomicReference<String> archivePath = new AtomicReference<>();
+        ReleaseApkDownload download = new ReleaseApkDownload(app, (path, output) -> {
+            File apk = UpdateApkProvider.apkFile(app, downloadId());
+            File temporary = new File(apk.getParentFile(), downloadId() + ".part.apk");
+            PackageInfo updated = packageInfo(packageName, release.versionCode, release.versionName, "aa");
+            updated.requestedPermissions = new String[]{Manifest.permission.INTERNET, Manifest.permission.REQUEST_INSTALL_PACKAGES};
+            shadowOf(app.getPackageManager()).setPackageArchiveInfo(temporary.getAbsolutePath(), updated);
+            shadowOf(app.getPackageManager()).setPackageArchiveInfo(apk.getAbsolutePath(), updated);
+            archivePath.set(path);
+            output.write(9);
+        });
+        ShadowDownloadManager manager = shadowOf(app.getSystemService(DownloadManager.class));
+        download.start(release);
+        shadowOf(manager.getRequest(downloadId())).setStatus(DownloadManager.STATUS_FAILED);
+        download.retry(release);
+        shadowOf(manager.getRequest(downloadId())).setStatus(DownloadManager.STATUS_FAILED);
+
+        download.retry(release);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(3);
+        while (download.status().state == ReleaseApkDownload.State.DOWNLOADING && System.nanoTime() < deadline) {
+            Thread.sleep(10);
+        }
+
+        assertEquals(release.archiveApkPath(), archivePath.get());
+        assertEquals(0, manager.getRequestCount());
+        ReleaseApkDownload reopened = new ReleaseApkDownload(app);
+        assertEquals(ReleaseApkDownload.State.READY, reopened.status().state);
+        assertEquals(UpdateApkProvider.apkUri(app, downloadId()), reopened.installIntent().getData());
+        File local = UpdateApkProvider.apkFile(app, downloadId());
+        reopened.cancel(reopened.status());
+        assertFalse(local.exists());
+        assertEquals(ReleaseApkDownload.State.IDLE, reopened.status().state);
     }
 
     @Test public void lowerFeedCanRecoverFromNewerDownloadWithoutCancellingAReplacement() throws Exception {
@@ -377,6 +418,7 @@ public class ReleaseApkDownloadTest {
             output.write(contents);
         }
         PackageInfo upgraded = packageInfo(packageName, release.versionCode, release.versionName, "aa");
+        upgraded.requestedPermissions = new String[]{Manifest.permission.INTERNET, Manifest.permission.REQUEST_INSTALL_PACKAGES};
         shadowOf(app.getPackageManager()).setPackageArchiveInfo(apk.getAbsolutePath(), upgraded);
 
         Intent installer = download.installIntent();
@@ -411,6 +453,29 @@ public class ReleaseApkDownloadTest {
         assertThrows(IOException.class, () -> ReleaseApkDownload.validateArchive(installed, otherApp, 13, "1.0.0"));
         PackageInfo otherSigner = packageInfo("app.clearscreen", 13, "1.0.0", "bb");
         assertThrows(IOException.class, () -> ReleaseApkDownload.validateArchive(installed, otherSigner, 13, "1.0.0"));
+    }
+
+    @Test public void sameSignedOfflineApkCannotReplaceTheNetworkBuildInApp() throws Exception {
+        ShadowEnvironment.setExternalStorageState(Environment.MEDIA_MOUNTED);
+        String packageName = app.getPackageName();
+        shadowOf(app.getPackageManager()).installPackage(packageInfo(packageName, 18, "1.0.2", "aa"));
+        ReleaseApkDownload download = new ReleaseApkDownload(app);
+        ReleaseUpdates.Info release = release();
+        download.start(release);
+        long id = downloadId();
+        ShadowDownloadManager manager = shadowOf(app.getSystemService(DownloadManager.class));
+        shadowOf(manager.getRequest(id)).setStatus(DownloadManager.STATUS_SUCCESSFUL);
+        File apk = UpdateApkProvider.apkFile(app, id);
+        assertTrue(apk.getParentFile().isDirectory() || apk.getParentFile().mkdirs());
+        assertTrue(apk.createNewFile());
+        shadowOf(app.getPackageManager()).setPackageArchiveInfo(apk.getAbsolutePath(),
+                packageInfo(packageName, release.versionCode, release.versionName, "aa"));
+
+        IOException failure = assertThrows(IOException.class, download::installIntent);
+
+        assertEquals("此安装包无法覆盖完整版，请重新下载", failure.getMessage());
+        assertEquals(ReleaseApkDownload.State.FAILED, download.status().state);
+        assertFalse(apk.exists());
     }
 
     @Test public void installerProviderIsPrivateAndSupportsTemporaryReadGrants() throws Exception {

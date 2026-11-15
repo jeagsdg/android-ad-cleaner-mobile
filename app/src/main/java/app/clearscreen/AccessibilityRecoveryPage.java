@@ -24,6 +24,7 @@ final class AccessibilityRecoveryPage {
     private final MainActivity activity;
     private Step shown;
     private boolean showedFailure;
+    private SkipKeepAliveService.RecoveryConnection shownConnection;
     private AlertDialog authorizationHelp;
 
     AccessibilityRecoveryPage(MainActivity activity) {
@@ -40,7 +41,8 @@ final class AccessibilityRecoveryPage {
     }
 
     boolean changed() {
-        return shown != step() || showedFailure != SkipKeepAliveService.recoveryFailed();
+        return shown != step() || showedFailure != SkipKeepAliveService.recoveryFailed()
+                || shownConnection != SkipKeepAliveService.recoveryConnection();
     }
 
     void render() {
@@ -50,12 +52,20 @@ final class AccessibilityRecoveryPage {
             authorizationHelp = null;
         }
         showedFailure = SkipKeepAliveService.recoveryFailed();
+        shownConnection = SkipKeepAliveService.recoveryConnection();
         activity.header("", "自动恢复无障碍",
                 "开屏跳过突然失效？净屏可以在小米手机上检查并恢复自己的无障碍开关。");
 
         LinearLayout panel = activity.card(activity.body);
         if (shown == Step.RUNNING) {
-            prompt(panel, "自动恢复运行中", "净屏约每 30 秒检查一次。要手动关闭无障碍，请先停止自动恢复。",
+            String title;
+            switch (shownConnection) {
+                case WAITING_FOR_SYSTEM: title = "等待系统重新连接"; break;
+                case RESTORING: title = "已重新打开开关，等待连接"; break;
+                case RESTORED: title = "已恢复无障碍连接"; break;
+                default: title = "自动恢复运行中";
+            }
+            prompt(panel, title, "净屏约每 30 秒检查一次。要手动关闭无障碍，请先停止自动恢复。",
                     "停止自动恢复", () -> {
                         SkipKeepAliveService.stopRecovery();
                         activity.render();
@@ -64,7 +74,7 @@ final class AccessibilityRecoveryPage {
             return;
         }
         if (showedFailure) {
-            activity.paragraph(panel, "上次恢复未成功，检查已停止。按下方提示完成设置后可再试。");
+            activity.paragraph(panel, "系统未确认无障碍已连接，自动恢复已停止。请在无障碍设置中重新打开净屏，再回到本页。");
             activity.space(panel, 12);
         }
         switch (shown) {

@@ -21,6 +21,7 @@ public final class MainActivity extends Activity {
     static final int GREEN = 0xff16624c, MINT = 0xffe9f1e9, LIME = 0xffd9eea6;
     static final int SKIP_MANAGEMENT = 7, CUSTOM_RULES = 9, POPUP_MANAGEMENT = 10;
     static final int APP_ADS = 11, APP_AD_DETAIL = 12, UPDATE_PAGE = 13, ACCESSIBILITY_RECOVERY = 14;
+    static final int SYSTEM_CLEAN_PREVIEW = 15, RULE_DIRECTORY = 16, APP_AD_MISS = 17;
     private static final int VPN_CONSENT = 41;
     static final int START_FILTER_NOTIFICATIONS = 42, FILTER_NOTIFICATIONS = 43;
     static final int KEEP_ALIVE_NOTIFICATIONS = 44;
@@ -37,6 +38,7 @@ public final class MainActivity extends Activity {
     int permissionParent, rulesParent = SKIP_MANAGEMENT;
     private int appAdsParent, updateParent;
     private int recoveryParent;
+    private int directoryParent;
     boolean onlyUnfinished = false;
     final Handler permissionHandler = new Handler(Looper.getMainLooper());
     PermissionAccess.State lastPermissionState;
@@ -50,6 +52,8 @@ public final class MainActivity extends Activity {
     private AppAdManagement appAdManagement;
     private ReleaseUpdatePage releaseUpdatePage;
     private AccessibilityRecoveryPage recoveryPage;
+    private SystemCleanPreviewPage cleanPreviewPage;
+    private RuleDirectoryPage directoryPage;
     ScrollView pageScroll;
     int renderedTab=-1;
     boolean shownKeepAliveEnabled;
@@ -85,6 +89,8 @@ public final class MainActivity extends Activity {
         appAdManagement = new AppAdManagement(this, state);
         releaseUpdatePage = new ReleaseUpdatePage(this);
         recoveryPage = new AccessibilityRecoveryPage(this);
+        cleanPreviewPage = new SystemCleanPreviewPage(this, state);
+        directoryPage = new RuleDirectoryPage(this, state);
         tab = state != null ? state.getInt("tab") : getIntent().getIntExtra("tab", 0);
         if (state != null) {
             permissionParent = state.getInt("permissionParent");
@@ -92,6 +98,7 @@ public final class MainActivity extends Activity {
             appAdsParent = state.getInt("appAdsParent");
             updateParent = state.getInt("updateParent");
             recoveryParent = state.getInt("recoveryParent");
+            directoryParent = state.getInt("directoryParent");
             onlyUnfinished = state.getBoolean("onlyUnfinished");
             returningFromAuthorization = state.getBoolean("returningFromAuthorization");
             pendingFilterStart = state.getBoolean("pendingFilterStart");
@@ -109,6 +116,7 @@ public final class MainActivity extends Activity {
         permissionHandler.removeCallbacks(permissionRefresh);
         permissionHandler.postDelayed(permissionRefresh, 1000);
         if (store != null && store.updateChecksEnabled()) checkForUpdates(false);
+        directoryPage.foregroundCheck();
     }
     @Override protected void onPostResume() {
         super.onPostResume();
@@ -132,10 +140,13 @@ public final class MainActivity extends Activity {
         state.putInt("appAdsParent", appAdsParent);
         state.putInt("updateParent", updateParent);
         state.putInt("recoveryParent", recoveryParent);
+        state.putInt("directoryParent", directoryParent);
         state.putBoolean("onlyUnfinished", onlyUnfinished);
         state.putBoolean("returningFromAuthorization", returningFromAuthorization);
         state.putBoolean("pendingFilterStart", pendingFilterStart);
         appAdManagement.save(state);
+        cleanPreviewPage.save(state);
+        directoryPage.save(state);
         super.onSaveInstanceState(state);
     }
     @Override protected void onNewIntent(Intent intent) {
@@ -241,14 +252,22 @@ public final class MainActivity extends Activity {
         recoveryParent = tab;
         showPage(ACCESSIBILITY_RECOVERY);
     }
+    void openRuleDirectory() { openRuleDirectory(""); }
+    void openRuleDirectory(String packageName) {
+        directoryParent = tab;
+        directoryPage.scopeTo(packageName);
+        showPage(RULE_DIRECTORY);
+    }
     void pageBackBar() {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPaddingRelative(dp(12), 0, dp(12), 0);
         String label = tab == 5 ? "返回权限设置" : tab == CUSTOM_RULES ? rulesParent == APP_AD_DETAIL
                 ? "返回应用详情" : rulesParent == POPUP_MANAGEMENT ? "返回弹窗管理" : "返回开屏管理"
-                : tab == APP_AD_DETAIL ? "返回应用列表"
+                : tab == APP_AD_DETAIL ? "返回应用列表" : tab == APP_AD_MISS ? "返回应用详情"
                 : tab == APP_ADS && appAdsParent == SKIP_MANAGEMENT ? "返回开屏管理"
+                : tab == RULE_DIRECTORY && directoryParent == APP_AD_DETAIL ? "返回应用详情"
+                : tab == RULE_DIRECTORY && directoryParent == APP_ADS ? "返回应用列表"
                 : tab == UPDATE_PAGE && updateParent == 3 ? "返回使用说明"
                 : tab == ACCESSIBILITY_RECOVERY && recoveryParent == SKIP_MANAGEMENT ? "返回开屏管理"
                 : tab == 4 && permissionParent != 0 ? "返回上页" : "返回首页";
@@ -306,6 +325,9 @@ public final class MainActivity extends Activity {
         else if (tab == SKIP_MANAGEMENT) splashPage(); else if (tab == POPUP_MANAGEMENT) popupPage();
         else if (tab == CUSTOM_RULES) customRulesPage();
         else if (tab == APP_ADS) appAdManagement.list(); else if (tab == APP_AD_DETAIL) appAdManagement.detail();
+        else if (tab == APP_AD_MISS) appAdManagement.missedAd();
+        else if (tab == SYSTEM_CLEAN_PREVIEW) cleanPreviewPage.render();
+        else if (tab == RULE_DIRECTORY) directoryPage.render();
         else if (tab == ACCESSIBILITY_RECOVERY) recoveryPage.render();
         else if (tab == UPDATE_PAGE && networkFilterAvailable()) releaseUpdatePage.render(newerRelease(store.cachedRelease()));
         else if(tab==8) supportPage(); else about();
@@ -313,10 +335,11 @@ public final class MainActivity extends Activity {
     }
     void backToParentPage() {
         boolean fromAppDetail = tab == APP_AD_DETAIL;
+        if (tab == APP_AD_MISS) appAdManagement.leaveMissedAd();
         if (tab == 4) returningFromAuthorization = false;
         tab = tab == 5 ? 4 : tab == 4 ? permissionParent : tab == CUSTOM_RULES ? rulesParent
-                : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent
-                : tab == ACCESSIBILITY_RECOVERY ? recoveryParent : 0;
+                : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_AD_MISS ? APP_AD_DETAIL : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent
+                : tab == ACCESSIBILITY_RECOVERY ? recoveryParent : tab == RULE_DIRECTORY ? directoryParent : 0;
         render();
         if (fromAppDetail) appAdManagement.restoreListPosition();
     }
@@ -405,12 +428,15 @@ public final class MainActivity extends Activity {
         features.setPadding(dp(9), dp(4), dp(9), dp(4));
         featureRow(features, R.drawable.ic_apps, "应用广告管理", this::openAppAds)
                 .setText("规则与排除项");
+        featureRow(features, R.drawable.ic_apps, "精选规则", this::openRuleDirectory)
+                .setText("查找并启停单条规则");
         homePopupStatus = featureRow(features, R.drawable.ic_popup, "应用内弹窗", () -> showPage(POPUP_MANAGEMENT));
         if (networkFilterAvailable())
             filterStatus = featureRow(features, R.drawable.ic_network, "网络广告过滤", () -> showPage(6));
         homeCleanStatus = featureRow(features, R.drawable.ic_settings, "系统广告设置", () -> {
             CleanerService service = CleanerService.get();
             if (service != null && service.busy) service.stop();
+            else if (service != null && service.systemPreview() != null) showPage(SYSTEM_CLEAN_PREVIEW);
             else chooseClean();
         });
         refreshFilter();
@@ -537,7 +563,8 @@ public final class MainActivity extends Activity {
                 ? "自动恢复无障碍已开启" : "无障碍掉线？自动恢复");
         updateText(homePopupStatus, !store.popupEnabled() ? "未开启"
                 : !connected ? "待连接无障碍" : busy ? "清理期间暂停" : "运行中 · 已确认 " + store.popupCount() + " 次");
-        updateText(homeCleanStatus, busy ? "清理中 · 点此停止" : store.lastRun().isEmpty()
+        updateText(homeCleanStatus, busy ? "任务进行中 · 点此停止"
+                : connected && service.systemPreview() != null ? "查看上次预览" : store.lastRun().isEmpty()
                 ? "检查推荐 · 可恢复" : "上次清理结果可查看");
         if (homePreviewStatus != null) homePreviewStatus.setVisibility(RulePreview.LOCAL.hasSession() ? View.VISIBLE : View.GONE);
     }
@@ -577,10 +604,10 @@ public final class MainActivity extends Activity {
         Arrays.fill(pick, true);
         int targets = rules.stream().mapToInt(rule -> rule.targets.size()).sum();
         AlertDialog.Builder dialog = new AlertDialog.Builder(this)
-                .setTitle((retry ? "重试范围" : "清理范围") + " · " + targets + " 个候选开关");
+                .setTitle((retry ? "重试范围" : "检查系统广告开关") + " · " + targets + " 个候选开关");
         if (manualCount > 0) dialog.setNeutralButton("手动项（" + manualCount + "）", (d,w) -> showManualRules(manualRules));
         dialog.setMultiChoiceItems(labels, pick, (d,w,checked) -> pick[w] = checked)
-            .setPositiveButton(retry ? "开始重试" : "开始清理", null).setNegativeButton("取消", null);
+            .setPositiveButton(retry ? "开始重试" : "读取并预览", null).setNegativeButton("取消", null);
         AlertDialog selection = dialog.create();
         selection.setOnShowListener(ignored -> selection.getButton(AlertDialog.BUTTON_POSITIVE)
             .setOnClickListener(button -> {
@@ -591,7 +618,7 @@ public final class MainActivity extends Activity {
                 if (current == null) { toast("自动操作权限已断开，请重新开启"); return; }
                 if (current.busy) { toast("已有任务正在执行"); return; }
                 selection.dismiss();
-                if (retry) current.retry(chosen); else current.clean(chosen);
+                if (retry) current.retry(chosen); else current.previewClean(chosen);
             }));
         selection.show();
     }
@@ -693,6 +720,8 @@ public final class MainActivity extends Activity {
                 }
                 if (CleanerService.unfinished(item))
                     action(c, "重试这项", false, () -> retryCleanItem(item));
+                if (item.optString("status").equals("stale_preview"))
+                    action(c, "重新检查系统开关", false, this::chooseClean);
                 action(c, "查看原设置路径", false, () -> ruleDetails(rule));
             }
         }
@@ -736,6 +765,7 @@ public final class MainActivity extends Activity {
             case "verify": return "需要核对开关状态";
             case "blocked": return "需要手动处理";
             case "skipped": return "已跳过";
+            case "stale_preview": return "设置已变化，需重新预览";
             case "failed": return "未完成";
             case "pending": case "unknown": return "结果待核对";
             case Store.NOT_APPLIED: return "未执行改动";
@@ -839,7 +869,7 @@ public final class MainActivity extends Activity {
                 .setNeutralButton("导出文件", (dialog, which) -> saveDiagnosticFile(preview.getText().toString()))
                 .setNegativeButton("关闭", null).show();
     }
-    private void saveDiagnosticFile(String report) {
+    void saveDiagnosticFile(String report) {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/plain")
                 .addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE, "净屏-诊断报告.txt");
         try {
@@ -850,7 +880,7 @@ public final class MainActivity extends Activity {
             toast("此设备无法打开文件保存窗口，可以复制报告");
         }
     }
-    private void copyDiagnosticText(String title, String report) {
+    void copyDiagnosticText(String title, String report) {
         ClipboardManager clipboard = getSystemService(ClipboardManager.class);
         if (clipboard == null) { toast("剪贴板暂不可用"); return; }
         ClipData clip = ClipData.newPlainText(title, report);

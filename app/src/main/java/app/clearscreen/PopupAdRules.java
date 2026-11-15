@@ -33,7 +33,7 @@ final class PopupAdRules {
         }
     }
 
-    private PopupAdRules(JSONArray entries) {
+    PopupAdRules(JSONArray entries) {
         for (int i = 0; i < entries.length(); i++) {
             JSONObject entry = entries.optJSONObject(i);
             if (entry == null) continue;

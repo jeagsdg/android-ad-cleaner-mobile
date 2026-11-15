@@ -95,6 +95,13 @@ public class DeviceChecks extends Instrumentation {
             finish(RESULT_OK, result);
             return;
         }
+        if (suite.equals("release20-features")) {
+            release20Features(automation, connectService());
+            result.putString("stream", "PASS: " + assertions + " 2.0 feature assertions on Android "
+                    + Build.VERSION.RELEASE + "; isolated fixture only\n");
+            finish(RESULT_OK, result);
+            return;
+        }
         if (suite.equals("release-ui")) {
             releaseUiChecks(connectService());
             result.putString("stream", "PASS: " + assertions + " release UI assertions on Android "
@@ -635,6 +642,7 @@ public class DeviceChecks extends Instrumentation {
         String previous = preferences.getString("public-release-info", null);
         boolean hadDownloadSource = preferences.contains("public-release-download-via-api");
         boolean previousDownloadSource = preferences.getBoolean("public-release-download-via-api", false);
+        String previousSource = preferences.getString("public-release-source", null);
         boolean hadUpdateChoice = preferences.contains("update-checks");
         boolean updateChoice = preferences.getBoolean("update-checks", false);
         boolean hadUpdateCheck = preferences.contains("last-update-success");
@@ -659,8 +667,10 @@ public class DeviceChecks extends Instrumentation {
                 require(waitUntil(() -> appNode(service, testNotes) != null), "version notes visible before download");
                 require(waitUntil(() -> appNode(service, "下载更新") != null),
                         "download needs a separate action");
-                require(appNode(service, "在 GitHub 给净屏点 Star") != null,
-                        "optional project support is visible alongside the download button");
+                require(findAfterScroll(service, "在浏览器下载备用 ZIP") != null,
+                        "backup ZIP download is reachable on the update page");
+                require(findAfterScroll(service, "在 GitHub 给净屏点 Star") != null,
+                        "optional project support is reachable on the update page");
                 AccessibilityNodeInfo later = appNode(service, "返回首页");
                 require(later != null && later.performAction(AccessibilityNodeInfo.ACTION_CLICK), "dismiss version notes");
                 require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "returned to home");
@@ -679,9 +689,111 @@ public class DeviceChecks extends Instrumentation {
             else editor.putString("public-release-info", previous);
             if (hadDownloadSource) editor.putBoolean("public-release-download-via-api", previousDownloadSource);
             else editor.remove("public-release-download-via-api");
+            if (previousSource == null) editor.remove("public-release-source");
+            else editor.putString("public-release-source", previousSource);
             if (hadUpdateChoice) editor.putBoolean("update-checks", updateChoice);
             else editor.remove("update-checks");
             editor.apply();
+        }
+    }
+
+    private void release20Features(UiAutomation automation, CleanerService service) throws Exception {
+        Context app = getTargetContext();
+        Store store = new Store(app);
+        store.setUpdateChecksEnabled(false);
+        Rule rule = new Rule(new JSONObject("{\"id\":\"preview-fixture\",\"title\":\"隔离测试设置\","
+                + "\"package\":\"app.clearscreen.testfixture\",\"activity\":\".FixtureActivity\","
+                + "\"targets\":[\"个性化推荐\",\"限制广告跟踪\",\"应用更新通知\"]}"));
+        useCleaner(service, () -> service.previewClean(Collections.singletonList(rule)));
+        await(service);
+        SystemCleanPreview preview = service.systemPreview();
+        require(preview != null && preview.entries.size() == 3, "read-only preview lists all three settings");
+        require(preview.entries.get(0).before && !preview.entries.get(0).desired, "recommendation preview direction");
+        require(!preview.entries.get(1).before && preview.entries.get(1).desired, "tracking restriction preview direction");
+        require(!preview.entries.get(2).verified(), "protected application update setting excluded");
+        require(store.read("journal").length() == 0, "no preview writes in journal");
+        UiDriver ui = new UiDriver(service, () -> false);
+        ui.open(rule);
+        require(ui.find("个性化推荐").checked && !ui.find("限制广告跟踪").checked
+                && ui.find("应用更新通知").checked, "preview did not change any switch");
+
+        showTab(MainActivity.SYSTEM_CLEAN_PREVIEW);
+        require(waitUntil(() -> appNode(service, "系统广告改动预览") != null), "preview screen opens");
+        AccessibilityNodeInfo restriction = findAfterScroll(service, "关 → 开");
+        require(restriction != null && restriction.isCheckable() && restriction.isChecked()
+                && restriction.performAction(AccessibilityNodeInfo.ACTION_CLICK), "deselect tracking restriction");
+        require(waitUntil(() -> {
+            AccessibilityNodeInfo row = appNode(service, "关 → 开");
+            return row != null && !row.isChecked();
+        }), "tracking restriction checkbox changed to unselected");
+        AccessibilityNodeInfo apply = findAfterScroll(service, "应用所选改动（1 项）");
+        require(apply != null && apply.isEnabled(), "apply button displays selected count; UI: " + visibleLabels(service));
+        saveScreenshot(automation, "release20-preview.png");
+        tapAppNode(apply, "apply the remaining change");
+        await(service);
+        JSONArray journal = store.read("journal");
+        require(journal.length() == 1 && journal.getJSONObject(0).optString("status").equals("changed"),
+                "only the selected setting was changed and recorded");
+        ui.open(rule);
+        require(!ui.find("个性化推荐").checked && !ui.find("限制广告跟踪").checked
+                && ui.find("应用更新通知").checked, "unselected and protected switches unchanged");
+        useCleaner(service, () -> service.restore(journal.optJSONObject(0)));
+        await(service);
+        ui.open(rule);
+        require(ui.find("个性化推荐").checked, "restore original recommendation switch");
+
+        showTab(MainActivity.RULE_DIRECTORY);
+        require(waitUntil(() -> appNode(service, "精选规则") != null), "directory opens");
+        AccessibilityNodeInfo search = null;
+        for (AccessibilityNodeInfo node : UiDriver.walk(service.getRootInActiveWindow())) {
+            if (node.isVisibleToUser() && node.isEditable()) { search = node; break; }
+        }
+        require(search != null, "directory search reachable");
+        Bundle query = new Bundle();
+        query.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, "com.okcam.ookcam");
+        require(search.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, query), "type rule search");
+        tapAppNode(findAfterScroll(service, "小鹰看看"), "open reviewed entry");
+        require(waitUntil(() -> appNode(service, "com.okcam.ookcam") != null), "detail shows target package");
+        require(appNode(service, "适配证据版本 3.0.41") != null, "tested app version is visible at the top");
+        require(appNode(service, "打开规则来源") != null, "rule source is visible at the top");
+        saveScreenshot(automation, "release20-catalog-detail.png");
+        tapAppNode(appNode(service, "停用此规则"), "disable selected rule");
+        require(waitUntil(() -> RulePacks.get(app).state().rules.stream().anyMatch(entry ->
+                entry.packageName.equals("com.okcam.ookcam") && !entry.enabled)), "saved exact rule selection");
+        tapAppNode(findAfterScroll(service, "小鹰看看"), "reopen reviewed entry");
+        tapAppNode(appNode(service, "启用此规则"), "enable selected rule");
+        require(waitUntil(() -> RulePacks.get(app).state().rules.stream().noneMatch(entry ->
+                entry.packageName.equals("com.okcam.ookcam") && !entry.enabled)), "saved re-enable selection");
+    }
+
+    private void showTab(int tab) {
+        Context app = getTargetContext();
+        app.startActivity(new Intent(app, MainActivity.class).putExtra("tab", tab)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP));
+    }
+
+    private void tapAppNode(AccessibilityNodeInfo node, String message) {
+        AccessibilityNodeInfo button = node == null ? null : SplashSkipper.clickable(node);
+        require(button != null && button.performAction(AccessibilityNodeInfo.ACTION_CLICK), message);
+    }
+
+    private String visibleLabels(CleanerService service) {
+        List<String> labels = new ArrayList<>();
+        for (AccessibilityNodeInfo node : UiDriver.walk(service.getRootInActiveWindow())) {
+            String label = UiDriver.text(node);
+            if (node.isVisibleToUser() && !label.isEmpty()) labels.add(label);
+        }
+        return labels.toString();
+    }
+
+    private void saveScreenshot(UiAutomation automation, String name) throws java.io.IOException {
+        android.graphics.Bitmap screen = automation.takeScreenshot();
+        require(screen != null, "captured " + name);
+        try (java.io.FileOutputStream output = new java.io.FileOutputStream(
+                new java.io.File(getTargetContext().getExternalFilesDir(null), name))) {
+            require(screen.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output), "saved " + name);
+        } finally {
+            screen.recycle();
         }
     }
 

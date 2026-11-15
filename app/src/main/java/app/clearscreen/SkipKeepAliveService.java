@@ -30,10 +30,11 @@ public final class SkipKeepAliveService extends Service {
     private static final long RECOVERY_CHECK_MS = 30_000;
     private static volatile SkipKeepAliveService active;
     private static boolean recoveryFailed;
+    enum RecoveryConnection { CONNECTED, WAITING_FOR_SYSTEM, RESTORING, RESTORED }
 
     private final Handler notificationHandler = new Handler(Looper.getMainLooper());
     private boolean recovering;
-    private boolean awaitingConnection;
+    private RecoveryConnection recoveryConnection = RecoveryConnection.CONNECTED;
     private final Runnable recoveryCheck = this::checkRecovery;
     private final Runnable legacyNotificationCheck = new Runnable() {
         @Override public void run() {
@@ -61,6 +62,11 @@ public final class SkipKeepAliveService extends Service {
         return recoveryFailed;
     }
 
+    static RecoveryConnection recoveryConnection() {
+        SkipKeepAliveService service = active;
+        return service == null ? RecoveryConnection.CONNECTED : service.recoveryConnection;
+    }
+
     static boolean startRecovery(Context context) {
         if (!canRecover(context) || !AccessibilityRecovery.connected(context)) return false;
         recoveryFailed = false;
@@ -86,8 +92,8 @@ public final class SkipKeepAliveService extends Service {
         try {
             if (active != null) {
                 if (active.recovering && canRecover(context)) {
-                    if (active.awaitingConnection && AccessibilityRecovery.connected(context)) {
-                        active.awaitingConnection = false;
+                    if (active.waitingForConnection() && AccessibilityRecovery.connected(context)) {
+                        active.recoveryConnection = RecoveryConnection.RESTORED;
                     }
                     return;
                 }
@@ -194,11 +200,18 @@ public final class SkipKeepAliveService extends Service {
         try {
             boolean configured = AccessibilityRecovery.configured(this);
             boolean connected = configured && CleanerService.get() != null;
-            if (awaitingConnection && !connected) {
+            if (connected) {
+                if (waitingForConnection()) recoveryConnection = RecoveryConnection.RESTORED;
+            } else if (recoveryConnection == RecoveryConnection.RESTORING
+                    || (configured && recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM)) {
                 endRecovery(true);
                 return;
+            } else if (configured) {
+                recoveryConnection = RecoveryConnection.WAITING_FOR_SYSTEM;
+            } else {
+                recoveryConnection = AccessibilityRecovery.restoreIfOff(this) ? RecoveryConnection.RESTORING
+                        : RecoveryConnection.WAITING_FOR_SYSTEM;
             }
-            awaitingConnection = !configured && AccessibilityRecovery.restoreIfOff(this);
             notificationHandler.postDelayed(recoveryCheck, RECOVERY_CHECK_MS);
         } catch (IllegalStateException | SecurityException failure) {
             Log.w(TAG, "System did not confirm accessibility recovery", failure);
@@ -206,10 +219,15 @@ public final class SkipKeepAliveService extends Service {
         }
     }
 
+    private boolean waitingForConnection() {
+        return recoveryConnection == RecoveryConnection.RESTORING
+                || recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM;
+    }
+
     private void endRecovery(boolean failed) {
         recoveryFailed = failed;
         recovering = false;
-        awaitingConnection = false;
+        recoveryConnection = RecoveryConnection.CONNECTED;
         notificationHandler.removeCallbacks(recoveryCheck);
         if (eligible(this)) {
             try {
@@ -249,7 +267,7 @@ public final class SkipKeepAliveService extends Service {
     private void stopRunning() {
         if (active == this) active = null;
         recovering = false;
-        awaitingConnection = false;
+        recoveryConnection = RecoveryConnection.CONNECTED;
         notificationHandler.removeCallbacks(recoveryCheck);
         notificationHandler.removeCallbacks(legacyNotificationCheck);
         stopForeground(STOP_FOREGROUND_REMOVE);

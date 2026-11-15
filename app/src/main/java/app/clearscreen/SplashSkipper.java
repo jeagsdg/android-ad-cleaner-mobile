@@ -57,10 +57,12 @@ final class SplashSkipper {
     private final Handler main=new Handler(Looper.getMainLooper());
     private final Runnable scheduledScan=this::scan;
     private final Store store;
-    private final SplashRules rules;
-    private final PopupAdRules popupAds;
+    private final RulePacks rulePacks;
+    private SplashRules rules;
+    private PopupAdRules popupAds;
     private final SkipFeedback feedback;
     private final SkipDiagnostics diagnostics = SkipDiagnostics.LOCAL;
+    private final MissedAdCapture missedCapture = MissedAdCapture.LOCAL;
     private final Object diagnosticOwner = new Object();
     private SkipDiagnostics.Attempt diagnosticAttempt;
     private final RulePreview preview=RulePreview.LOCAL;
@@ -98,13 +100,19 @@ final class SplashSkipper {
     private final Set<PopupAdRules.Rule> catalogUnconfirmed=new HashSet<>();
     private List<CustomSkipRule> popupRuleSnapshot=Collections.emptyList();
     SplashSkipper(CleanerService service){
-        this.service=service;store=new Store(service);rules=new SplashRules(service);popupAds=new PopupAdRules(service);
+        this.service=service;store=new Store(service);rulePacks=RulePacks.get(service);useCurrentCatalog();
         feedback = new SkipFeedback(service, main);
         try{android.content.pm.ResolveInfo info=service.getPackageManager().resolveActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),0);if(info!=null&&info.activityInfo!=null)launcher=info.activityInfo.packageName;}catch(Exception ignored){}
+    }
+    private void useCurrentCatalog(){
+        RulePacks.State state=rulePacks.state();
+        rules=state.splashRules;
+        popupAds=state.popupRules;
     }
     void close(){
         closed=true;
         diagnostics.disconnected(diagnosticOwner);
+        missedCapture.stop(foreground,true);
         feedback.clear();
         main.removeCallbacksAndMessages(null);
     }
@@ -126,7 +134,8 @@ final class SplashSkipper {
         String pkg=event.getPackageName().toString();
         Set<String> media=store.mediaAssistEnabled();
         if(service.busy||(!store.splashEnabled()&&!store.popupEnabled()&&media.isEmpty()
-                &&!preview.hasSession()&&!diagnostics.hasSession())){
+                &&!preview.hasSession()&&!diagnostics.hasSession()&&!missedCapture.awaiting(pkg)
+                &&!missedCapture.awaiting(foreground))){
             if(!foreground.isEmpty()){
                 feedback.clear();stopCurrentInput();foreground="";foregroundVisit++;
                 previewDue=Long.MAX_VALUE;
@@ -205,7 +214,10 @@ final class SplashSkipper {
                     nextSplashProbe=Math.min(nextSplashProbe,lastSplashProbe+minimumGap);
                 }
             }
-            if(relevant)queueWindowContent(media);
+            if(relevant){
+                if(inActiveWindow||type==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)missedCapture.requestProbe(pkg);
+                queueWindowContent(media);
+            }
         }
         schedule();
     }
@@ -289,10 +301,12 @@ final class SplashSkipper {
             stopCurrentInput();
             return;
         }
+        missedCapture.verifiedWindow(pkg);
         long now=SystemClock.elapsedRealtime();
         boolean newVisit=!pkg.equals(foreground);
         boolean newWindow=activeWindow!=windowId;
         if(newVisit){
+            useCurrentCatalog();
             feedback.clear();
             foreground=pkg;
             activity="";
@@ -449,7 +463,10 @@ final class SplashSkipper {
         KeyguardManager keyguard=service.getSystemService(KeyguardManager.class);
         return keyguard!=null&&keyguard.isKeyguardLocked();
     }
-    private void note(SkipDiagnostics.Phase phase){diagnostics.note(foreground,diagnosticAttempt,phase);}
+    private void note(SkipDiagnostics.Phase phase){
+        diagnostics.note(foreground,diagnosticAttempt,phase);
+        missedCapture.note(foreground,MissedAdCapture.Mode.SPLASH,phase);
+    }
     private void schedule(){
         if(closed)return;
         long now=SystemClock.elapsedRealtime(), due=Long.MAX_VALUE;
@@ -458,6 +475,8 @@ final class SplashSkipper {
         }else if(!service.busy){
             if(scanSplash())due=Math.max(now+QUICK_SCAN_MS,nextSplashProbe);
             if(deadline>0&&diagnostics.observes(foreground,diagnosticAttempt))due=Math.min(due,Math.max(now,deadline));
+            long captureProbe=missedCapture.nextProbe(foreground);
+            if(captureProbe!=Long.MAX_VALUE)due=Math.min(due,Math.max(now+QUICK_SCAN_MS,captureProbe));
             if(!splashWaiting&&!splashVerifying&&!popupVerifying){
                 if(popupPending)due=Math.min(due,Math.max(now+QUICK_SCAN_MS,Math.max(pauseUntil,popupReadyAt())));
                 if(mediaPending)due=Math.min(due,Math.max(now+150,Math.max(pauseUntil,nextMediaProbe)));
@@ -493,6 +512,7 @@ final class SplashSkipper {
             return;
         }
         if(excluded(foreground)||CustomSkipRule.protectedPackage(foreground))return;
+        boolean checkCapture=missedCapture.nextProbe(foreground)<=now;
         boolean checkPopup=popupPending&&store.popupEnabled()&&!popupVerifying&&!splashWaiting&&!splashVerifying
                 &&now>=pauseUntil&&now>=popupReadyAt();
         boolean retryingPopupRoot=popupRootRetryPending;
@@ -503,7 +523,10 @@ final class SplashSkipper {
         boolean checkMedia=mediaPending&&!popupVerifying&&!splashWaiting&&!splashVerifying
                 &&now>=pauseUntil&&now>=nextMediaProbe;
         boolean checkSplash=scanSplash()&&now>=nextSplashProbe;
-        if(!checkSplash&&!checkPopup&&!checkMedia){schedule();return;}
+        if(!checkSplash&&!checkPopup&&!checkMedia){
+            if(checkCapture)sampleMissedAdOnly();
+            schedule();return;
+        }
         if(checkSplash){
             long age=launchAge();
             lastSplashProbe=SystemClock.elapsedRealtime();
@@ -511,26 +534,38 @@ final class SplashSkipper {
         }
         if(screenLocked()){
             if(checkSplash)note(SkipDiagnostics.Phase.GUARDED);
+            if(checkCapture)missedCapture.sample(foreground,"",activeWindow,null,Collections.emptyList());
             stopCurrentInput();
             return;
         }
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         if(root==null){
             if(checkSplash)note(SkipDiagnostics.Phase.WINDOW_UNAVAILABLE);
+            if(checkCapture)missedCapture.defer(foreground);
             if(checkPopup)retryUnreadablePopup(retryingPopupRoot);
             if(checkMedia)mediaPending=false;
             schedule();return;
         }
         if(!belongsTo(root,foreground)){
             if(checkSplash)note(SkipDiagnostics.Phase.WINDOW_UNAVAILABLE);
+            if(checkCapture)missedCapture.defer(foreground);
             if(scanSplash()&&launchAge()<=1200){schedule();return;}
             deadline=0;
+            if(checkCapture)schedule();
             return;
         }
-        List<AccessibilityNodeInfo> nodes=checkSplash||checkPopup?UiDriver.walkComplete(root):Collections.emptyList();
+        boolean captureWindow=checkCapture&&root.getWindowId()==activeWindow;
+        boolean captureProtected=captureWindow&&PopupAdRules.protectedActivity(activity);
+        boolean captureNodes=captureWindow&&!captureProtected&&missedCapture.wantsDetails(foreground);
+        List<AccessibilityNodeInfo> nodes=checkSplash||checkPopup||captureNodes?UiDriver.walkComplete(root):Collections.emptyList();
+        if(captureWindow){
+            missedCapture.sample(foreground,activity,activeWindow,
+                    captureProtected?null:screen(root),nodes);
+        }else if(checkCapture)missedCapture.defer(foreground);
         if(checkSplash){
             List<CustomSkipRule> custom=customRules();
-            Consumer<SkipDiagnostics.Phase> trace=diagnostics.observes(foreground,diagnosticAttempt)?this::note:null;
+            Consumer<SkipDiagnostics.Phase> trace=diagnostics.observes(foreground,diagnosticAttempt)
+                    ||missedCapture.observing(foreground,MissedAdCapture.Mode.SPLASH)?this::note:null;
             SplashHit hit=splashHit(root,rules,splashActivity(root),custom,launchAge(),trace,nodes,splashMode());
             if(hit!=null){
                 if(checkPopup){
@@ -570,6 +605,21 @@ final class SplashSkipper {
             }
         }
         schedule();
+    }
+    private void sampleMissedAdOnly(){
+        if(screenLocked()){
+            missedCapture.sample(foreground,"",activeWindow,null,Collections.emptyList());
+            return;
+        }
+        AccessibilityNodeInfo root=service.getRootInActiveWindow();
+        if(activeWindow<0||!matchesWindow(root,foreground,activeWindow)){
+            missedCapture.defer(foreground);
+            return;
+        }
+        boolean guarded=PopupAdRules.protectedActivity(activity);
+        List<AccessibilityNodeInfo> nodes=!guarded&&missedCapture.wantsDetails(foreground)
+                ?UiDriver.walkComplete(root):Collections.emptyList();
+        missedCapture.sample(foreground,activity,activeWindow,guarded?null:screen(root),nodes);
     }
     private void retryUnreadablePopup(boolean alreadyRetried){
         if(popupRetries>0){
@@ -1015,6 +1065,8 @@ final class SplashSkipper {
     }
     private void recordPopup(String pkg,boolean confirmed){
         try{store.recordPopup(pkg,confirmed);}catch(RuntimeException ignored){/* History failure never retries a screen click. */}
+        missedCapture.note(pkg,MissedAdCapture.Mode.POPUP,
+                confirmed?SkipDiagnostics.Phase.CONFIRMED:SkipDiagnostics.Phase.UNCONFIRMED);
         if(confirmed)showFeedback(pkg,"净屏 · 弹窗已关闭");
     }
     private void verifySplash(String pkg,long visit,long interaction,SkipDiagnostics.Attempt attempt,
@@ -1035,6 +1087,7 @@ final class SplashSkipper {
         if(closed)return;
         if(visit==foregroundVisit&&pkg.equals(foreground)){splashVerifying=false;schedule();}
         diagnostics.note(pkg,attempt,phase);
+        if(visit==foregroundVisit)missedCapture.note(pkg,MissedAdCapture.Mode.SPLASH,phase);
         boolean confirmed=phase==SkipDiagnostics.Phase.CONFIRMED;
         try{store.recordSplash(pkg,confirmed);}catch(RuntimeException ignored){/* History failure never retries a screen click. */}
         if(confirmed)showFeedback(pkg,"净屏 · 开屏已跳过");

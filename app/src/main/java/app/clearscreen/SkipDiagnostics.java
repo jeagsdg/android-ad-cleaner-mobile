@@ -105,6 +105,11 @@ final class SkipDiagnostics {
 
     synchronized boolean targets(String pkg) { return hasSession() && packageName.equals(pkg); }
 
+    synchronized String recentResult(String pkg, long version) {
+        if (!targets(pkg) || attempt == null || version != appVersion || phase == Phase.WAITING) return "";
+        return phase == Phase.SCAN_ENDED && probe != Phase.WAITING ? probe.label : phase.label;
+    }
+
     synchronized Attempt begin(String pkg, Object owner) {
         if (!targets(pkg)) return null;
         attempt = new Attempt(owner);

@@ -9,9 +9,10 @@ import java.util.regex.Pattern;
 
 /** Read-only checks against the project's public GitHub update feed. */
 final class ReleaseUpdates {
-    private static final String REPOSITORY = "jeagsdg/android-ad-cleaner-mobile";
-    private static final String RAW_APK_ROOT = "https://raw.githubusercontent.com/" + REPOSITORY + "/main/dist/";
-    private static final String API_APK_ROOT = "https://api.github.com/repos/" + REPOSITORY + "/contents/dist/";
+    private static final String REPOSITORY_NAME = "android-ad-cleaner-mobile";
+    private static final String REPOSITORY = "jeagsdg/" + REPOSITORY_NAME;
+    static final String ARCHIVE_URL = "https://codeload.github.com/" + REPOSITORY + "/zip/refs/heads/main";
+    static final String ARCHIVE_ROOT = REPOSITORY_NAME + "-main/";
     private static final int MAX_FEED_BYTES = 16 * 1024;
     private static final int MAX_NOTES_LENGTH = 1200;
     private static final Pattern INTEGER = Pattern.compile("0|[1-9][0-9]{0,9}");
@@ -22,28 +23,48 @@ final class ReleaseUpdates {
 
     static Uri repositoryUri() { return Uri.parse("https://github.com/" + REPOSITORY); }
 
+    static Uri archiveUri() { return Uri.parse(ARCHIVE_URL); }
+
+    static String fileUrl(String path, boolean api) {
+        return api ? "https://api.github.com/repos/" + REPOSITORY + "/contents/" + path + "?ref=main"
+                : "https://raw.githubusercontent.com/" + REPOSITORY + "/main/" + path;
+    }
+
+    enum Source {
+        RAW, API, ARCHIVE;
+
+        static Source restore(String name, boolean legacyApi) {
+            try { return valueOf(name); }
+            catch (IllegalArgumentException ignored) { return legacyApi ? API : RAW; }
+        }
+
+        int flag() { return 1 << ordinal(); }
+    }
+
     static final class Info {
         final int versionCode;
         final String versionName;
         final String notes;
-        final boolean preferApiDownload;
+        final Source source;
 
-        private Info(int versionCode, String versionName, String notes, boolean preferApiDownload) {
+        private Info(int versionCode, String versionName, String notes, Source source) {
             this.versionCode = versionCode;
             this.versionName = versionName;
             this.notes = notes;
-            this.preferApiDownload = preferApiDownload;
+            this.source = source;
         }
 
         Uri rawDownloadUri() {
-            return Uri.parse(RAW_APK_ROOT + apkName());
+            return Uri.parse(fileUrl("dist/" + apkName(), false));
         }
 
         Uri apiDownloadUri() {
-            return Uri.parse(API_APK_ROOT + apkName() + "?ref=main");
+            return Uri.parse(fileUrl("dist/" + apkName(), true));
         }
 
-        private String apkName() {
+        String archiveApkPath() { return "0-update/" + apkName(); }
+
+        String apkName() {
             return "ClearScreen-" + versionName + ".apk";
         }
     }
@@ -53,10 +74,14 @@ final class ReleaseUpdates {
     }
 
     static Info parse(String source) throws IOException {
-        return parse(source, false);
+        return parse(source, Source.RAW);
     }
 
     static Info parse(String source, boolean preferApiDownload) throws IOException {
+        return parse(source, preferApiDownload ? Source.API : Source.RAW);
+    }
+
+    static Info parse(String source, Source origin) throws IOException {
         if (source == null || source.length() > MAX_FEED_BYTES) throw invalidFeed();
         Integer schema = null, versionCode = null;
         String versionName = null, notes = null;
@@ -95,7 +120,7 @@ final class ReleaseUpdates {
                 || notes.chars().anyMatch(c -> Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t')) {
             throw invalidFeed();
         }
-        return new Info(versionCode, versionName, notes, preferApiDownload);
+        return new Info(versionCode, versionName, notes, origin);
     }
 
     private static int readInteger(JsonReader reader) throws IOException {

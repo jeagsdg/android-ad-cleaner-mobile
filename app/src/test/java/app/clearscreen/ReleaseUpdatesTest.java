@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import static org.junit.Assert.assertEquals;
@@ -30,6 +31,19 @@ public class ReleaseUpdatesTest {
         assertEquals("api.github.com", api.getHost());
         assertEquals("/repos/jeagsdg/android-ad-cleaner-mobile/contents/dist/ClearScreen-0.9.0.apk", api.getPath());
         assertEquals("main", api.getQueryParameter("ref"));
+        assertEquals("0-update/ClearScreen-0.9.0.apk", info.archiveApkPath());
+        assertEquals("codeload.github.com", ReleaseUpdates.archiveUri().getHost());
+    }
+
+    @Test public void archiveSourceSurvivesRestartWithoutChangingTheFourFieldFeed() throws IOException {
+        ReleaseUpdates.Info info = ReleaseUpdates.parse(VALID, ReleaseUpdates.Source.ARCHIVE);
+        new Store(RuntimeEnvironment.getApplication()).cacheRelease(info);
+
+        ReleaseUpdates.Info restored = new Store(RuntimeEnvironment.getApplication()).cachedRelease();
+
+        assertEquals(ReleaseUpdates.Source.ARCHIVE, restored.source);
+        assertEquals(info.versionCode, restored.versionCode);
+        assertEquals(info.notes, restored.notes);
     }
 
     @Test public void rejectsMalformedOrSubstitutedMetadata() {

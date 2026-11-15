@@ -181,6 +181,11 @@ final class AppAdManagement {
             return;
         }
 
+        LinearLayout help = screen.card(screen.body);
+        screen.action(help, "刚才没跳过", true, () -> screen.showPage(MainActivity.APP_AD_MISS));
+        screen.space(help, 4);
+        screen.paragraph(help, "查看此应用的处理结果，或重现一次广告并预览反馈。");
+
         LinearLayout controls = screen.card(screen.body);
         controls.addView(screen.bold("此应用的处理偏好", 18, MainActivity.INK));
         boolean paused = screen.store.splashExcluded().contains(selected);
@@ -225,15 +230,36 @@ final class AppAdManagement {
         if (launchable) screen.linkAction(tools, "打开应用", () -> screen.openInstalledApp(selected));
     }
 
+    void missedAd() {
+        Map<String, String> installed = screen.launcherApps();
+        if (selected.isEmpty() || CustomSkipRule.protectedPackage(selected)
+                || (!installed.containsKey(selected) && screen.store.packageVersion(selected) < 0)) {
+            screen.showPage(MainActivity.APP_AD_DETAIL);
+            return;
+        }
+        String name = installed.getOrDefault(selected, selected);
+        new MissedAdReportPage(screen, selected, name).render();
+    }
+
+    void leaveMissedAd() {
+        MissedAdCapture.LOCAL.stop(selected, false);
+    }
+
     private void showBuiltInRules(Coverage entry, boolean protectedApp, boolean knownInstalled) {
         LinearLayout builtIn = screen.card(screen.body);
         builtIn.addView(screen.bold("内置规则", 18, MainActivity.INK));
         screen.space(builtIn, 8);
-        screen.paragraph(builtIn, protectedApp ? "此应用属于受保护范围。"
-                : entry == null ? "可尝试通用识别，也可以添加本机规则。"
-                : "开屏 " + entry.splash + " 条 · 应用内 " + entry.popup + " 条。命中取决于广告样式和应用版本。");
+        if (protectedApp) screen.paragraph(builtIn, "此应用属于受保护范围。");
+        else if (entry == null) screen.paragraph(builtIn, "可尝试通用识别，也可以添加本机规则。");
+        else {
+            screen.paragraph(builtIn, "已收录的广告场景");
+            if (entry.splash > 0) screen.paragraph(builtIn, "启动时的开屏广告 · " + entry.splash + " 条");
+            if (entry.popup > 0) screen.paragraph(builtIn, "应用内弹窗与指定广告页面 · " + entry.popup + " 条");
+            screen.paragraph(builtIn, "是否命中取决于广告样式和应用版本。");
+        }
         if (!knownInstalled) screen.paragraph(builtIn, "这台设备暂未检测到此应用。");
         builtIn.addView(screen.text(selected, 14, MainActivity.MUTED));
+        if (!protectedApp) screen.linkAction(builtIn, "查看此应用的规则目录", () -> screen.openRuleDirectory(selected));
     }
 
     private void saveExclusion(String mode, boolean excluded) {
