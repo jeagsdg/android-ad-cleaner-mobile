@@ -490,6 +490,37 @@ public class PopupAdRulesTest {
         assertNull(rules.find(root, activity, SCREEN));
     }
 
+    @Test public void gameStorePromotionsRequireTheNativeCloseBesideTheirOwnImage() {
+        assertGameStorePromotion("com.byfen.market", ".ui.activity.MainActivity", "android.view.ViewGroup",
+                "idIvImage", "idIvClose", "cancel_update");
+        assertGameStorePromotion("com.xmcy.hykb", ".app.ui.main.MainActivity", "android.widget.LinearLayout",
+                "dialog_home_notice_image_icon", "dialog_home_notice_image_close", "update_cancel");
+    }
+
+    private void assertGameStorePromotion(String pkg, String activitySuffix, String layoutClass,
+                                          String imageId, String closeId, String updateCancelId) {
+        String activity = pkg + activitySuffix;
+        AccessibilityNodeInfo root = frame(pkg);
+        AccessibilityNodeInfo dialog = add(root, node(pkg, layoutClass, null, false, SCREEN));
+        AccessibilityNodeInfo creative = add(dialog, image(pkg, imageId, true));
+        AccessibilityNodeInfo close = add(dialog, image(pkg, closeId, true));
+
+        PopupAdRules.Match match = rules.find(root, activity, SCREEN);
+        assertNotNull(match);
+        assertEquals(close, match.target);
+        assertEquals(1, match.rule.maxPerVisit());
+        assertNull(rules.find(root, activity + "Other", SCREEN));
+        close.setVisibleToUser(false);
+        assertNull(rules.find(root, activity, SCREEN));
+        close.setVisibleToUser(true);
+        creative.setContentDescription("观看广告领取奖励");
+        assertNull(rules.find(root, activity, SCREEN));
+        creative.setContentDescription(null);
+        close.setViewIdResourceName(pkg + ":id/" + updateCancelId);
+        creative.setText("发现新版本");
+        assertNull(rules.find(root, activity, SCREEN));
+    }
+
     private static AccessibilityNodeInfo frame(String pkg) {
         return node(pkg, "android.widget.FrameLayout", null, false, SCREEN);
     }

@@ -817,6 +817,72 @@ public class SplashSkipperTest {
         }
     }
 
+    @Test @Config(sdk = 28)
+    public void ookcamRecognizesTheDedicatedAdWindowAfterTheMainAppHasOpened() {
+        String pkg = "com.okcam.ookcam";
+        String home = pkg + ".MainActivity";
+        String adPage = pkg + ".SplashActivity";
+        CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
+        for (String activity : List.of(home, adPage)) {
+            shadowOf(service.getPackageManager()).addActivityIfNotPresent(new ComponentName(pkg, activity));
+        }
+        ActiveRootService shadowService = Shadow.extract(service);
+        Store store = new Store(service);
+        store.setSplashEnabled(true);
+        store.setPopupEnabled(false);
+        store.setSkipToastEnabled(false);
+        Rect screen = new Rect(0, 0, 1080, 2400);
+        Rect corner = new Rect(820, 100, 1010, 190);
+        AccessibilityWindowInfo homeWindow = windowOnDisplay(41, Display.DEFAULT_DISPLAY);
+        AccessibilityWindowInfo adWindow = windowOnDisplay(42, Display.DEFAULT_DISPLAY);
+        AccessibilityNodeInfo homeRoot = windowNode("", screen, homeWindow);
+        homeRoot.setPackageName(pkg);
+        AccessibilityNodeInfo adRoot = windowNode("", screen, adWindow);
+        adRoot.setPackageName(pkg);
+        AccessibilityNodeInfo host = windowNode("", screen, adWindow);
+        host.setPackageName(pkg);
+        host.setClassName("android.widget.RelativeLayout");
+        host.setViewIdResourceName(pkg + ":id/adsFl");
+        shadowOf(adRoot).addChild(host);
+        AccessibilityNodeInfo genericClose = windowNode("关闭广告", corner, adWindow);
+        genericClose.setPackageName(pkg);
+        genericClose.setClickable(true);
+        shadowOf(adRoot).addChild(genericClose);
+
+        SplashSkipper skipper = new SplashSkipper(service);
+        try {
+            shadowService.activeRoot = () -> homeRoot;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, pkg, 41, home);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(SplashSkipper.WINDOW_MS + 400));
+
+            shadowService.activeRoot = () -> adRoot;
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, pkg, 42, adPage);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(400));
+            assertTrue(shadowOf(genericClose).getPerformedActions().isEmpty());
+
+            AccessibilityNodeInfo creative = windowNode("", screen, adWindow);
+            creative.setPackageName(pkg);
+            creative.setViewIdResourceName(pkg + ":id/ksad_splash_root_container");
+            shadowOf(host).addChild(creative);
+            AccessibilityNodeInfo skip = windowNode("", corner, adWindow);
+            skip.setPackageName(pkg);
+            skip.setViewIdResourceName(pkg + ":id/ksad_skip_view_area");
+            skip.setClickable(true);
+            shadowOf(creative).addChild(skip);
+            shadowOf(skip).setOnPerformActionListener((action, args) -> {
+                shadowService.activeRoot = () -> homeRoot;
+                return true;
+            });
+
+            sendWindowEvent(skipper, AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, pkg, 42);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+            assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK), shadowOf(skip).getPerformedActions());
+            assertTrue(shadowOf(genericClose).getPerformedActions().isEmpty());
+        } finally {
+            skipper.close();
+        }
+    }
+
     @Test public void confirmedGenericPopupsCanContinueInTheSameWindowUpToTheVisitLimit() {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         ActiveRootService shadowService = Shadow.extract(service);

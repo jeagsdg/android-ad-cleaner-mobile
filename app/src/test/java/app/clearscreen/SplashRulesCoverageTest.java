@@ -920,6 +920,54 @@ public class SplashRulesCoverageTest {
         assertNull(SplashSkipper.match(root, rules, activity));
     }
 
+    @Test public void aiwuLegacySplashNeedsTheVisibleAdAndTapsItsNativeSkipContainer() {
+        String pkg = "com.aiwu.market";
+        String activity = pkg + ".main.ui.splash.SplashActivity";
+        Rect corner = new Rect(910, 2180, 1080, 2350);
+        AccessibilityNodeInfo root = node(pkg, "android.widget.RelativeLayout", null, false, SCREEN);
+        AccessibilityNodeInfo content = add(root, frame(pkg, pkg + ":id/splash_container"));
+        add(root, node(pkg, "android.widget.ImageView", pkg + ":id/bottom", false, SCREEN));
+        AccessibilityNodeInfo skip = add(root, node(pkg, "android.widget.FrameLayout", pkg + ":id/skipLayout", true, corner));
+        AccessibilityNodeInfo label = add(skip, node(pkg, "android.widget.TextView", pkg + ":id/tv_red_skip", false, corner));
+        label.setText("跳过");
+        assertNull(SplashSkipper.match(root, rules, activity));
+
+        AccessibilityNodeInfo ad = add(content, frame(pkg, "com.byted.pangle:id/tt_splash_view"));
+        AccessibilityNodeInfo badge = add(ad, node(pkg, "android.widget.TextView", "com.byted.pangle:id/tt_splash_ad_logo", true, CORNER));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, pkg + ".ui.activity.NewHomeActivity"));
+        assertNull(SplashSkipper.match(root, rules, activity, 10_000));
+        badge.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        badge.setVisibleToUser(true);
+        skip.setClickable(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
+    @Test public void aiwuCurrentSplashClicksOnlyTheVisibleCountdownBesideLoadedContent() {
+        String pkg = "com.aiwu.market";
+        String activity = pkg + ".main.ui.splash.SplashActivity";
+        Rect corner = new Rect(920, 2190, 1010, 2280);
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo content = add(root, frame(pkg, pkg + ":id/splashContainer"));
+        AccessibilityNodeInfo bottom = add(root, node(pkg, "androidx.constraintlayout.widget.ConstraintLayout",
+                pkg + ":id/bottomLayout", true, SCREEN));
+        add(bottom, node(pkg, "android.widget.ImageView", pkg + ":id/logoIv", true, SCREEN));
+        AccessibilityNodeInfo skip = add(bottom, node(pkg, pkg + ".ui.widget.CircleCountDownProgressbar",
+                pkg + ":id/countDownProgressbar", true, corner));
+
+        assertNull(SplashSkipper.match(root, rules, activity));
+        add(content, node(pkg, "android.widget.ImageView", pkg + ":id/imageView", false, SCREEN));
+        assertEquals(skip, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, rules, activity + "AliasTv"));
+        skip.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        skip.setVisibleToUser(true);
+        AccessibilityNodeInfo privacy = add(root, button(pkg, "android.widget.Button", null));
+        privacy.setText("同意用户协议");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
     private static AccessibilityNodeInfo frame(String pkg, String id) {
         return node(pkg, "android.widget.FrameLayout", id, false, SCREEN);
     }

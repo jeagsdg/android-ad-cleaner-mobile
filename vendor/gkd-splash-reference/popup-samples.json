@@ -353,5 +353,27 @@
     "group": "竖屏短剧广告倒计时结束",
     "exactActivity": true,
     "pageDown": true
+  },
+  {
+    "package": "com.byfen.market",
+    "name": "百分网游戏盒子",
+    "activity": "com.byfen.market.ui.activity.MainActivity",
+    "versionName": "5.7.1",
+    "snapshot": "https://i.gkd.li/import/13801613",
+    "sha256": "f173032063e8049da98b2f4d2c5955173bff05386658ee8f969c97d02c96a585",
+    "selector": "ViewGroup[childCount=2] > ImageView[id=\"com.byfen.market:id/idIvImage\"][clickable=true][childCount=0] + @ImageView[id=\"com.byfen.market:id/idIvClose\"][text=null][desc=null][clickable=true][childCount=0]",
+    "group": "首页游戏推广弹窗",
+    "exactActivity": true
+  },
+  {
+    "package": "com.xmcy.hykb",
+    "name": "好游快爆",
+    "activity": "com.xmcy.hykb.app.ui.main.MainActivity",
+    "versionName": "1.5.6.903",
+    "snapshot": "https://i.gkd.li/import/13259427",
+    "sha256": "be55f49d2317c626c35238b82f18db2149595100e75a0e45d7f275529af87f7d",
+    "selector": "LinearLayout[childCount=2] > ImageView[id=\"com.xmcy.hykb:id/dialog_home_notice_image_icon\"][clickable=true][childCount=0] + @ImageView[id=\"com.xmcy.hykb:id/dialog_home_notice_image_close\"][text=null][desc=null][clickable=true][childCount=0]",
+    "group": "首页活动推广弹窗",
+    "exactActivity": true
   }
 ]

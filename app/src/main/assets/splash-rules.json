@@ -16025,6 +16025,435 @@
       "exactActivity": true
     },
     {
+      "package": "com.aiwu.market",
+      "name": "爱吾游戏宝盒",
+      "groupKey": -90,
+      "ruleIndex": 83,
+      "selector": "FrameLayout[id=\"com.aiwu.market:id/splash_container\"] + ImageView[id=\"com.aiwu.market:id/bottom\"] + @FrameLayout[id=\"com.aiwu.market:id/skipLayout\"][clickable=true][childCount=1] > TextView[id=\"com.aiwu.market:id/tv_red_skip\"][text=\"跳过\"][clickable=false][childCount=0]",
+      "snapshots": [
+        "https://i.gkd.li/import/13387463"
+      ],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/splash_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "ImageView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/bottom"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/skipLayout"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    1
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/tv_red_skip"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    false
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 2
+      },
+      "activityIds": [
+        "com.aiwu.market.main.ui.splash.SplashActivity"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [
+        {
+          "path": [
+            {
+              "class": "FrameLayout",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "com.byted.pangle:id/tt_splash_view"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        },
+        {
+          "path": [
+            {
+              "class": "TextView",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "com.byted.pangle:id/tt_splash_ad_logo"
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        }
+      ],
+      "requiredSelectors": [
+        "FrameLayout[id=\"com.byted.pangle:id/tt_splash_view\"]",
+        "TextView[id=\"com.byted.pangle:id/tt_splash_ad_logo\"]"
+      ],
+      "reference": {
+        "versionName": "2.4.0.7",
+        "snapshotSha256": "9ebdff6aede1d6405dfd9dd7fea46117cf8ccdc4701fe3c74e3afe57b05e1f62"
+      },
+      "exactActivity": true
+    },
+    {
+      "package": "com.aiwu.market",
+      "name": "爱吾游戏宝盒",
+      "groupKey": -90,
+      "ruleIndex": 84,
+      "selector": "FrameLayout[id=\"com.aiwu.market:id/splashContainer\"][childCount>0] + *[id=\"com.aiwu.market:id/bottomLayout\"] > *[id=\"com.aiwu.market:id/countDownProgressbar\"][clickable=true][childCount=0]",
+      "snapshots": [],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "FrameLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/splashContainer"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    ">",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/bottomLayout"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.aiwu.market:id/countDownProgressbar"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "+",
+            [
+              1
+            ]
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 2
+      },
+      "activityIds": [
+        "com.aiwu.market.main.ui.splash.SplashActivity"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [],
+      "requiredSelectors": [],
+      "reference": {
+        "versionName": "2.7.2.0",
+        "apkLayout": {
+          "store": "https://www.25game.com/Android/View/3610/",
+          "url": "https://www.25game.com/AppDown/3610/",
+          "apkSha256": "f6c5ebcb88d4ecb3473d88952dbce32bba9f881a5ac5c925124833381102d0dd",
+          "path": "res/66W.xml",
+          "layoutSha256": "43c11732845b87810ac8ea4469606a086394e516484e7314b0495617387b33e4"
+        }
+      },
+      "exactActivity": true
+    },
+    {
+      "package": "com.okcam.ookcam",
+      "name": "小鹰看看",
+      "groupKey": -90,
+      "ruleIndex": 85,
+      "selector": "RelativeLayout[id=\"com.okcam.ookcam:id/adsFl\"] >n *[id=\"com.okcam.ookcam:id/ksad_splash_root_container\"] >n *[id=\"com.okcam.ookcam:id/ksad_skip_view_area\"||id=\"com.okcam.ookcam:id/ksad_splash_skip_left_view\"||id=\"com.okcam.ookcam:id/ksad_splash_skip_right_view\"||id=\"com.okcam.ookcam:id/ksad_splash_circle_skip_left_view\"||id=\"com.okcam.ookcam:id/ksad_splash_circle_skip_right_view\"][clickable=true]",
+      "snapshots": [],
+      "evidence": "resource",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "RelativeLayout",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/adsFl"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/ksad_splash_root_container"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/ksad_skip_view_area"
+                  ]
+                ],
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/ksad_splash_skip_left_view"
+                  ]
+                ],
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/ksad_splash_skip_right_view"
+                  ]
+                ],
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/ksad_splash_circle_skip_left_view"
+                  ]
+                ],
+                [
+                  [
+                    "id",
+                    "=",
+                    "com.okcam.ookcam:id/ksad_splash_circle_skip_right_view"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            []
+          ],
+          [
+            ">",
+            []
+          ]
+        ],
+        "target": 2
+      },
+      "activityIds": [
+        "com.okcam.ookcam.SplashActivity"
+      ],
+      "matchTime": 10000,
+      "requireClickable": true,
+      "required": [],
+      "requiredSelectors": [],
+      "reference": {
+        "versionName": "3.0.41",
+        "apkLayout": {
+          "store": "https://sj.qq.com/appdetail/com.okcam.ookcam",
+          "url": "https://imtt.dd.qq.com/sjy.00022/sjy.00004/16891/apk/CC9C37CC6691E53FB6C69C39B0488EBB.apk?fsname=com.okcam.ookcam_3.0.41.apk",
+          "apkSha256": "970d124abe591e7856c7cbb4366bca9eb68a76310227a7a7c066564253524a9a",
+          "path": "res/nE6.xml",
+          "layoutSha256": "2a114fdc96e38178e96da9363c0d2cee6f404e98a58dcf03a3695260ad396ef9"
+        }
+      },
+      "exactActivity": true
+    },
+    {
       "package": "com.hihonor.appmarket",
       "name": "荣耀应用市场",
       "groupKey": 0,

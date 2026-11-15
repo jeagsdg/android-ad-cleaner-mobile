@@ -921,5 +921,49 @@
     "selector": "ImageView[id=\"com.infothinker.gzmetro:id/img_splash\"][visibleToUser=true] < RelativeLayout[clickable=false] > @LinearLayout[id=\"com.infothinker.gzmetro:id/btn_skip_ad\"][text=null][desc=null][clickable=true] > TextView[id=null][text=\"跳过\"][clickable=false][childCount=0] + TextView[id=\"com.infothinker.gzmetro:id/tv_time_count\"][text!=null][clickable=false][childCount=0]",
     "evidence": "resource",
     "exactActivity": true
+  },
+  {
+    "package": "com.aiwu.market",
+    "name": "爱吾游戏宝盒",
+    "activity": "com.aiwu.market.main.ui.splash.SplashActivity",
+    "versionName": "2.4.0.7",
+    "snapshot": "https://i.gkd.li/import/13387463",
+    "sha256": "9ebdff6aede1d6405dfd9dd7fea46117cf8ccdc4701fe3c74e3afe57b05e1f62",
+    "selector": "FrameLayout[id=\"com.aiwu.market:id/splash_container\"] + ImageView[id=\"com.aiwu.market:id/bottom\"] + @FrameLayout[id=\"com.aiwu.market:id/skipLayout\"][clickable=true][childCount=1] > TextView[id=\"com.aiwu.market:id/tv_red_skip\"][text=\"跳过\"][clickable=false][childCount=0]",
+    "requiredSelectors": ["FrameLayout[id=\"com.byted.pangle:id/tt_splash_view\"]", "TextView[id=\"com.byted.pangle:id/tt_splash_ad_logo\"]"],
+    "evidence": "resource",
+    "exactActivity": true
+  },
+  {
+    "package": "com.aiwu.market",
+    "name": "爱吾游戏宝盒",
+    "activity": "com.aiwu.market.main.ui.splash.SplashActivity",
+    "versionName": "2.7.2.0",
+    "apkLayout": {
+      "store": "https://www.25game.com/Android/View/3610/",
+      "url": "https://www.25game.com/AppDown/3610/",
+      "apkSha256": "f6c5ebcb88d4ecb3473d88952dbce32bba9f881a5ac5c925124833381102d0dd",
+      "path": "res/66W.xml",
+      "layoutSha256": "43c11732845b87810ac8ea4469606a086394e516484e7314b0495617387b33e4"
+    },
+    "selector": "FrameLayout[id=\"com.aiwu.market:id/splashContainer\"][childCount>0] + *[id=\"com.aiwu.market:id/bottomLayout\"] > *[id=\"com.aiwu.market:id/countDownProgressbar\"][clickable=true][childCount=0]",
+    "evidence": "resource",
+    "exactActivity": true
+  },
+  {
+    "package": "com.okcam.ookcam",
+    "name": "小鹰看看",
+    "activity": "com.okcam.ookcam.SplashActivity",
+    "versionName": "3.0.41",
+    "apkLayout": {
+      "store": "https://sj.qq.com/appdetail/com.okcam.ookcam",
+      "url": "https://imtt.dd.qq.com/sjy.00022/sjy.00004/16891/apk/CC9C37CC6691E53FB6C69C39B0488EBB.apk?fsname=com.okcam.ookcam_3.0.41.apk",
+      "apkSha256": "970d124abe591e7856c7cbb4366bca9eb68a76310227a7a7c066564253524a9a",
+      "path": "res/nE6.xml",
+      "layoutSha256": "2a114fdc96e38178e96da9363c0d2cee6f404e98a58dcf03a3695260ad396ef9"
+    },
+    "selector": "RelativeLayout[id=\"com.okcam.ookcam:id/adsFl\"] >n *[id=\"com.okcam.ookcam:id/ksad_splash_root_container\"] >n *[id=\"com.okcam.ookcam:id/ksad_skip_view_area\"||id=\"com.okcam.ookcam:id/ksad_splash_skip_left_view\"||id=\"com.okcam.ookcam:id/ksad_splash_skip_right_view\"||id=\"com.okcam.ookcam:id/ksad_splash_circle_skip_left_view\"||id=\"com.okcam.ookcam:id/ksad_splash_circle_skip_right_view\"][clickable=true]",
+    "evidence": "resource",
+    "exactActivity": true
   }
 ]

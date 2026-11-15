@@ -23,6 +23,8 @@ final class SplashSkipper {
     private static final String WECHAT_PACKAGE="com.tencent.mm";
     private static final String WECHAT_PLUGIN_SPLASH=WECHAT_PACKAGE+".plugin.appbrand.ui.AppBrandPluginUI";
     private static final String WECHAT_MINI_APP_SPLASH=WECHAT_PACKAGE+".plugin.appbrand.ui.AppBrandUI00";
+    private static final String OOKCAM_PACKAGE="com.okcam.ookcam";
+    private static final String OOKCAM_AD_SPLASH=OOKCAM_PACKAGE+".SplashActivity";
     private static final long QUICK_SCAN_MS=65;
     private static final long USER_INPUT_PAUSE_MS=900;
     private static final long OWN_CLICK_ECHO_MS=550;
@@ -327,8 +329,8 @@ final class SplashSkipper {
             nextPopupProbe=0;
         }
         if(!newVisit&&newActivity&&newWindow&&launchAt>=0&&!splashVerifying
-                &&reviewedWeChatMiniApp(pkg,activity)&&!activity.equals(previousActivity)){
-            // Entering a mini program can leave the app package in the foreground.
+                &&reviewedInAppSplash(pkg,activity)&&!activity.equals(previousActivity)){
+            // Some apps open a separate ad window without leaving the foreground package.
             attempted=false;
             nextSplashProbe=Math.max(now,pauseUntil);
             armSplash(launchAt,true);
@@ -341,8 +343,9 @@ final class SplashSkipper {
             armSplash(now,false);
         }
     }
-    private static boolean reviewedWeChatMiniApp(String pkg,String activity){
-        return WECHAT_PACKAGE.equals(pkg)&&(WECHAT_PLUGIN_SPLASH.equals(activity)||WECHAT_MINI_APP_SPLASH.equals(activity));
+    private static boolean reviewedInAppSplash(String pkg,String activity){
+        return (WECHAT_PACKAGE.equals(pkg)&&(WECHAT_PLUGIN_SPLASH.equals(activity)||WECHAT_MINI_APP_SPLASH.equals(activity)))
+                ||(OOKCAM_PACKAGE.equals(pkg)&&OOKCAM_AD_SPLASH.equals(activity));
     }
     private void armSplash(long now,boolean exactActivityOnly){
         cancelDelayedSplash();
@@ -1114,7 +1117,7 @@ final class SplashSkipper {
         String pkg=String.valueOf(root.getPackageName());
         if(CustomSkipRule.protectedPackage(pkg)||PopupAdRules.protectedActivity(activity))return noHit(trace,SkipDiagnostics.Phase.GUARDED);
         boolean exactActivityOnly=mode==SplashMatch.EXACT_ACTIVITY_ONLY;
-        if(exactActivityOnly&&!reviewedWeChatMiniApp(pkg,activity))
+        if(exactActivityOnly&&!reviewedInAppSplash(pkg,activity))
             return noHit(trace,SkipDiagnostics.Phase.PAGE_MISMATCH);
         int window=root.getWindowId();
         if(nodes.isEmpty())return noHit(trace,SkipDiagnostics.Phase.TREE_UNAVAILABLE);
