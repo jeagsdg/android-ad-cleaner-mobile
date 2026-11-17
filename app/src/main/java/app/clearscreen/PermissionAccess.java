@@ -178,6 +178,17 @@ final class PermissionAccess {
             Boolean restricted = backgroundRestricted(context), exempt = batteryExempt(context);
             out.put("backgroundRestricted", restricted == null ? JSONObject.NULL : restricted);
             out.put("batteryOptimizationExempt", exempt == null ? JSONObject.NULL : exempt);
+            if (AccessibilityRecovery.supported()) {
+                try { out.put("accessibilitySwitchEnabled", AccessibilityRecovery.configured(context)); }
+                catch (SecurityException ignored) { out.put("accessibilitySwitchEnabled", JSONObject.NULL); }
+                out.put("accessibilityServiceConnected", CleanerService.get() != null);
+                out.put("recoveryAuthorized", AccessibilityRecovery.hasPermission(context));
+                out.put("recoveryNotificationAllowed", SkipKeepAliveService.notificationsAllowed(context));
+                out.put("keepAliveRunning", SkipKeepAliveService.running());
+                out.put("accessibilityRecovery", SkipKeepAliveService.recoveryRunning()
+                        ? SkipKeepAliveService.recoveryConnection().name()
+                        : SkipKeepAliveService.recoveryFailed() ? "FAILED" : "STOPPED");
+            }
             String installer;
             try {
                 installer = Build.VERSION.SDK_INT >= 30

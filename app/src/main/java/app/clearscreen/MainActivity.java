@@ -1554,13 +1554,17 @@ public final class MainActivity extends Activity {
     }
     void backgroundHelp() {
         Boolean restricted = PermissionAccess.backgroundRestricted(this), exempt = PermissionAccess.batteryExempt(this);
+        boolean xiaomi = AccessibilityRecovery.supported();
         String state = restricted == null ? "此设备未提供后台限制状态。"
                 : restricted ? "系统已限制净屏在后台运行。" : "系统未报告净屏处于后台受限状态。";
         String battery = exempt == null ? "暂时无法读取电池优化状态。"
                 : exempt ? "净屏已被系统列入电池优化豁免。" : "净屏仍受系统电池优化管理。";
         new AlertDialog.Builder(this).setTitle("后台运行状态")
-                .setMessage(state + "\n" + battery + "\n\n若无障碍经常断开，可在系统设置中检查净屏的后台运行权限。厂商的省电策略由本机系统管理。")
-                .setPositiveButton("打开系统设置", (d, w) -> {
+                .setMessage(state + "\n" + battery + (xiaomi
+                        ? "\n\n在净屏应用详情里，将「省电策略」设为「无限制」，并开启「后台自启动」。若应用详情没有自启动开关，可在系统设置里搜索「后台自启动」。"
+                        : "\n\n若无障碍经常断开，可在系统设置中检查净屏的后台运行权限。厂商的省电策略由本机系统管理。"))
+                .setPositiveButton(xiaomi ? "打开净屏应用详情" : "打开系统设置", (d, w) -> {
+                    if (xiaomi && PermissionAccess.openAppInfo(this, this::startActivity)) return;
                     if (!PermissionAccess.openBatterySettings(this, this::startActivity)) toast("请从系统设置手动打开净屏应用详情");
                 }).setNegativeButton("关闭", null).show();
     }
@@ -1647,7 +1651,7 @@ public final class MainActivity extends Activity {
     }
     void setKeepAlive(boolean enabled) {
         store.setSkipKeepAliveEnabled(enabled);
-        if (!enabled) SkipKeepAliveService.stopRecovery();
+        if (!enabled) SkipKeepAliveService.stopRecovery(this);
         SkipKeepAliveService.sync(this);
         render();
     }

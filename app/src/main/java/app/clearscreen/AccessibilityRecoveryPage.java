@@ -24,6 +24,7 @@ final class AccessibilityRecoveryPage {
     private final MainActivity activity;
     private Step shown;
     private boolean showedFailure;
+    private PermissionAccess.State shownAccess;
     private SkipKeepAliveService.RecoveryConnection shownConnection;
     private AlertDialog authorizationHelp;
 
@@ -42,6 +43,7 @@ final class AccessibilityRecoveryPage {
 
     boolean changed() {
         return shown != step() || showedFailure != SkipKeepAliveService.recoveryFailed()
+                || (shown == Step.CONNECT && shownAccess != PermissionAccess.state(activity))
                 || shownConnection != SkipKeepAliveService.recoveryConnection();
     }
 
@@ -52,6 +54,7 @@ final class AccessibilityRecoveryPage {
             authorizationHelp = null;
         }
         showedFailure = SkipKeepAliveService.recoveryFailed();
+        shownAccess = shown == Step.CONNECT ? PermissionAccess.state(activity) : null;
         shownConnection = SkipKeepAliveService.recoveryConnection();
         activity.header("", "自动恢复无障碍",
                 "开屏跳过突然失效？净屏可以在小米手机上检查并恢复自己的无障碍开关。");
@@ -60,21 +63,31 @@ final class AccessibilityRecoveryPage {
         if (shown == Step.RUNNING) {
             String title;
             switch (shownConnection) {
-                case WAITING_FOR_SYSTEM: title = "等待系统重新连接"; break;
+                case WAITING_FOR_SYSTEM: title = "开关已开启，服务未连接"; break;
                 case RESTORING: title = "已重新打开开关，等待连接"; break;
+                case WAITING_TO_RETRY: title = "开关未保持开启，等待重试"; break;
                 case RESTORED: title = "已恢复无障碍连接"; break;
                 default: title = "自动恢复运行中";
             }
-            prompt(panel, title, "净屏约每 30 秒检查一次。要手动关闭无障碍，请先停止自动恢复。",
+            boolean disconnected = shownConnection == SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM;
+            prompt(panel, title, disconnected
+                            ? "净屏会继续检查。若开屏仍无法跳过，可到系统设置关掉「净屏」再打开。"
+                            : "净屏在亮屏、解锁和开关变化时检查，也会定时复查。要手动关闭无障碍，请先停止自动恢复。",
                     "停止自动恢复", () -> {
-                        SkipKeepAliveService.stopRecovery();
+                        SkipKeepAliveService.stopRecovery(activity);
                         activity.render();
                     });
+            if (disconnected) activity.linkAction(panel, "停止恢复并打开无障碍设置", () -> {
+                SkipKeepAliveService.stopRecovery(activity);
+                activity.render();
+                activity.openAccessibilitySettings();
+            });
             activity.paragraph(activity.body, "如果手机重启或净屏被彻底关闭，重新打开本页即可再次开启。");
+            troubleshooting();
             return;
         }
         if (showedFailure) {
-            activity.paragraph(panel, "系统未确认无障碍已连接，自动恢复已停止。请在无障碍设置中重新打开净屏，再回到本页。");
+            activity.paragraph(panel, "自动恢复已停止。请检查系统的无障碍设置和净屏通知，再回到本页。");
             activity.space(panel, 12);
         }
         switch (shown) {
@@ -83,7 +96,10 @@ final class AccessibilityRecoveryPage {
                         "开启开屏跳过", activity::toggleSplash);
                 break;
             case CONNECT:
-                prompt(panel, "先连接无障碍", "在手机设置的无障碍服务列表中开启「净屏」，然后回到这里。",
+                boolean disconnected = shownAccess == PermissionAccess.State.DISCONNECTED;
+                prompt(panel, disconnected ? "开关已开启，服务未连接" : "先连接无障碍",
+                        disconnected ? "若一直未连接，请在系统无障碍设置里关掉「净屏」再打开。"
+                                : "在手机设置的无障碍服务列表中开启「净屏」，然后回到这里。",
                         "打开无障碍设置", activity::openAccessibilitySettings);
                 activity.linkAction(panel, "开启遇到问题", activity::accessibility);
                 break;
@@ -108,6 +124,12 @@ final class AccessibilityRecoveryPage {
                 break;
             default: break;
         }
+        troubleshooting();
+    }
+
+    private void troubleshooting() {
+        activity.linkAction(activity.body, "检查后台限制", activity::backgroundHelp);
+        activity.linkAction(activity.body, "查看诊断报告", activity::diagnostics);
     }
 
     private void prompt(LinearLayout panel, String title, String description, String button, Runnable next) {

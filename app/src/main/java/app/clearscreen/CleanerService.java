@@ -14,7 +14,9 @@ import java.util.concurrent.*;
 public final class CleanerService extends AccessibilityService {
     private static final long TARGET_CHECK_BUDGET_MS=36_000;
     private static java.lang.ref.WeakReference<CleanerService> reference=new java.lang.ref.WeakReference<>(null);
+    private static long connectionGeneration;
     public static CleanerService get(){return reference.get();}
+    static long connectionGeneration(){return connectionGeneration;}
     public volatile boolean busy;
     public volatile String progress="准备就绪";
     private volatile String stopReason;
@@ -29,7 +31,7 @@ public final class CleanerService extends AccessibilityService {
     boolean startRulePreview(List<CustomSkipRule> drafts) {
         return skipper != null && skipper.startRulePreview(drafts);
     }
-    @Override protected void onServiceConnected(){reference=new java.lang.ref.WeakReference<>(this);if(skipper!=null)skipper.close();skipper=new SplashSkipper(this);SkipKeepAliveService.sync(this);}
+    @Override protected void onServiceConnected(){reference=new java.lang.ref.WeakReference<>(this);connectionGeneration++;if(skipper!=null)skipper.close();skipper=new SplashSkipper(this);SkipKeepAliveService.onAccessibilityConnected(this);}
     @Override public void onAccessibilityEvent(AccessibilityEvent event){if(skipper!=null)skipper.event(event);}
     // This callback interrupts feedback while the accessibility connection remains active.
     @Override public void onInterrupt(){if(skipper!=null)skipper.interruptFeedback();}

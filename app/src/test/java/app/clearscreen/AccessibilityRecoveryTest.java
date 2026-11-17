@@ -3,6 +3,7 @@ package app.clearscreen;
 import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.Service;
 import android.content.ClipboardManager;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -48,7 +49,7 @@ public class AccessibilityRecoveryTest {
     }
 
     @After public void teardown() {
-        SkipKeepAliveService.stopRecovery();
+        SkipKeepAliveService.stopRecovery(app);
         if (keepAlive != null) keepAlive.onDestroy();
         cleaner.onDestroy();
     }
@@ -68,29 +69,69 @@ public class AccessibilityRecoveryTest {
         assertTrue(SkipKeepAliveService.recoveryRunning());
     }
 
-    @Test public void enabledButDisconnectedWaitsAndReportsFailureIfSystemDoesNotReconnect() {
+    @Test public void enabledButDisconnectedKeepsWatchingAndCanRestoreLaterClear() {
         startRecovery();
         String before = enabledServices();
         cleaner.onUnbind(new Intent());
-        poll();
+        settle();
         assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
                 SkipKeepAliveService.recoveryConnection());
         poll();
+        poll();
         assertEquals(before, enabledServices());
-        assertFalse(SkipKeepAliveService.recoveryRunning());
-        assertTrue(SkipKeepAliveService.recoveryFailed());
+        assertTrue(SkipKeepAliveService.recoveryRunning());
+        assertFalse(SkipKeepAliveService.recoveryFailed());
+        setEnabledServices(OTHER_SERVICE);
+        settle();
+        assertRestoredWithoutChangingOtherService();
     }
 
-    @Test public void stopsAfterUnconfirmedRestoreWithoutRetrying() {
+    @Test public void keepsRetryingAfterUnconfirmedRestoreWithoutRewritingTooSoon() {
         startRecovery();
         removeOwnService();
+        settle();
+        assertRestoredWithoutChangingOtherService();
+        for (int clear = 0; clear < 4; clear++) {
+            setEnabledServices(OTHER_SERVICE);
+            settle();
+            assertEquals(OTHER_SERVICE, enabledServices());
+            assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_TO_RETRY,
+                    SkipKeepAliveService.recoveryConnection());
+            poll();
+            assertRestoredWithoutChangingOtherService();
+            assertTrue(SkipKeepAliveService.recoveryRunning());
+        }
+    }
+
+    @Test public void stickySystemRestartResumesAndRespectsRetryDelay() {
+        startRecovery();
+        removeOwnService();
+        assertEquals(Service.START_STICKY, restartService());
+        settle();
+        assertRestoredWithoutChangingOtherService();
+        // A second process death cannot erase the delay if the system never bound the service.
+        setEnabledServices(OTHER_SERVICE);
+        assertEquals(Service.START_STICKY, restartService());
+        settle();
+        assertEquals(OTHER_SERVICE, enabledServices());
+        assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_TO_RETRY,
+                SkipKeepAliveService.recoveryConnection());
         poll();
         assertRestoredWithoutChangingOtherService();
+        assertTrue(SkipKeepAliveService.recoveryRunning());
+    }
+
+    @Test public void staleConnectionCannotConfirmRestoreBeforeNewBindCallback() {
+        startRecovery();
         setEnabledServices(OTHER_SERVICE);
+        settle();
+        assertRestoredWithoutChangingOtherService();
         poll();
-        assertEquals(OTHER_SERVICE, enabledServices());
-        assertFalse(SkipKeepAliveService.recoveryRunning());
-        assertTrue(SkipKeepAliveService.recoveryFailed());
+        assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
+                SkipKeepAliveService.recoveryConnection());
+        cleaner.onServiceConnected();
+        assertEquals(SkipKeepAliveService.RecoveryConnection.RESTORED,
+                SkipKeepAliveService.recoveryConnection());
     }
 
     @Test public void notificationStopDisarmsBeforeNextPoll() throws Exception {
@@ -103,6 +144,9 @@ public class AccessibilityRecoveryTest {
         poll();
         assertFalse(new Store(app).skipKeepAliveEnabled());
         assertFalse(SkipKeepAliveService.recoveryRunning());
+        assertEquals(OTHER_SERVICE, enabledServices());
+        assertEquals(Service.START_NOT_STICKY, restartService());
+        poll();
         assertEquals(OTHER_SERVICE, enabledServices());
     }
 
@@ -244,8 +288,14 @@ public class AccessibilityRecoveryTest {
         assertNotNull(start);
         assertEquals(new ComponentName(app, SkipKeepAliveService.class), start.getComponent());
         keepAlive = Robolectric.buildService(SkipKeepAliveService.class).create().get();
-        keepAlive.onStartCommand(start, 0, 1);
+        assertEquals(Service.START_STICKY, keepAlive.onStartCommand(start, 0, 1));
         assertTrue(SkipKeepAliveService.recoveryRunning());
+    }
+
+    private int restartService() {
+        keepAlive.onDestroy();
+        keepAlive = Robolectric.buildService(SkipKeepAliveService.class).create().get();
+        return keepAlive.onStartCommand(null, 0, 1);
     }
 
     private void removeOwnService() {
@@ -270,5 +320,9 @@ public class AccessibilityRecoveryTest {
 
     private void poll() {
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(30));
+    }
+
+    private void settle() {
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4));
     }
 }
