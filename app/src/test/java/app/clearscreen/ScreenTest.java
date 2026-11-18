@@ -30,7 +30,7 @@ import static org.robolectric.Shadows.shadowOf;
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class ScreenTest {
     @Test public void supportIsOptionalAndExportsOriginalImage()throws Exception{
-        MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();assertNotNull(find(a.getWindow().getDecorView(),"系统广告设置"));find(a.getWindow().getDecorView(),"赞赏").performClick();assertNotNull(find(a.getWindow().getDecorView(),"保存赞赏码"));
+        MainActivity a=Robolectric.buildActivity(MainActivity.class).setup().get();assertNotNull(find(a.getWindow().getDecorView(),"系统广告设置"));find(a.getWindow().getDecorView(),"赞赏作者").performClick();assertNotNull(find(a.getWindow().getDecorView(),"保存赞赏码"));
         java.io.ByteArrayOutputStream output=new java.io.ByteArrayOutputStream();a.copySupportCode(output);byte[] hash=java.security.MessageDigest.getInstance("SHA-256").digest(output.toByteArray());StringBuilder hex=new StringBuilder();for(byte b:hash)hex.append(String.format(java.util.Locale.ROOT,"%02x",b));assertEquals("a7821f2dc8ea85999ff1159a7e399a7de3d3981dfba55f6acbbc897d1aff4508",hex.toString());
         find(a.getWindow().getDecorView(),"保存赞赏码").performClick();android.content.Intent save=org.robolectric.Shadows.shadowOf(a).getNextStartedActivityForResult().intent;assertEquals(android.content.Intent.ACTION_CREATE_DOCUMENT,save.getAction());assertEquals("image/jpeg",save.getType());find(a.getWindow().getDecorView(),"返回首页").performClick();assertNotNull(find(a.getWindow().getDecorView(),"系统广告设置"));
     }
@@ -177,6 +177,28 @@ public class ScreenTest {
             View history = activity.getWindow().getDecorView();
             assertNotNull(find(history, "原值：开 · 未执行改动"));
             assertNull(find(history, "恢复原始状态"));
+        } finally {
+            controller.pause().stop().destroy();
+        }
+    }
+
+    @Test public void homeMissReportReturnsToHomeAfterRecreation() {
+        String pkg = "com.example.missed";
+        PackageInfo installed = new PackageInfo();
+        installed.packageName = pkg;
+        shadowOf(RuntimeEnvironment.getApplication().getPackageManager()).installPackage(installed);
+        Bundle state = new Bundle();
+        state.putInt("tab", MainActivity.APP_AD_MISS);
+        state.putString("appAdSelected", pkg);
+        state.putBoolean("missedFromHome", true);
+        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup(state);
+        try {
+            controller.recreate();
+            MainActivity activity = controller.get();
+            assertEquals(MainActivity.APP_AD_MISS, activity.tab);
+            clickFeature(activity, "返回首页");
+            assertEquals(0, activity.tab);
+            assertNotNull(find(activity.getWindow().getDecorView(), "赞赏作者"));
         } finally {
             controller.pause().stop().destroy();
         }

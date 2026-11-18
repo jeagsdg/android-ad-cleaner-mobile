@@ -14,9 +14,7 @@ import java.util.concurrent.*;
 public final class CleanerService extends AccessibilityService {
     private static final long TARGET_CHECK_BUDGET_MS=36_000;
     private static java.lang.ref.WeakReference<CleanerService> reference=new java.lang.ref.WeakReference<>(null);
-    private static long connectionGeneration;
     public static CleanerService get(){return reference.get();}
-    static long connectionGeneration(){return connectionGeneration;}
     public volatile boolean busy;
     public volatile String progress="准备就绪";
     private volatile String stopReason;
@@ -31,12 +29,24 @@ public final class CleanerService extends AccessibilityService {
     boolean startRulePreview(List<CustomSkipRule> drafts) {
         return skipper != null && skipper.startRulePreview(drafts);
     }
-    @Override protected void onServiceConnected(){reference=new java.lang.ref.WeakReference<>(this);connectionGeneration++;if(skipper!=null)skipper.close();skipper=new SplashSkipper(this);SkipKeepAliveService.onAccessibilityConnected(this);}
+    @Override protected void onServiceConnected(){
+        boolean newlyConnected=get()!=this;
+        reference=new java.lang.ref.WeakReference<>(this);
+        if(skipper!=null)skipper.close();
+        skipper=new SplashSkipper(this);
+        if(newlyConnected)AccessibilityReliability.record(this,AccessibilityReliability.Kind.CONNECTED);
+        SkipKeepAliveService.onAccessibilityConnected(this);
+    }
     @Override public void onAccessibilityEvent(AccessibilityEvent event){if(skipper!=null)skipper.event(event);}
     // This callback interrupts feedback while the accessibility connection remains active.
     @Override public void onInterrupt(){if(skipper!=null)skipper.interruptFeedback();}
-    @Override public boolean onUnbind(Intent intent){returnToResults=false;stopFor("无障碍连接已断开，任务已暂停");if(skipper!=null)skipper.close();if(reference.get()==this)reference.clear();SkipKeepAliveService.sync(this);hideOverlay();return super.onUnbind(intent);}
-    @Override public void onDestroy(){returnToResults=false;stopFor("无障碍服务已关闭，任务已暂停");if(skipper!=null)skipper.close();worker.shutdownNow();if(reference.get()==this)reference.clear();SkipKeepAliveService.sync(this);hideOverlay();super.onDestroy();}
+    @Override public boolean onUnbind(Intent intent){returnToResults=false;stopFor("无障碍连接已断开，任务已暂停");if(skipper!=null)skipper.close();noteDisconnected();SkipKeepAliveService.sync(this);hideOverlay();return super.onUnbind(intent);}
+    @Override public void onDestroy(){returnToResults=false;stopFor("无障碍服务已关闭，任务已暂停");if(skipper!=null)skipper.close();worker.shutdownNow();noteDisconnected();SkipKeepAliveService.sync(this);hideOverlay();super.onDestroy();}
+    private void noteDisconnected(){
+        if(get()!=this)return;
+        reference.clear();
+        AccessibilityReliability.record(this,AccessibilityReliability.Kind.DISCONNECTED);
+    }
     public void stop(){stopFor("已手动停止");}
     private synchronized void stopFor(String reason){
         if(stopReason!=null)return;

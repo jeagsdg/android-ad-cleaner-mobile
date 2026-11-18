@@ -178,13 +178,17 @@ final class PermissionAccess {
             Boolean restricted = backgroundRestricted(context), exempt = batteryExempt(context);
             out.put("backgroundRestricted", restricted == null ? JSONObject.NULL : restricted);
             out.put("batteryOptimizationExempt", exempt == null ? JSONObject.NULL : exempt);
+            out.put("lastAccessibilityEvent", reliabilityEvent(AccessibilityReliability.recentEvent(context)));
+            long disconnectedAt = AccessibilityReliability.lastDisconnectionMillis(context);
+            out.put("lastAccessibilityDisconnectionTimeMillis", disconnectedAt > 0 ? disconnectedAt : JSONObject.NULL);
             if (AccessibilityRecovery.supported()) {
                 try { out.put("accessibilitySwitchEnabled", AccessibilityRecovery.configured(context)); }
                 catch (SecurityException ignored) { out.put("accessibilitySwitchEnabled", JSONObject.NULL); }
                 out.put("accessibilityServiceConnected", CleanerService.get() != null);
-                out.put("recoveryAuthorized", AccessibilityRecovery.hasPermission(context));
                 out.put("recoveryNotificationAllowed", SkipKeepAliveService.notificationsAllowed(context));
                 out.put("keepAliveRunning", SkipKeepAliveService.running());
+                out.put("lastAccessibilityRecoveryEvent",
+                        reliabilityEvent(AccessibilityReliability.recentRecovery(context)));
                 out.put("accessibilityRecovery", SkipKeepAliveService.recoveryRunning()
                         ? SkipKeepAliveService.recoveryConnection().name()
                         : SkipKeepAliveService.recoveryFailed() ? "FAILED" : "STOPPED");
@@ -198,5 +202,10 @@ final class PermissionAccess {
             out.put("installingPackage", installer == null ? JSONObject.NULL : installer);
         } catch (JSONException e) { throw new IllegalStateException(e); }
         return out;
+    }
+
+    private static JSONObject reliabilityEvent(AccessibilityReliability.Event event) throws JSONException {
+        return new JSONObject().put("kind", event.kind.name())
+                .put("timeMillis", event.timeMillis > 0 ? event.timeMillis : JSONObject.NULL);
     }
 }

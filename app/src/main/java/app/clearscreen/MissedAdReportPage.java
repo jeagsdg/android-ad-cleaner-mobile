@@ -35,12 +35,21 @@ final class MissedAdReportPage {
             if (!session.complete) return;
         }
         CleanerService service = CleanerService.get();
+        String disconnect = recentDisconnect();
         if (service == null) {
             LinearLayout access = screen.card(screen.body);
-            screen.paragraph(access, "无障碍服务未连接。连接后可重现广告并诊断。");
-            screen.linkAction(access, "连接无障碍服务", screen::accessibility);
+            boolean switchOn = PermissionAccess.state(screen) == PermissionAccess.State.DISCONNECTED;
+            access.addView(screen.bold(switchOn ? "开关已开启，服务未连接" : "无障碍服务未连接", 18, MainActivity.INK));
+            screen.paragraph(access, disconnect.isEmpty() ? "先连接服务，再打开应用重现广告。" : disconnect);
+            if (switchOn && AccessibilityRecovery.supported())
+                screen.linkAction(access, "检查并重新连接", screen::openRecoveryPage);
+            else screen.linkAction(access, "连接无障碍服务", screen::accessibility);
         } else if (service.busy) {
             screen.paragraph(screen.card(screen.body), "系统设置清理正在执行。结束后再重现广告。");
+        } else if (!disconnect.isEmpty()) {
+            LinearLayout card = screen.card(screen.body);
+            card.addView(screen.bold("近期有过断连", 18, MainActivity.INK));
+            screen.paragraph(card, disconnect + " 当前已连接，可重现一次来检查此应用。");
         }
         showMode(MissedAdCapture.Mode.SPLASH, "打开应用时显示", service);
         showMode(MissedAdCapture.Mode.POPUP, "进入应用后出现，例如首页弹窗或内容里的广告", service);
@@ -50,9 +59,19 @@ final class MissedAdReportPage {
         screen.linkAction(help, "生成基本反馈", () -> new AlertDialog.Builder(screen).setTitle("遇到的是哪种广告？")
                 .setItems(new String[]{MissedAdCapture.Mode.SPLASH.label, MissedAdCapture.Mode.POPUP.label}, (dialog, index) -> {
                     MissedAdCapture.Mode mode = MissedAdCapture.Mode.values()[index];
-                    MissedAdCapture.basicLocal(pkg, screen.store.packageVersion(pkg), versionName(), mode, status(mode));
+                    String context = recentDisconnect();
+                    MissedAdCapture.basicLocal(pkg, screen.store.packageVersion(pkg), versionName(), mode,
+                            status(mode) + (context.isEmpty() ? "" : "\n" + context));
                     screen.render();
                 }).setNegativeButton("取消", null).show());
+    }
+
+    private String recentDisconnect() {
+        long time = AccessibilityReliability.lastDisconnectionMillis(screen);
+        long age = System.currentTimeMillis() - time;
+        if (time <= 0 || age < 0 || age >= MissedAdCapture.RETAIN_MS) return "";
+        return android.text.format.DateFormat.getTimeFormat(screen).format(new java.util.Date(time))
+                + " 净屏记录到无障碍服务断开。";
     }
 
     private void showMode(MissedAdCapture.Mode mode, String subtitle, CleanerService service) {
@@ -62,7 +81,8 @@ final class MissedAdReportPage {
         screen.paragraph(card, subtitle + "\n" + status(mode));
         if (service != null && !service.busy && allowed(mode))
             screen.linkAction(card, mode == MissedAdCapture.Mode.SPLASH ? "重现开屏广告" : "重现应用内广告", () -> consent(mode));
-        else if (!allowed(mode)) screen.linkAction(card, "返回检查处理设置", screen::backToParentPage);
+        else if (!allowed(mode)) screen.linkAction(card, "检查此应用的处理设置",
+                () -> screen.showPage(MainActivity.APP_AD_DETAIL));
     }
 
     private boolean allowed(MissedAdCapture.Mode mode) {

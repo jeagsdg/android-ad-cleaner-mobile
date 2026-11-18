@@ -30,6 +30,7 @@ final class AppAdManagement {
     private int limit = PAGE_SIZE;
     private int listScroll;
     private boolean restoreListOnResume;
+    private boolean missedFromHome;
     private String query = "", selected = "";
 
     AppAdManagement(MainActivity screen, Bundle saved) {
@@ -38,6 +39,7 @@ final class AppAdManagement {
         showCatalog = saved.getBoolean("appAdCatalog");
         query = saved.getString("appAdQuery", "");
         selected = saved.getString("appAdSelected", "");
+        missedFromHome = saved.getBoolean("missedFromHome");
         limit = Math.max(PAGE_SIZE, saved.getInt("appAdLimit"));
         listScroll = saved.getInt("appAdScroll");
         restoreListOnResume = saved.getInt("tab") == MainActivity.APP_ADS;
@@ -50,6 +52,7 @@ final class AppAdManagement {
         state.putBoolean("appAdCatalog", showCatalog);
         state.putString("appAdQuery", query);
         state.putString("appAdSelected", selected);
+        state.putBoolean("missedFromHome", missedFromHome);
         state.putInt("appAdLimit", limit);
         state.putInt("appAdScroll", listScroll);
     }
@@ -182,7 +185,10 @@ final class AppAdManagement {
         }
 
         LinearLayout help = screen.card(screen.body);
-        screen.action(help, "刚才没跳过", true, () -> screen.showPage(MainActivity.APP_AD_MISS));
+        screen.action(help, "刚才没跳过", true, () -> {
+            missedFromHome = false;
+            screen.showPage(MainActivity.APP_AD_MISS);
+        });
         screen.space(help, 4);
         screen.paragraph(help, "查看此应用的处理结果，或重现一次广告并预览反馈。");
 
@@ -230,11 +236,21 @@ final class AppAdManagement {
         if (launchable) screen.linkAction(tools, "打开应用", () -> screen.openInstalledApp(selected));
     }
 
+    void openMissedFromHome(String pkg) {
+        selected = pkg;
+        missedFromHome = true;
+        screen.showPage(MainActivity.APP_AD_MISS);
+    }
+
+    String missedBackLabel() { return missedFromHome ? "返回首页" : "返回应用详情"; }
+
+    int missedParent() { return missedFromHome ? 0 : MainActivity.APP_AD_DETAIL; }
+
     void missedAd() {
         Map<String, String> installed = screen.launcherApps();
         if (selected.isEmpty() || CustomSkipRule.protectedPackage(selected)
                 || (!installed.containsKey(selected) && screen.store.packageVersion(selected) < 0)) {
-            screen.showPage(MainActivity.APP_AD_DETAIL);
+            screen.showPage(missedParent());
             return;
         }
         String name = installed.getOrDefault(selected, selected);

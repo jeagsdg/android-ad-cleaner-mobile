@@ -107,6 +107,10 @@ public class PermissionAccessTest {
         assertEquals("OFF", permissions.getString("accessibilityState"));
         assertEquals("not_determined", permissions.getString("restrictionStatus"));
         assertTrue(permissions.has("installingPackage"));
+        JSONObject event = permissions.getJSONObject("lastAccessibilityEvent");
+        assertEquals("UNKNOWN", event.getString("kind"));
+        assertTrue(event.isNull("timeMillis"));
+        assertTrue(permissions.isNull("lastAccessibilityDisconnectionTimeMillis"));
         if (Build.VERSION.SDK_INT >= 33) assertFalse(permissions.getBoolean("notificationRuntimePermission"));
         else assertTrue(permissions.isNull("notificationRuntimePermission"));
         assertEquals(id, export.getJSONArray("journal").getJSONObject(0).getString("id"));

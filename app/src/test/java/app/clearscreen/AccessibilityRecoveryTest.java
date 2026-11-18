@@ -1,16 +1,20 @@
 package app.clearscreen;
 
+import android.app.ActivityManager;
 import android.app.Application;
+import android.app.ApplicationExitInfo;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
-import android.content.ClipboardManager;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import android.content.SharedPreferences;
 import android.os.Looper;
+import android.os.Process;
 import android.provider.Settings;
 
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -20,11 +24,13 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.android.controller.ActivityController;
+import org.robolectric.shadows.ShadowActivityManager.ApplicationExitInfoBuilder;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowBuild;
 
 import java.time.Duration;
 
+import static app.clearscreen.AccessibilityReliability.Kind.*;
 import static org.junit.Assert.*;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -32,6 +38,7 @@ import static org.robolectric.Shadows.shadowOf;
 @Config(sdk = {26, 34})
 public class AccessibilityRecoveryTest {
     private static final String OTHER_SERVICE = "other.package/.Service";
+    private static final int BOOT_COUNT = 12;
     private Application app;
     private CleanerService cleaner;
     private SkipKeepAliveService keepAlive;
@@ -40,10 +47,10 @@ public class AccessibilityRecoveryTest {
         app = RuntimeEnvironment.getApplication();
         ShadowBuild.setManufacturer("Xiaomi");
         ShadowBuild.setBrand("Redmi");
-        shadowOf(app).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS,
-                AccessibilityRecovery.PERMISSION);
+        shadowOf(app).grantPermissions(android.Manifest.permission.POST_NOTIFICATIONS);
         new Store(app).setSplashEnabled(true);
-        setEnabledServices(OTHER_SERVICE + ":" + PermissionAccess.component(app).flattenToString());
+        Settings.Global.putInt(app.getContentResolver(), Settings.Global.BOOT_COUNT, BOOT_COUNT);
+        setEnabledServices(selectedServices());
         cleaner = Robolectric.buildService(CleanerService.class).create().get();
         cleaner.onServiceConnected();
     }
@@ -54,225 +61,217 @@ public class AccessibilityRecoveryTest {
         cleaner.onDestroy();
     }
 
-    @Test public void restoresOnlyOwnServiceAfterUnbindAndRecoversAgainAfterReconnect() {
+    @Test public void watchesStillSelectedServiceUntilActualReconnectAcrossRepeatedChecks() throws Exception {
         startRecovery();
-        removeOwnService();
-        assertTrue(SkipKeepAliveService.recoveryRunning());
-        poll();
-        assertRestoredWithoutChangingOtherService();
-        cleaner.onServiceConnected();
-        removeOwnService();
-        poll();
-        assertRestoredWithoutChangingOtherService();
-        cleaner.onServiceConnected();
-        poll();
-        assertTrue(SkipKeepAliveService.recoveryRunning());
-    }
+        cleaner.onUnbind(new Intent());
+        long disconnectedAt = AccessibilityReliability.lastDisconnectionMillis(app);
+        assertTrue(disconnectedAt > 0);
+        assertEquals(DISCONNECTED, AccessibilityReliability.recentEvent(app).kind);
 
-    @Test public void enabledButDisconnectedKeepsWatchingAndCanRestoreLaterClear() {
-        startRecovery();
-        String before = enabledServices();
+        settle();
+        assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
+                SkipKeepAliveService.recoveryConnection());
+        assertEquals(RECOVERY_WAITING, AccessibilityReliability.recentRecovery(app).kind);
+        for (int check = 0; check < 6; check++) {
+            poll();
+            assertEquals(selectedServices(), enabledServices());
+            assertTrue(SkipKeepAliveService.recoveryRunning());
+        }
+
+        cleaner.onServiceConnected();
+        assertEquals(SkipKeepAliveService.RecoveryConnection.RESTORED,
+                SkipKeepAliveService.recoveryConnection());
+        assertEquals(RECOVERED, AccessibilityReliability.recentEvent(app).kind);
+        assertEquals(disconnectedAt, AccessibilityReliability.lastDisconnectionMillis(app));
+        JSONObject report = PermissionAccess.diagnostics(app);
+        assertEquals(disconnectedAt, report.getLong("lastAccessibilityDisconnectionTimeMillis"));
+        assertEquals("RECOVERED", report.getJSONObject("lastAccessibilityRecoveryEvent").getString("kind"));
+
         cleaner.onUnbind(new Intent());
         settle();
         assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
                 SkipKeepAliveService.recoveryConnection());
-        poll();
-        poll();
-        assertEquals(before, enabledServices());
-        assertTrue(SkipKeepAliveService.recoveryRunning());
-        assertFalse(SkipKeepAliveService.recoveryFailed());
-        setEnabledServices(OTHER_SERVICE);
-        settle();
-        assertRestoredWithoutChangingOtherService();
+        cleaner.onServiceConnected();
+        assertEquals(RECOVERED, AccessibilityReliability.recentRecovery(app).kind);
+        assertEquals(selectedServices(), enabledServices());
     }
 
-    @Test public void keepsRetryingAfterUnconfirmedRestoreWithoutRewritingTooSoon() {
+    @Test public void switchingOffAccessibilityEndsWatchingAndRemainsOffAcrossRestarts() {
         startRecovery();
         removeOwnService();
         settle();
-        assertRestoredWithoutChangingOtherService();
-        for (int clear = 0; clear < 4; clear++) {
-            setEnabledServices(OTHER_SERVICE);
-            settle();
-            assertEquals(OTHER_SERVICE, enabledServices());
-            assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_TO_RETRY,
-                    SkipKeepAliveService.recoveryConnection());
-            poll();
-            assertRestoredWithoutChangingOtherService();
-            assertTrue(SkipKeepAliveService.recoveryRunning());
-        }
-    }
-
-    @Test public void stickySystemRestartResumesAndRespectsRetryDelay() {
-        startRecovery();
-        removeOwnService();
-        assertEquals(Service.START_STICKY, restartService());
-        settle();
-        assertRestoredWithoutChangingOtherService();
-        // A second process death cannot erase the delay if the system never bound the service.
-        setEnabledServices(OTHER_SERVICE);
-        assertEquals(Service.START_STICKY, restartService());
-        settle();
+        assertFalse(SkipKeepAliveService.recoveryRunning());
+        assertEquals(RECOVERY_STOPPED, AccessibilityReliability.recentRecovery(app).kind);
+        Notification firstNotice = selectionNotice();
+        assertNotNull(firstNotice);
+        assertEquals("净屏的无障碍开关已关闭", firstNotice.extras.getCharSequence(Notification.EXTRA_TITLE));
+        assertTrue((firstNotice.flags & Notification.FLAG_AUTO_CANCEL) != 0);
+        assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(firstNotice.contentIntent).getSavedIntent().getAction());
+        assertEquals(Service.START_NOT_STICKY, restartService());
+        SkipKeepAliveService.onForeground(app);
+        poll();
+        assertSame(firstNotice, selectionNotice());
         assertEquals(OTHER_SERVICE, enabledServices());
-        assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_TO_RETRY,
-                SkipKeepAliveService.recoveryConnection());
-        poll();
-        assertRestoredWithoutChangingOtherService();
-        assertTrue(SkipKeepAliveService.recoveryRunning());
+        assertFalse(AccessibilityRecovery.watching(app));
+        assertNull(shadowOf(app).getNextStartedService());
+
+        // A manual re-enable can connect normally without opting back into watching.
+        setEnabledServices(selectedServices());
+        cleaner.onServiceConnected();
+        assertFalse(SkipKeepAliveService.recoveryRunning());
+        assertEquals(RECOVERY_STOPPED, AccessibilityReliability.recentRecovery(app).kind);
+        assertNull(selectionNotice());
     }
 
-    @Test public void staleConnectionCannotConfirmRestoreBeforeNewBindCallback() {
+    @Test public void foregroundResumesPreviouslyEnabledWatchAfterSameProcessServiceLoss() {
         startRecovery();
-        setEnabledServices(OTHER_SERVICE);
+        cleaner.onUnbind(new Intent());
+        destroyKeepAlive();
+        SkipKeepAliveService.sync(app);
+        assertNull(shadowOf(app).getNextStartedService());
+
+        SkipKeepAliveService.onForeground(app);
+        assertEquals(Service.START_STICKY, acceptForegroundStart());
+        assertEquals(RECOVERY_RESUMED, AccessibilityReliability.recentRecovery(app).kind);
         settle();
-        assertRestoredWithoutChangingOtherService();
-        poll();
         assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
                 SkipKeepAliveService.recoveryConnection());
-        cleaner.onServiceConnected();
-        assertEquals(SkipKeepAliveService.RecoveryConnection.RESTORED,
-                SkipKeepAliveService.recoveryConnection());
+        assertEquals(selectedServices(), enabledServices());
     }
 
-    @Test public void notificationStopDisarmsBeforeNextPoll() throws Exception {
+    @Test @Config(sdk = 34) public void foregroundResumesAfterVerifiedSameBootResourceExit() {
+        startRecovery();
+        int owner = simulateProcessLoss();
+        addExit(owner, ApplicationExitInfo.REASON_LOW_MEMORY);
+
+        SkipKeepAliveService.onForeground(app);
+        assertEquals(Service.START_STICKY, acceptForegroundStart());
+        assertEquals(RECOVERY_RESUMED, AccessibilityReliability.recentRecovery(app).kind);
+        assertEquals(selectedServices(), enabledServices());
+    }
+
+    @Test @Config(sdk = 34) public void userRequestedStopWinsOverOlderRecoverableExit() {
+        startRecovery();
+        int owner = simulateProcessLoss();
+        addExit(owner, ApplicationExitInfo.REASON_LOW_MEMORY);
+        addExit(owner + 1, ApplicationExitInfo.REASON_USER_REQUESTED);
+
+        SkipKeepAliveService.onForeground(app);
+        assertNoForegroundWatch();
+        assertFalse(AccessibilityRecovery.watching(app));
+        assertFalse(new Store(app).skipKeepAliveEnabled());
+        assertEquals(RECOVERY_STOPPED, AccessibilityReliability.recentRecovery(app).kind);
+        assertNull(selectionNotice());
+    }
+
+    @Test @Config(sdk = 34) public void unverifiedProcessExitDoesNotResumeFromOpeningApp() {
+        startRecovery();
+        addExit(simulateProcessLoss(), ApplicationExitInfo.REASON_SIGNALED);
+        SkipKeepAliveService.onForeground(app);
+        assertNoForegroundWatch();
+        assertEquals(selectedServices(), enabledServices());
+    }
+
+    @Test public void newBootDoesNotResumeEvenWithSavedOptIn() {
+        startRecovery();
+        destroyKeepAlive();
+        Settings.Global.putInt(app.getContentResolver(), Settings.Global.BOOT_COUNT, BOOT_COUNT + 1);
+        SkipKeepAliveService.onForeground(app);
+        assertNoForegroundWatch();
+        assertFalse(AccessibilityRecovery.watching(app));
+        assertFalse(new Store(app).skipKeepAliveEnabled());
+    }
+
+    @Test public void legacySessionResumesOnlyFromAndroidStickyRestartIfSwitchIsStillOn() {
+        legacySession();
+        SkipKeepAliveService.onForeground(app);
+        assertNoForegroundWatch();
+        assertEquals(Service.START_STICKY, restartService());
+        assertEquals(RECOVERY_RESUMED, AccessibilityReliability.recentRecovery(app).kind);
+        assertEquals("WATCHING", recoveryPrefs().getString("state", ""));
+        assertFalse(recoveryPrefs().contains("last-attempt"));
+        assertEquals(selectedServices(), enabledServices());
+    }
+
+    @Test public void legacyRestartWithRemovedSelectionLeavesSwitchOffAndDisarms() {
+        legacySession();
+        removeOwnService();
+        assertEquals(Service.START_NOT_STICKY, restartService());
+        poll();
+        assertFalse(AccessibilityRecovery.watching(app));
+        assertEquals(OTHER_SERVICE, enabledServices());
+        assertNull(selectionNotice());
+    }
+
+    @Test public void stoppingWhileExplicitStartIsQueuedCancelsThatRequest() {
+        assertTrue(SkipKeepAliveService.startRecovery(app));
+        SkipKeepAliveService.stopRecovery(app);
+        assertEquals(Service.START_NOT_STICKY, acceptForegroundStart());
+        assertFalse(SkipKeepAliveService.recoveryRunning());
+        assertFalse(new Store(app).skipKeepAliveEnabled());
+    }
+
+    @Test public void notificationStopDisarmsOnForegroundReturnAndSystemRestart() {
         startRecovery();
         Notification notification = shadowOf(keepAlive).getLastForegroundNotification();
         assertNotNull(notification.deleteIntent);
         assertEquals("停止保活", notification.actions[0].title.toString());
         keepAlive.onStartCommand(shadowOf(notification.actions[0].actionIntent).getSavedIntent(), 0, 2);
-        removeOwnService();
-        poll();
+        SkipKeepAliveService.onForeground(app);
+        assertNoForegroundWatch();
         assertFalse(new Store(app).skipKeepAliveEnabled());
-        assertFalse(SkipKeepAliveService.recoveryRunning());
-        assertEquals(OTHER_SERVICE, enabledServices());
         assertEquals(Service.START_NOT_STICKY, restartService());
-        poll();
-        assertEquals(OTHER_SERVICE, enabledServices());
+        assertEquals(selectedServices(), enabledServices());
+        assertNull(selectionNotice());
     }
 
-    @Test public void notificationBlockDisarmsBeforeNextPoll() {
+    @Test public void blockingNotificationsStopsWatching() {
         startRecovery();
-        removeOwnService();
         shadowOf(app.getSystemService(NotificationManager.class)).setNotificationsEnabled(false);
+        removeOwnService();
         poll();
         assertFalse(SkipKeepAliveService.recoveryRunning());
+        assertFalse(AccessibilityRecovery.watching(app));
         assertEquals(OTHER_SERVICE, enabledServices());
+        assertNull(selectionNotice());
     }
 
-    @Test public void requiresPositiveOptInOnSupportedBrandWithGrantAndInitialConnection() {
-        assertFalse(SkipKeepAliveService.recoveryRunning());
+    @Test public void requiresNotificationsAndOwnSelectionButMayStartWhileUnbound() {
         ShadowBuild.setManufacturer("Google");
         ShadowBuild.setBrand("Google");
         assertFalse(SkipKeepAliveService.startRecovery(app));
         ShadowBuild.setManufacturer("POCO");
-        shadowOf(app).denyPermissions(AccessibilityRecovery.PERMISSION);
-        assertFalse(SkipKeepAliveService.startRecovery(app));
-        shadowOf(app).grantPermissions(AccessibilityRecovery.PERMISSION);
         removeOwnService();
         assertFalse(SkipKeepAliveService.startRecovery(app));
-        assertEquals(OTHER_SERVICE, enabledServices());
-        assertNull(shadowOf(app).getNextStartedService());
-    }
+        setEnabledServices(selectedServices());
 
-    @Test public void permissionRevocationDisarmsBeforeNextPoll() {
-        startRecovery();
-        removeOwnService();
-        shadowOf(app).denyPermissions(AccessibilityRecovery.PERMISSION);
-        poll();
-        assertFalse(SkipKeepAliveService.recoveryRunning());
-        assertEquals(OTHER_SERVICE, enabledServices());
-    }
-
-    @Test public void visibleXiaomiActionRequiresConfirmationAndOffersStop() {
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
-        try {
-            MainActivity activity = controller.get();
-            ScreenTest.clickFeature(activity, "无障碍掉线？自动恢复");
-            ScreenTest.clickFeature(activity, "开启自动恢复");
-            assertNull(shadowOf(app).getNextStartedService());
-            ShadowAlertDialog.getLatestAlertDialog().getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
-            shadowOf(Looper.getMainLooper()).idle();
-            acceptForegroundStart();
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-            ScreenTest.clickFeature(activity, "停止自动恢复");
-            removeOwnService();
-            poll();
-            assertFalse(SkipKeepAliveService.recoveryRunning());
-            assertEquals(OTHER_SERVICE, enabledServices());
-        } finally {
-            controller.pause().stop().destroy();
-        }
-    }
-
-    @Test public void setupChecksOrdinaryPrerequisitesBeforeShowingComputerInstructions() {
-        new Store(app).setSplashEnabled(false);
-        shadowOf(app).denyPermissions(AccessibilityRecovery.PERMISSION);
-        removeOwnService();
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
-        try {
-            MainActivity activity = controller.get();
-            ScreenTest.clickFeature(activity, "无障碍掉线？自动恢复");
-            ScreenTest.clickFeature(activity, "开启开屏跳过");
-            ShadowAlertDialog.getLatestAlertDialog().getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
-            shadowOf(Looper.getMainLooper()).idle();
-            assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS,
-                    shadowOf(activity).getNextStartedActivity().getAction());
-            assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "查看电脑授权步骤"));
-            setEnabledServices(OTHER_SERVICE + ":" + PermissionAccess.component(app).flattenToShortString());
-            cleaner.onServiceConnected();
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-            assertEquals(MainActivity.ACCESSIBILITY_RECOVERY, activity.tab);
-            assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "开启自动恢复"));
-            if (Build.VERSION.SDK_INT >= 30) {
-                ScreenTest.clickFeature(activity, "用手机授权");
-                ShadowAlertDialog.getLatestAlertDialog().getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
-                shadowOf(Looper.getMainLooper()).idle();
-                ClipboardManager clipboard = activity.getSystemService(ClipboardManager.class);
-                assertEquals("pm grant app.clearscreen " + AccessibilityRecovery.PERMISSION,
-                        clipboard.getPrimaryClip().getItemAt(0).getText().toString());
-            } else assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "用手机授权"));
-            ScreenTest.clickFeature(activity, Build.VERSION.SDK_INT >= 30 ? "用电脑授权" : "查看电脑授权步骤");
-            assertEquals("复制授权命令", ShadowAlertDialog.getLatestAlertDialog()
-                    .getButton(android.app.AlertDialog.BUTTON_POSITIVE).getText().toString());
-            android.app.AlertDialog help = ShadowAlertDialog.getLatestAlertDialog();
-            shadowOf(app).grantPermissions(AccessibilityRecovery.PERMISSION);
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-            assertFalse(help.isShowing());
-            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "开启自动恢复"));
-            assertNull(shadowOf(app).getNextStartedService());
-        } finally {
-            controller.pause().stop().destroy();
-        }
-    }
-
-    @Test public void grantingNotificationsDoesNotStartRecovery() {
         NotificationManager manager = app.getSystemService(NotificationManager.class);
         shadowOf(manager).setNotificationsEnabled(false);
-        ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
-        try {
-            MainActivity activity = controller.get();
-            ScreenTest.clickFeature(activity, "无障碍掉线？自动恢复");
-            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "允许保活通知"));
-            assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "开启自动恢复"));
-            assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "查看电脑授权步骤"));
-            shadowOf(manager).setNotificationsEnabled(true);
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
-            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "开启自动恢复"));
-            assertNull(shadowOf(app).getNextStartedService());
-        } finally {
-            controller.pause().stop().destroy();
-        }
+        assertFalse(SkipKeepAliveService.startRecovery(app));
+        shadowOf(manager).setNotificationsEnabled(true);
+        assertNoForegroundWatch();
+
+        startRecovery();
+        settle();
+        assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
+                SkipKeepAliveService.recoveryConnection());
+        assertEquals(selectedServices(), enabledServices());
     }
 
-    @Test public void otherBrandsDoNotShowSetup() {
-        ShadowBuild.setManufacturer("Google");
-        ShadowBuild.setBrand("Google");
+    @Test public void visibleActionRequiresConfirmationAndOffersStop() {
         ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup();
         try {
             MainActivity activity = controller.get();
-            assertNull(ScreenTest.find(activity.getWindow().getDecorView(), "无障碍掉线？自动恢复"));
-            activity.showPage(MainActivity.ACCESSIBILITY_RECOVERY);
-            assertEquals(0, activity.tab);
+            ScreenTest.clickFeature(activity, "无障碍连接守护");
+            ScreenTest.clickFeature(activity, "开启连接守护");
+            assertNoForegroundWatch();
+            ShadowAlertDialog.getLatestAlertDialog().getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick();
+            shadowOf(Looper.getMainLooper()).idle();
+            assertEquals(Service.START_STICKY, acceptForegroundStart());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
+            ScreenTest.clickFeature(activity, "停止连接守护");
+            assertFalse(SkipKeepAliveService.recoveryRunning());
+            assertEquals(selectedServices(), enabledServices());
         } finally {
             controller.pause().stop().destroy();
         }
@@ -280,22 +279,61 @@ public class AccessibilityRecoveryTest {
 
     private void startRecovery() {
         assertTrue(SkipKeepAliveService.startRecovery(app));
-        acceptForegroundStart();
+        assertEquals(Service.START_STICKY, acceptForegroundStart());
+        assertTrue(SkipKeepAliveService.recoveryRunning());
     }
 
-    private void acceptForegroundStart() {
+    private int acceptForegroundStart() {
         Intent start = shadowOf(app).getNextStartedService();
         assertNotNull(start);
         assertEquals(new ComponentName(app, SkipKeepAliveService.class), start.getComponent());
         keepAlive = Robolectric.buildService(SkipKeepAliveService.class).create().get();
-        assertEquals(Service.START_STICKY, keepAlive.onStartCommand(start, 0, 1));
-        assertTrue(SkipKeepAliveService.recoveryRunning());
+        return keepAlive.onStartCommand(start, 0, 1);
     }
 
     private int restartService() {
-        keepAlive.onDestroy();
+        destroyKeepAlive();
         keepAlive = Robolectric.buildService(SkipKeepAliveService.class).create().get();
         return keepAlive.onStartCommand(null, 0, 1);
+    }
+
+    private void destroyKeepAlive() {
+        if (keepAlive == null) return;
+        keepAlive.onDestroy();
+        keepAlive = null;
+    }
+
+    private int simulateProcessLoss() {
+        destroyKeepAlive();
+        int owner = Process.myPid() + 100;
+        recoveryPrefs().edit().putInt("owner-pid", owner)
+                .putLong("owner-since", System.currentTimeMillis() - 1000).apply();
+        return owner;
+    }
+
+    private void addExit(int pid, int reason) {
+        shadowOf(app.getSystemService(ActivityManager.class)).addApplicationExitInfo(
+                ApplicationExitInfoBuilder.newBuilder().setProcessName(app.getPackageName())
+                        .setPid(pid).setReason(reason).setTimestamp(System.currentTimeMillis()).build());
+    }
+
+    private void legacySession() {
+        new Store(app).setSkipKeepAliveEnabled(true);
+        recoveryPrefs().edit().putString("state", "RESTORE_ATTEMPTED").putLong("last-attempt", 1).apply();
+    }
+
+    private SharedPreferences recoveryPrefs() {
+        return app.getSharedPreferences("accessibility-recovery-session", Context.MODE_PRIVATE);
+    }
+
+    private void assertNoForegroundWatch() {
+        assertNull(shadowOf(app).getNextStartedService());
+        assertFalse(SkipKeepAliveService.recoveryRunning());
+    }
+
+    private Notification selectionNotice() {
+        return shadowOf(app.getSystemService(NotificationManager.class))
+                .getNotification(SkipKeepAliveService.ACCESSIBILITY_OFF_NOTICE_ID);
     }
 
     private void removeOwnService() {
@@ -303,11 +341,8 @@ public class AccessibilityRecoveryTest {
         cleaner.onUnbind(new Intent());
     }
 
-    private void assertRestoredWithoutChangingOtherService() {
-        assertEquals(OTHER_SERVICE + ":" + PermissionAccess.component(app).flattenToShortString(),
-                enabledServices());
-        assertEquals(0, Settings.Secure.getInt(app.getContentResolver(),
-                Settings.Secure.ACCESSIBILITY_ENABLED, 0));
+    private String selectedServices() {
+        return OTHER_SERVICE + ":" + PermissionAccess.component(app).flattenToShortString();
     }
 
     private String enabledServices() {

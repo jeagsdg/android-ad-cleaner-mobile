@@ -255,6 +255,67 @@ public class SplashRulesCoverageTest {
         assertNull(SplashSkipper.match(root, rules, activity));
     }
 
+    @Test public void iqiyiLiteClosesItsLaunchAdOverTheInactiveHomeSearch() {
+        // Snapshot 13797162, iQIYI Lite 3.12.40. Node 13 closes the ad. Node 30 is the covered search.
+        String pkg = "com.qiyi.video.lite";
+        String activity = pkg + ".homepage.HomeActivity";
+        String sharedId = pkg + ":id/unused_res_a";
+        Rect adBounds = new Rect(0, 0, 1080, 1950);
+        Rect closeBounds = new Rect(822, 60, 1020, 168);
+        Rect searchBounds = new Rect(204, 99, 771, 207);
+        AccessibilityNodeInfo root = frame(pkg, null);
+        AccessibilityNodeInfo page = add(root, frame(pkg, sharedId));
+        AccessibilityNodeInfo overlay = add(page, frame(pkg, sharedId));
+        AccessibilityNodeInfo layer = add(overlay, frame(pkg, sharedId));
+        AccessibilityNodeInfo ad = add(layer, node(pkg, "android.widget.FrameLayout", sharedId, false, adBounds));
+        add(ad, frame(pkg, sharedId));
+        AccessibilityNodeInfo creative = add(ad, node(pkg, "android.widget.FrameLayout", null, false, adBounds));
+        add(creative, node(pkg, "android.widget.ImageView", sharedId, false, adBounds));
+        add(creative, node(pkg, "android.widget.ImageView", sharedId, false, CORNER));
+        AccessibilityNodeInfo corner = add(creative, frame(pkg, null));
+        AccessibilityNodeInfo close = add(corner, node(pkg, "android.widget.FrameLayout", sharedId, true, closeBounds));
+        AccessibilityNodeInfo labelRow = add(close, node(pkg, "android.widget.LinearLayout", null, false, closeBounds));
+        add(labelRow, frame(pkg, sharedId));
+        add(labelRow, node(pkg, "android.widget.TextView", sharedId, false, closeBounds)).setText("关闭");
+        Rect linkBounds = new Rect(97, 1704, 983, 1869);
+        AccessibilityNodeInfo link = add(creative, node(pkg, "android.widget.RelativeLayout", sharedId, true, linkBounds));
+        AccessibilityNodeInfo linkRow = add(link, node(pkg, "android.widget.LinearLayout", null, false, linkBounds));
+        AccessibilityNodeInfo linkLabel = add(linkRow, node(pkg, "android.widget.TextView", sharedId, false, linkBounds));
+        linkLabel.setText("点击跳转至详情页面或第三方应用");
+        AccessibilityNodeInfo home = add(page, frame(pkg, sharedId));
+        AccessibilityNodeInfo content = add(home, frame(pkg, sharedId));
+        AccessibilityNodeInfo header = add(content, frame(pkg, sharedId));
+        AccessibilityNodeInfo searchRow = add(header, frame(pkg, sharedId));
+        AccessibilityNodeInfo searchBox = add(searchRow, frame(pkg, sharedId));
+        AccessibilityNodeInfo search = add(searchBox, node(pkg, "android.widget.EditText", sharedId, true, searchBounds));
+        search.setEditable(true);
+
+        assertEquals(close, SplashSkipper.match(root, rules, activity));
+        assertNull(SplashSkipper.match(root, SplashRules.EMPTY, activity));
+        assertNull(SplashSkipper.match(root, rules, activity + "Other"));
+        assertNull(SplashSkipper.match(root, rules, activity, 10_000));
+
+        search.setFocused(true);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        search.setFocused(false);
+        search.setFocusable(true);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        search.setFocusable(false);
+        search.setText("搜索关键词");
+        assertNull(SplashSkipper.match(root, rules, activity));
+        search.setText("");
+        search.setBoundsInScreen(new Rect(204, 2000, 771, 2110));
+        assertNull(SplashSkipper.match(root, rules, activity));
+        search.setBoundsInScreen(searchBounds);
+
+        linkLabel.setVisibleToUser(false);
+        assertNull(SplashSkipper.match(root, rules, activity));
+        linkLabel.setVisibleToUser(true);
+        assertEquals(close, SplashSkipper.match(root, rules, activity));
+        add(root, button(pkg, "android.widget.Button", null)).setText("同意用户协议");
+        assertNull(SplashSkipper.match(root, rules, activity));
+    }
+
     @Test public void qunarCountdownCloseRequiresTheAdSiblingAndAValidCountdown() {
         String pkg = "com.Qunar";
         String activity = "com.mqunar.atom.alexhome.ui.activity.MainActivity";

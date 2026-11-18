@@ -17,10 +17,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.provider.Settings;
 import android.util.Log;
 
-import app.clearscreen.AccessibilityRecovery.RestoreResult;
-import app.clearscreen.AccessibilityRecovery.Session;
+import app.clearscreen.AccessibilityRecovery.Resume;
+import app.clearscreen.AccessibilityReliability.Kind;
 
 /** User-visible foreground support for ad skipping and optional accessibility recovery. */
 public final class SkipKeepAliveService extends Service {
@@ -28,20 +29,24 @@ public final class SkipKeepAliveService extends Service {
     static final String CHANNEL = "skip-keep-alive";
     private static final String START = "app.clearscreen.SKIP_KEEP_ALIVE_START";
     private static final String START_RECOVERY = "app.clearscreen.START_ACCESSIBILITY_RECOVERY";
+    private static final String RESUME_RECOVERY = "app.clearscreen.RESUME_ACCESSIBILITY_RECOVERY";
+    private static final String RECOVERY_REQUEST = "recovery-request";
     private static final String STOP = "app.clearscreen.SKIP_KEEP_ALIVE_STOP";
     private static final int NOTIFICATION_ID = 40;
+    static final int ACCESSIBILITY_OFF_NOTICE_ID = 42;
     private static final long LEGACY_NOTIFICATION_CHECK_MS = 30_000;
     private static final long RECOVERY_CHECK_MS = 30_000;
     private static final long SYSTEM_SETTLE_MS = 1_500;
     private static volatile SkipKeepAliveService active;
     private static boolean recoveryFailed;
-    enum RecoveryConnection { CONNECTED, WAITING_FOR_SYSTEM, RESTORING, WAITING_TO_RETRY, RESTORED }
+    private static long nextRecoveryRequest;
+    private static long pendingRecoveryRequest;
+    enum RecoveryConnection { CONNECTED, WAITING_FOR_SYSTEM, RESTORED }
 
     private final Handler notificationHandler = new Handler(Looper.getMainLooper());
     private boolean recovering;
     private boolean observingRecovery;
     private boolean eventCheckQueued;
-    private long generationBeforeRestore = -1;
     private RecoveryConnection recoveryConnection = RecoveryConnection.CONNECTED;
     private final Runnable recoveryCheck = this::checkRecovery;
     private final Runnable eventCheck = () -> {
@@ -50,7 +55,7 @@ public final class SkipKeepAliveService extends Service {
     };
     private final ContentObserver accessibilityChanges = new ContentObserver(notificationHandler) {
         @Override public void onChange(boolean selfChange) {
-            scheduleEventCheck();
+            checkRecovery();
         }
     };
     private final BroadcastReceiver screenWake = new BroadcastReceiver() {
@@ -90,27 +95,68 @@ public final class SkipKeepAliveService extends Service {
     }
 
     static boolean startRecovery(Context context) {
-        if (!canRecover(context) || !AccessibilityRecovery.connected(context)) return false;
+        if (!canRecover(context)) return false;
         recoveryFailed = false;
         try {
-            // Deliver an explicit start even if ordinary keepalive is already running.
+            if (!AccessibilityRecovery.configured(context)) return false;
+            long request = ++nextRecoveryRequest;
+            pendingRecoveryRequest = request;
             ForegroundServices.start(context,
-                    new Intent(context, SkipKeepAliveService.class).setAction(START_RECOVERY));
+                    new Intent(context, SkipKeepAliveService.class).setAction(START_RECOVERY)
+                            .putExtra(RECOVERY_REQUEST, request));
             return true;
         } catch (IllegalStateException | SecurityException failure) {
             Log.w(TAG, "System declined accessibility recovery start", failure);
-            recoveryFailed = true;
+            pendingRecoveryRequest = 0;
+            noteRecoveryFailure(context);
             return false;
         }
     }
 
     static void stopRecovery(Context context) {
-        if (recoveryRunning()) active.endRecovery(false);
-        else AccessibilityRecovery.clearSession(context);
+        pendingRecoveryRequest = 0;
+        cancelSelectionNotice(context);
+        if (recoveryRunning()) active.endRecovery();
+        else {
+            recoveryFailed = false;
+            clearRecovery(context);
+        }
+    }
+
+    /** Call only from the resumed app activity, where Android allows a new foreground start. */
+    static void onForeground(Context context) {
+        if (active != null || !AccessibilityRecovery.watching(context)) {
+            sync(context);
+            return;
+        }
+        Resume disposition = AccessibilityRecovery.resumeDisposition(context);
+        if (disposition == Resume.DISARM) {
+            disarmKeepAlive(context);
+            return;
+        }
+        if (!canResume(context)) {
+            clearRecovery(context);
+            sync(context);
+            return;
+        }
+        try {
+            if (!AccessibilityRecovery.configured(context)) {
+                clearRecovery(context);
+                return;
+            }
+            if (disposition == Resume.ALLOWED) {
+                ForegroundServices.start(context,
+                        new Intent(context, SkipKeepAliveService.class).setAction(RESUME_RECOVERY));
+            }
+        } catch (IllegalStateException | SecurityException failure) {
+            Log.w(TAG, "System declined accessibility recovery restart", failure);
+            noteRecoveryFailure(context);
+        }
     }
 
     static void onAccessibilityConnected(Context context) {
-        if (recoveryRunning() && AccessibilityRecovery.connected(context)) active.checkRecovery();
+        cancelSelectionNotice(context);
+        if (recoveryRunning()) active.checkRecovery();
         else sync(context);
     }
 
@@ -120,12 +166,14 @@ public final class SkipKeepAliveService extends Service {
         try {
             if (active != null) {
                 if (active.recovering) {
-                    if (canRecover(context)) active.scheduleEventCheck();
-                    else active.endRecovery(false);
+                    if (canResume(context)) active.scheduleEventCheck();
+                    else active.endRecovery();
                     return;
                 }
                 if (!eligible(context)) active.stopRunning();
-            } else if (eligible(context)) ForegroundServices.start(context, service.setAction(START));
+            } else if (!AccessibilityRecovery.watching(context) && eligible(context)) {
+                ForegroundServices.start(context, service.setAction(START));
+            }
         } catch (IllegalStateException | SecurityException e) {
             Log.w(TAG, "System declined foreground service change", e);
         }
@@ -143,8 +191,35 @@ public final class SkipKeepAliveService extends Service {
     }
 
     private static boolean canRecover(Context context) {
-        return AccessibilityRecovery.supported() && AccessibilityRecovery.hasPermission(context)
-                && canKeepAlive(context);
+        return AccessibilityRecovery.supported() && canKeepAlive(context);
+    }
+
+    private static boolean canResume(Context context) {
+        return AccessibilityRecovery.watching(context)
+                && new Store(context).skipKeepAliveEnabled() && canRecover(context);
+    }
+
+    private static void noteRecoveryFailure(Context context) {
+        recoveryFailed = true;
+        AccessibilityReliability.record(context, Kind.RECOVERY_FAILED);
+    }
+
+    private static void clearRecovery(Context context) {
+        if (AccessibilityRecovery.watching(context)) {
+            AccessibilityRecovery.clearSession(context);
+            AccessibilityReliability.record(context, Kind.RECOVERY_STOPPED);
+        }
+    }
+
+    private static void disarmKeepAlive(Context context) {
+        pendingRecoveryRequest = 0;
+        new Store(context).setSkipKeepAliveEnabled(false);
+        clearRecovery(context);
+        cancelSelectionNotice(context);
+    }
+
+    private static void cancelSelectionNotice(Context context) {
+        context.getSystemService(NotificationManager.class).cancel(ACCESSIBILITY_OFF_NOTICE_ID);
     }
 
     static boolean notificationsAllowed(Context context) {
@@ -173,10 +248,18 @@ public final class SkipKeepAliveService extends Service {
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
-        if (STOP.equals(action)) new Store(this).setSkipKeepAliveEnabled(false);
-        boolean startRecovery = START_RECOVERY.equals(action);
+        if (STOP.equals(action)) {
+            disarmKeepAlive(this);
+            stopRunning();
+            return START_NOT_STICKY;
+        }
+        boolean explicitStart = START_RECOVERY.equals(action);
+        long request = explicitStart ? intent.getLongExtra(RECOVERY_REQUEST, 0) : 0;
+        boolean startRecovery = request != 0 && request == pendingRecoveryRequest;
+        if (startRecovery) pendingRecoveryRequest = 0;
         boolean systemRestart = intent == null;
-        if (!startRecovery && !START.equals(action) && !systemRestart) {
+        boolean foregroundRestart = RESUME_RECOVERY.equals(action);
+        if (!explicitStart && !START.equals(action) && !systemRestart && !foregroundRestart) {
             stopRunning();
             return START_NOT_STICKY;
         }
@@ -184,46 +267,52 @@ public final class SkipKeepAliveService extends Service {
         try {
             // A queued foreground start must be acknowledged even if settings changed in the meantime.
             boolean starting = active != this;
-            if (startRecovery && canRecover(this) && AccessibilityRecovery.connected(this)) {
+            if (startRecovery && canRecover(this) && AccessibilityRecovery.configured(this)) {
                 enableRecovery(false);
-            } else if (systemRestart && canRecover(this) && new Store(this).skipKeepAliveEnabled()
-                    && AccessibilityRecovery.session(this) != Session.STOPPED) {
-                enableRecovery(true);
             } else {
-                if (systemRestart) AccessibilityRecovery.clearSession(this);
-                if (starting) showNotification();
-                if (startRecovery) recoveryFailed = true;
+                if ((systemRestart || foregroundRestart) && AccessibilityRecovery.watching(this)) {
+                    Resume disposition = AccessibilityRecovery.resumeDisposition(this);
+                    if (disposition == Resume.DISARM) disarmKeepAlive(this);
+                    else if (!canResume(this)) clearRecovery(this);
+                    else if (!AccessibilityRecovery.configured(this)) {
+                        if (starting) showNotification();
+                        stopRunning();
+                        return START_NOT_STICKY;
+                    } else if (systemRestart || disposition == Resume.ALLOWED) enableRecovery(true);
+                }
+                if (starting && !recovering) showNotification();
+                if (startRecovery) noteRecoveryFailure(this);
             }
-            if (recovering || eligible(this)) {
+            if (recovering || (!AccessibilityRecovery.watching(this) && eligible(this))) {
                 active = this;
                 if (starting && Build.VERSION.SDK_INT < 28) {
                     notificationHandler.removeCallbacks(legacyNotificationCheck);
                     notificationHandler.postDelayed(legacyNotificationCheck, LEGACY_NOTIFICATION_CHECK_MS);
                 }
-            } else stopRunning();
+            } else stopService();
         } catch (IllegalStateException | SecurityException e) {
             Log.w(TAG, "System declined foreground service start", e);
-            if (startRecovery || systemRestart) recoveryFailed = true;
-            stopRunning();
+            if (startRecovery || systemRestart || foregroundRestart) noteRecoveryFailure(this);
+            stopService();
         }
         return recovering ? START_STICKY : START_NOT_STICKY;
     }
 
-    private void enableRecovery(boolean systemRestart) {
+    private void enableRecovery(boolean resuming) {
         if (recovering) return;
         recovering = true;
         showNotification();
-        if (!systemRestart) {
-            new Store(this).setSkipKeepAliveEnabled(true);
-            AccessibilityRecovery.saveSession(this, Session.WATCHING);
-        }
         IntentFilter wake = new IntentFilter(Intent.ACTION_SCREEN_ON);
         wake.addAction(Intent.ACTION_USER_PRESENT);
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(screenWake, wake, Context.RECEIVER_NOT_EXPORTED);
         else registerReceiver(screenWake, wake);
         observingRecovery = true;
         getContentResolver().registerContentObserver(AccessibilityRecovery.settingUri(), false, accessibilityChanges);
-        if (systemRestart) scheduleEventCheck();
+        AccessibilityRecovery.takeOwnership(this);
+        if (!resuming) new Store(this).setSkipKeepAliveEnabled(true);
+        recoveryFailed = false;
+        if (resuming) AccessibilityReliability.record(this, Kind.RECOVERY_RESUMED);
+        scheduleEventCheck();
         notificationHandler.postDelayed(recoveryCheck, RECOVERY_CHECK_MS);
     }
 
@@ -235,44 +324,35 @@ public final class SkipKeepAliveService extends Service {
 
     private void checkRecovery() {
         if (active != this || !recovering) return;
-        if (!canRecover(this)) {
-            endRecovery(false);
+        if (!canResume(this)) {
+            endRecovery();
             return;
         }
         try {
-            boolean configured = AccessibilityRecovery.configured(this);
-            boolean attempted = AccessibilityRecovery.session(this) == Session.RESTORE_ATTEMPTED;
-            long delay = RECOVERY_CHECK_MS;
-            long retryIn = attempted ? RECOVERY_CHECK_MS - AccessibilityRecovery.timeSinceAttempt(this) : 0;
-            if (configured && CleanerService.get() != null
-                    && (!attempted || generationBeforeRestore != CleanerService.connectionGeneration())) {
-                if (attempted) AccessibilityRecovery.saveSession(this, Session.WATCHING);
-                if (attempted || recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM) {
-                    updateRecoveryConnection(RecoveryConnection.RESTORED);
-                }
-            } else if (configured) {
-                // The service is enabled in Settings. Keep watching, and let Android manage binding.
-                if (retryIn <= 0 || recoveryConnection != RecoveryConnection.RESTORING) {
-                    updateRecoveryConnection(RecoveryConnection.WAITING_FOR_SYSTEM);
-                } else delay = retryIn;
-            } else if (retryIn > 0) {
-                updateRecoveryConnection(RecoveryConnection.WAITING_TO_RETRY);
-                delay = retryIn;
-            } else {
-                generationBeforeRestore = CleanerService.connectionGeneration();
-                RestoreResult result = AccessibilityRecovery.restoreIfOff(this);
-                switch (result) {
-                    case REQUESTED: updateRecoveryConnection(RecoveryConnection.RESTORING); break;
-                    case ALREADY_ENABLED: updateRecoveryConnection(RecoveryConnection.WAITING_FOR_SYSTEM); break;
-                    case NOT_CONFIRMED: updateRecoveryConnection(RecoveryConnection.WAITING_TO_RETRY); break;
-                }
+            if (!AccessibilityRecovery.configured(this)) {
+                // A missing selection may be a deliberate revocation. Wait for a new opt-in.
+                stopRunning();
+                showSelectionNotice();
+                return;
             }
-            notificationHandler.removeCallbacks(recoveryCheck);
-            notificationHandler.postDelayed(recoveryCheck, delay);
+            if (CleanerService.get() == null) {
+                if (recoveryConnection != RecoveryConnection.WAITING_FOR_SYSTEM) {
+                    AccessibilityReliability.record(this, Kind.RECOVERY_WAITING);
+                    updateRecoveryConnection(RecoveryConnection.WAITING_FOR_SYSTEM);
+                }
+            } else if (recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM) {
+                AccessibilityReliability.record(this, Kind.RECOVERED);
+                updateRecoveryConnection(RecoveryConnection.RESTORED);
+            }
+            recoveryFailed = false;
         } catch (IllegalStateException | SecurityException failure) {
-            Log.w(TAG, "System did not confirm accessibility recovery", failure);
-            endRecovery(true);
+            if (!recoveryFailed) {
+                Log.w(TAG, "Could not check accessibility connection", failure);
+                noteRecoveryFailure(this);
+            }
         }
+        notificationHandler.removeCallbacks(recoveryCheck);
+        notificationHandler.postDelayed(recoveryCheck, RECOVERY_CHECK_MS);
     }
 
     private void updateRecoveryConnection(RecoveryConnection connection) {
@@ -294,9 +374,9 @@ public final class SkipKeepAliveService extends Service {
         }
     }
 
-    private void endRecovery(boolean failed) {
-        recoveryFailed = failed;
-        AccessibilityRecovery.clearSession(this);
+    private void endRecovery() {
+        recoveryFailed = false;
+        clearRecovery(this);
         stopWatching();
         if (eligible(this)) {
             try {
@@ -319,10 +399,9 @@ public final class SkipKeepAliveService extends Service {
                 new Intent(this, SkipKeepAliveService.class).setAction(STOP), PendingIntent.FLAG_IMMUTABLE);
         Notification notification = ForegroundServices.lowPriorityNotification(this, CHANNEL, "跳过保活")
                 .setSmallIcon(R.drawable.ic_app)
-                .setContentTitle(recovering ? "净屏 · 自动恢复无障碍" : "净屏 · 跳过保活")
+                .setContentTitle(recovering ? "净屏 · 无障碍连接守护" : "净屏 · 跳过保活")
                 .setContentText(!recovering ? "点击管理开屏与弹窗跳过"
-                        : recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM ? "无障碍开关已开启，服务未连接"
-                        : recoveryConnection == RecoveryConnection.WAITING_TO_RETRY ? "开关未保持开启，等待重试"
+                        : recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM ? "无障碍已开启，等待系统连接"
                         : "正在检查净屏的无障碍服务")
                 .setContentIntent(open)
                 .setDeleteIntent(recovering ? stop : null)
@@ -337,9 +416,32 @@ public final class SkipKeepAliveService extends Service {
         }
     }
 
+    private void showSelectionNotice() {
+        if (!notificationsAllowed(this)) return;
+        Intent settings = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+        PendingIntent open = PendingIntent.getActivity(this, ACCESSIBILITY_OFF_NOTICE_ID, settings,
+                PendingIntent.FLAG_IMMUTABLE);
+        Notification notice = ForegroundServices.lowPriorityNotification(this, CHANNEL, "跳过保活")
+                .setSmallIcon(R.drawable.ic_app)
+                .setContentTitle("净屏的无障碍开关已关闭")
+                .setContentText("开屏或弹窗处理已暂停。点此查看系统设置。")
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .build();
+        try {
+            getSystemService(NotificationManager.class).notify(ACCESSIBILITY_OFF_NOTICE_ID, notice);
+        } catch (SecurityException failure) {
+            Log.w(TAG, "System declined accessibility switch notice", failure);
+        }
+    }
+
     private void stopRunning() {
+        clearRecovery(this);
+        stopService();
+    }
+
+    private void stopService() {
         if (active == this) active = null;
-        AccessibilityRecovery.clearSession(this);
         stopWatching();
         notificationHandler.removeCallbacks(legacyNotificationCheck);
         stopForeground(STOP_FOREGROUND_REMOVE);

@@ -45,7 +45,7 @@ public final class MainActivity extends Activity {
     TextView filterStatus, filterCounter, keepAliveStatus, adState;
     Button filterButton;
     TextView homeSplashStatus, homeSplashCount, homePopupStatus, homeCleanStatus;
-    Button homeSplashButton, homeOpenApp;
+    Button homeSplashButton, homeOpenApp, homeMissed;
     Button homeRecovery;
     Button homePreviewStatus;
     FilterStore filterStore;
@@ -110,7 +110,7 @@ public final class MainActivity extends Activity {
         inForeground = true;
         updateScreen = new WeakReference<>(this);
         lastPermissionState = PermissionAccess.state(this);
-        if (store != null && store.skipKeepAliveEnabled()) SkipKeepAliveService.sync(this);
+        if (store != null) SkipKeepAliveService.onForeground(this);
         if (store != null && !completeAuthorization(lastPermissionState)) render();
         appAdManagement.restoreSavedListPosition();
         permissionHandler.removeCallbacks(permissionRefresh);
@@ -248,7 +248,7 @@ public final class MainActivity extends Activity {
         appAdsParent = tab;
         showPage(APP_ADS);
     }
-    private void openRecoveryPage() {
+    void openRecoveryPage() {
         recoveryParent = tab;
         showPage(ACCESSIBILITY_RECOVERY);
     }
@@ -264,12 +264,13 @@ public final class MainActivity extends Activity {
         bar.setPaddingRelative(dp(12), 0, dp(12), 0);
         String label = tab == 5 ? "返回权限设置" : tab == CUSTOM_RULES ? rulesParent == APP_AD_DETAIL
                 ? "返回应用详情" : rulesParent == POPUP_MANAGEMENT ? "返回弹窗管理" : "返回开屏管理"
-                : tab == APP_AD_DETAIL ? "返回应用列表" : tab == APP_AD_MISS ? "返回应用详情"
+                : tab == APP_AD_DETAIL ? "返回应用列表" : tab == APP_AD_MISS ? appAdManagement.missedBackLabel()
                 : tab == APP_ADS && appAdsParent == SKIP_MANAGEMENT ? "返回开屏管理"
                 : tab == RULE_DIRECTORY && directoryParent == APP_AD_DETAIL ? "返回应用详情"
                 : tab == RULE_DIRECTORY && directoryParent == APP_ADS ? "返回应用列表"
                 : tab == UPDATE_PAGE && updateParent == 3 ? "返回使用说明"
                 : tab == ACCESSIBILITY_RECOVERY && recoveryParent == SKIP_MANAGEMENT ? "返回开屏管理"
+                : tab == ACCESSIBILITY_RECOVERY && recoveryParent == APP_AD_MISS ? "返回漏跳诊断"
                 : tab == 4 && permissionParent != 0 ? "返回上页" : "返回首页";
         Button back = button(label, false, this::backToParentPage);
         back.setTextColor(INK);
@@ -294,7 +295,7 @@ public final class MainActivity extends Activity {
         syncSystemBack();
         filterStatus=null;filterCounter=null;filterButton=null;keepAliveStatus=null;adState=null;
         homeSplashStatus=null;homeSplashCount=null;homeSplashButton=null;homeOpenApp=null;homePopupStatus=null;homeCleanStatus=null;homeRecovery=null;
-        homeUpdateContainer=null;shownRelease=null;updateCheckStatus=null;homePreviewStatus=null;
+        homeUpdateContainer=null;shownRelease=null;updateCheckStatus=null;homePreviewStatus=null;homeMissed=null;
         shell = column();
         shell.setBackgroundColor(BG);
         shell.setOnApplyWindowInsetsListener((view, insets) -> {
@@ -338,7 +339,7 @@ public final class MainActivity extends Activity {
         if (tab == APP_AD_MISS) appAdManagement.leaveMissedAd();
         if (tab == 4) returningFromAuthorization = false;
         tab = tab == 5 ? 4 : tab == 4 ? permissionParent : tab == CUSTOM_RULES ? rulesParent
-                : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_AD_MISS ? APP_AD_DETAIL : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent
+                : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_AD_MISS ? appAdManagement.missedParent() : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent
                 : tab == ACCESSIBILITY_RECOVERY ? recoveryParent : tab == RULE_DIRECTORY ? directoryParent : 0;
         render();
         if (fromAppDetail) appAdManagement.restoreListPosition();
@@ -364,28 +365,31 @@ public final class MainActivity extends Activity {
         mark.setImageResource(R.drawable.ic_app);
         mark.setBackground(shape(GREEN, 11));
         mark.setClipToOutline(true);
-        top.addView(mark, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        android.content.res.Configuration config = getResources().getConfiguration();
+        boolean compactHeader = config.screenWidthDp < 380 && config.fontScale > 1.15f;
+        if (!compactHeader) top.addView(mark, new LinearLayout.LayoutParams(dp(32), dp(32)));
         TextView name = heading("净屏", 25, INK);
         LinearLayout.LayoutParams nameLayout = new LinearLayout.LayoutParams(0, -2, 1);
-        nameLayout.setMarginStart(dp(10));
+        nameLayout.setMarginStart(compactHeader ? 0 : dp(8));
         top.addView(name, nameLayout);
         Button help = button("使用说明", false, () -> showPage(3));
         help.setTextSize(14);
+        help.setMinWidth(0);
+        help.setMinimumWidth(0);
+        help.setPadding(dp(5), dp(8), dp(5), dp(8));
         help.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x1416624c));
         top.addView(help, new LinearLayout.LayoutParams(-2, -2));
+        LinearLayout.LayoutParams supportLayout = new LinearLayout.LayoutParams(-2, -2);
+        supportLayout.setMarginStart(dp(8));
+        top.addView(supportButton(), supportLayout);
         body.addView(top);
         space(body, 12);
 
         LinearLayout splash = card(body);
         splash.setBackground(shape(0xff163f32, 22));
         splash.setPaddingRelative(dp(18), dp(12), dp(18), dp(8));
-        LinearLayout splashHeading = new LinearLayout(this);
-        splashHeading.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams titleLayout = new LinearLayout.LayoutParams(0, -2, 1);
-        titleLayout.setMarginEnd(dp(8));
-        splashHeading.addView(heading("开屏广告跳过", 24, Color.WHITE), titleLayout);
-        splashHeading.addView(supportBookmark(), new LinearLayout.LayoutParams(-2, -2));
-        splash.addView(splashHeading, new LinearLayout.LayoutParams(-1, -2));
+        splash.addView(heading("开屏广告跳过", 24, Color.WHITE));
+        space(splash, 5);
         homeSplashStatus = bold("", 13, LIME);
         homeSplashStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         splash.addView(homeSplashStatus);
@@ -397,17 +401,21 @@ public final class MainActivity extends Activity {
                 () -> chooseInstalledApp(this::openInstalledApp, "请从桌面打开常用应用"));
         homeOpenApp.setTextColor(INK);
         homeOpenApp.setBackground(touchBackground(LIME, 14, 0x20162e24));
-        splash.addView(homeOpenApp, new LinearLayout.LayoutParams(-1, -2));
         homeSplashButton = button("", true, () -> {
-            if (store.splashEnabled() && CleanerService.get() == null) beginAccessibility();
+            if (store.splashEnabled() && CleanerService.get() == null
+                    && PermissionAccess.state(this) == PermissionAccess.State.DISCONNECTED
+                    && AccessibilityRecovery.supported()) openRecoveryPage();
+            else if (store.splashEnabled() && CleanerService.get() == null) beginAccessibility();
             else toggleSplash();
         });
         splash.addView(homeSplashButton, new LinearLayout.LayoutParams(-1, -2));
-        Button manage = button("管理开屏跳过", false, () -> showPage(SKIP_MANAGEMENT));
-        manage.setTextColor(0xffe5f1e8);
-        manage.setTextSize(14);
-        manage.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x28ffffff));
-        splash.addView(manage, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout actions = new LinearLayout(this);
+        actions.addView(homeTextButton("管理开屏跳过", () -> showPage(SKIP_MANAGEMENT)),
+                new LinearLayout.LayoutParams(0, -2, 1));
+        homeMissed = homeTextButton("刚才没跳过", () -> chooseInstalledApp(
+                appAdManagement::openMissedFromHome, "暂未找到可诊断的应用"));
+        actions.addView(homeMissed, new LinearLayout.LayoutParams(0, -2, 1));
+        splash.addView(actions);
         if (AccessibilityRecovery.supported()) {
             homeRecovery = button("", false, this::openRecoveryPage);
             homeRecovery.setTextColor(0xffe5f1e8);
@@ -415,6 +423,7 @@ public final class MainActivity extends Activity {
             homeRecovery.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x28ffffff));
             splash.addView(homeRecovery, new LinearLayout.LayoutParams(-1, -2));
         }
+        splash.addView(homeOpenApp, new LinearLayout.LayoutParams(-1, -2));
 
         homeUpdateContainer = column();
         body.addView(homeUpdateContainer);
@@ -448,32 +457,26 @@ public final class MainActivity extends Activity {
         linkAction(more, "改动记录与恢复", () -> showPage(2));
     }
 
-    private Button supportBookmark() {
-        Button bookmark = button("赞赏", false, () -> showPage(8));
-        bookmark.setTextColor(INK);
-        bookmark.setTextSize(14);
-        bookmark.setMinWidth(dp(52));
-        bookmark.setMinimumWidth(dp(52));
-        bookmark.setContentDescription("赞赏 · 支持作者");
-        bookmark.setPadding(dp(10), dp(7), dp(10), dp(13));
-        Path outline = new Path();
-        outline.moveTo(0, 0);
-        outline.lineTo(64, 0);
-        outline.lineTo(64, 48);
-        outline.lineTo(32, 41);
-        outline.lineTo(0, 48);
-        outline.close();
-        android.graphics.drawable.shapes.PathShape shape =
-                new android.graphics.drawable.shapes.PathShape(outline, 64, 48);
-        android.graphics.drawable.ShapeDrawable fill = new android.graphics.drawable.ShapeDrawable(shape);
-        fill.getPaint().setColor(0xffc6e3c9);
-        fill.getPaint().setAntiAlias(true);
-        android.graphics.drawable.ShapeDrawable mask = new android.graphics.drawable.ShapeDrawable(
-                new android.graphics.drawable.shapes.PathShape(outline, 64, 48));
-        mask.getPaint().setAntiAlias(true);
-        bookmark.setBackground(new android.graphics.drawable.RippleDrawable(
-                android.content.res.ColorStateList.valueOf(0x28162e24), fill, mask));
-        return bookmark;
+    private Button supportButton() {
+        Button support = button("赞赏作者", false, () -> showPage(8));
+        support.setTextColor(0xff77351f);
+        support.setTextSize(15);
+        support.setPadding(dp(12), dp(6), dp(12), dp(6));
+        support.setBackground(touchBackground(0xfff8d9bc, 24, 0x1877351f));
+        android.graphics.drawable.Drawable heart = getDrawable(R.drawable.ic_support);
+        heart.setBounds(0, 0, dp(18), dp(18));
+        support.setCompoundDrawablesRelative(heart, null, null, null);
+        support.setCompoundDrawablePadding(dp(5));
+        return support;
+    }
+
+    private Button homeTextButton(String label, Runnable action) {
+        Button button = button(label, false, action);
+        button.setTextColor(0xffe5f1e8);
+        button.setTextSize(14);
+        button.setPadding(dp(2), dp(8), dp(2), dp(8));
+        button.setBackground(touchBackground(Color.TRANSPARENT, 12, 0x28ffffff));
+        return button;
     }
 
     void sectionTitle(String label) {
@@ -544,9 +547,14 @@ public final class MainActivity extends Activity {
         boolean busy = connected && service.busy;
         boolean splash = store.splashEnabled();
         boolean active = splash && connected;
-        updateText(homeSplashStatus, !splash ? "未开启" : !connected ? "还需在手机设置里开启"
+        PermissionAccess.State access = connected ? PermissionAccess.State.READY : PermissionAccess.state(this);
+        boolean unbound = splash && access == PermissionAccess.State.DISCONNECTED;
+        boolean unknown = splash && access == PermissionAccess.State.UNKNOWN;
+        updateText(homeSplashStatus, !splash ? "未开启" : unbound ? "开关已开启，服务未连接"
+                : unknown ? "暂时无法读取系统开关" : !connected ? "无障碍开关已关闭"
                 : busy ? "清理期间暂停" : "已开启");
-        String buttonLabel = !splash ? "开启自动跳过" : !connected ? "打开手机设置" : "暂停开屏跳过";
+        String buttonLabel = !splash ? "开启自动跳过" : unbound && AccessibilityRecovery.supported() ? "检查并重新连接"
+                : !connected ? "打开手机设置" : "暂停开屏跳过";
         if (!buttonLabel.contentEquals(homeSplashButton.getText())) {
             homeSplashButton.setText(buttonLabel);
             homeSplashButton.setTextColor(active ? 0xffe5f1e8 : INK);
@@ -557,16 +565,34 @@ public final class MainActivity extends Activity {
         String guidance = active ? busy ? "系统设置清理结束后会继续。"
                 : count > 0 ? "已确认跳过 " + count + " 次" : "像平时一样打开应用，净屏会尝试跳过广告。"
                 : connected ? "开启后，净屏会自动尝试跳过开屏广告。" : "点下方按钮，再在手机设置里开启「净屏」。";
+        if (unbound) guidance = "正在等待系统连接。连接前无法跳过开屏广告。";
+        if (unknown) guidance = "可在手机的无障碍设置中查看「净屏」的开关。";
+        if (active && !busy) {
+            String recovery = recentRecoveryNote();
+            if (!recovery.isEmpty()) guidance = count > 0 ? "已确认跳过 " + count + " 次 · " + recovery : recovery;
+        }
         updateText(homeSplashCount, guidance);
+        homeMissed.setVisibility(splash || store.popupEnabled() ? View.VISIBLE : View.GONE);
         homeOpenApp.setVisibility(active && !busy && count == 0 ? View.VISIBLE : View.GONE);
         if (homeRecovery != null) updateText(homeRecovery, SkipKeepAliveService.recoveryRunning()
-                ? "自动恢复无障碍已开启" : "无障碍掉线？自动恢复");
+                ? "无障碍连接守护已开启" : "无障碍连接守护");
         updateText(homePopupStatus, !store.popupEnabled() ? "未开启"
                 : !connected ? "待连接无障碍" : busy ? "清理期间暂停" : "运行中 · 已确认 " + store.popupCount() + " 次");
         updateText(homeCleanStatus, busy ? "任务进行中 · 点此停止"
                 : connected && service.systemPreview() != null ? "查看上次预览" : store.lastRun().isEmpty()
                 ? "检查推荐 · 可恢复" : "上次清理结果可查看");
         if (homePreviewStatus != null) homePreviewStatus.setVisibility(RulePreview.LOCAL.hasSession() ? View.VISIBLE : View.GONE);
+    }
+
+    private String recentRecoveryNote() {
+        AccessibilityReliability.Event event = AccessibilityReliability.recentRecovery(this);
+        long age = System.currentTimeMillis() - event.timeMillis;
+        if (age < 0 || age >= 24 * 60 * 60_000L || event.timeMillis == 0) return "";
+        if (event.kind != AccessibilityReliability.Kind.RECOVERED) return "";
+        return android.text.format.DateUtils.formatDateTime(this, event.timeMillis,
+                android.text.format.DateUtils.FORMAT_SHOW_TIME
+                        | (android.text.format.DateUtils.isToday(event.timeMillis) ? 0
+                        : android.text.format.DateUtils.FORMAT_SHOW_DATE)) + " 已恢复连接";
     }
 
     void chooseClean() {
@@ -1493,7 +1519,7 @@ public final class MainActivity extends Activity {
         paragraph(state,"已确认跳过 " + store.splashCount() + " 次。开始操作或进入授权页时暂停。");
         action(state,store.splashEnabled()?"关闭开屏跳过":"开启开屏跳过",true,this::toggleSplash);
         if (store.splashEnabled() && !connected) linkAction(state,"继续授权",this::accessibility);
-        if (AccessibilityRecovery.supported()) linkAction(state, "自动恢复无障碍", this::openRecoveryPage);
+        if (AccessibilityRecovery.supported()) linkAction(state, "无障碍连接守护", this::openRecoveryPage);
 
         LinearLayout options = card(body);
         options.addView(bold("应用与记录", 17, INK));
@@ -2009,7 +2035,7 @@ public final class MainActivity extends Activity {
                 }).setNegativeButton("关闭", null).show();
     }
     void supportPage() {
-        header("", "赞赏", "谢谢你支持净屏的后续维护。");
+        header("", "赞赏作者", "如果净屏帮你省了时间，欢迎支持后续的规则适配和维护。");
         LinearLayout code = card(body);
         ImageView image = new ImageView(this);
         image.setScaleType(ImageView.ScaleType.FIT_CENTER);

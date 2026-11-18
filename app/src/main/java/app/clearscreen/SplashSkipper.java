@@ -25,6 +25,9 @@ final class SplashSkipper {
     private static final String WECHAT_MINI_APP_SPLASH=WECHAT_PACKAGE+".plugin.appbrand.ui.AppBrandUI00";
     private static final String OOKCAM_PACKAGE="com.okcam.ookcam";
     private static final String OOKCAM_AD_SPLASH=OOKCAM_PACKAGE+".SplashActivity";
+    private static final String QIYI_LITE_PACKAGE="com.qiyi.video.lite";
+    private static final String QIYI_LITE_HOME=QIYI_LITE_PACKAGE+".homepage.HomeActivity";
+    private static final String QIYI_LITE_RESOURCE=QIYI_LITE_PACKAGE+":id/unused_res_a";
     private static final long QUICK_SCAN_MS=65;
     private static final long USER_INPUT_PAUSE_MS=900;
     private static final long OWN_CLICK_ECHO_MS=550;
@@ -1181,10 +1184,20 @@ final class SplashSkipper {
         boolean useDefaults=mode!=SplashMatch.CUSTOM_ONLY&&scoped.stream().noneMatch(rule->rule.replaceDefaults);
         boolean useGeneric=useDefaults&&!exactActivityOnly;
         boolean onboarding=useGeneric&&activity!=null&&ONBOARDING_PAGE.matcher(activity).find();
+        boolean checkCoveredSearch=useGeneric&&QIYI_LITE_PACKAGE.equals(pkg)&&QIYI_LITE_HOME.equals(activity);
         boolean ad=false;
+        AccessibilityNodeInfo coveredSearch=null;
         for(AccessibilityNodeInfo node:nodes){
             if(!node.isVisibleToUser())continue;
-            if(unsafeWindowNode(node,true))return noHit(trace,SkipDiagnostics.Phase.GUARDED);
+            if(unsafeWindowNode(node,!checkCoveredSearch))return noHit(trace,SkipDiagnostics.Phase.GUARDED);
+            if(node.isEditable()){
+                if(coveredSearch!=null||!belongsTo(node,pkg)||node.getWindowId()!=window||node.isFocusable()
+                        ||node.isAccessibilityFocused()||!TextUtils.equals(node.getClassName(),"android.widget.EditText")
+                        ||!QIYI_LITE_RESOURCE.equals(node.getViewIdResourceName())
+                        ||!TextUtils.isEmpty(node.getText())||!TextUtils.isEmpty(node.getContentDescription()))
+                    return noHit(trace,SkipDiagnostics.Phase.GUARDED);
+                coveredSearch=node;
+            }
             if(useGeneric&&!ad&&belongsTo(node,pkg)&&node.getWindowId()==window){
                 ad=adMarker(label(node.getText()))||adMarker(label(node.getContentDescription()));
             }
@@ -1199,6 +1212,7 @@ final class SplashSkipper {
             CustomSkipRule userRule=null;
             for(CustomSkipRule rule:scoped)if(rule.matchesButton(node)){userRule=rule;break;}
             SplashRules.Action action=userRule==null&&defaults!=null?defaults.action(node,text.isEmpty()?desc:text):null;
+            if(coveredSearch!=null&&(action!=SplashRules.Action.CLICK||!coversQiyiLiteSearch(node,coveredSearch)))continue;
             boolean known=userRule!=null||action!=null;
             if(!known&&(!useGeneric||(!skipLabel(text)&&!skipLabel(desc))))continue;
             readable=true;
@@ -1233,6 +1247,7 @@ final class SplashSkipper {
         }
         if(ambiguous)return noHit(trace,SkipDiagnostics.Phase.AMBIGUOUS);
         if(best==null){
+            if(coveredSearch!=null)return noHit(trace,SkipDiagnostics.Phase.GUARDED);
             if(unsafe)return noHit(trace,SkipDiagnostics.Phase.TARGET_UNSAFE);
             SkipDiagnostics.Phase reason=trace!=null&&useDefaults?rules.explainMiss(pkg,activity,elapsed,window,nodes):null;
             if(reason!=null)return noHit(trace,reason);
@@ -1241,6 +1256,33 @@ final class SplashSkipper {
         }
         if(trace!=null)trace.accept(SkipDiagnostics.Phase.TARGET_FOUND);
         return best;
+    }
+    // Snapshot 13797162 exposes an unfocusable Home search field behind a native launch ad.
+    // Require the reviewed click target, the ad's separate CTA, and the covered Home sibling.
+    private static boolean coversQiyiLiteSearch(AccessibilityNodeInfo close,AccessibilityNodeInfo search){
+        if(!close.isClickable()||!QIYI_LITE_RESOURCE.equals(close.getViewIdResourceName()))return false;
+        AccessibilityNodeInfo closeLabel=childAt(childAt(close,0),1);
+        if(closeLabel==null||!closeLabel.isVisibleToUser()||!TextUtils.equals(closeLabel.getText(),"关闭"))return false;
+        AccessibilityNodeInfo creative=ancestorAt(close,2);
+        AccessibilityNodeInfo creativeLink=childAt(creative,3);
+        AccessibilityNodeInfo linkLabel=childAt(childAt(creativeLink,0),0);
+        if(creativeLink==null||!creativeLink.isVisibleToUser()||!creativeLink.isClickable()||linkLabel==null
+                ||!linkLabel.isVisibleToUser()||!TextUtils.equals(linkLabel.getText(),"点击跳转至详情页面或第三方应用"))
+            return false;
+        AccessibilityNodeInfo page=ancestorAt(creative,4);
+        AccessibilityNodeInfo home=childAt(page,1);
+        if(home==null||!home.equals(ancestorAt(search,5)))return false;
+        Rect canvas=new Rect(),field=new Rect();
+        creative.getBoundsInScreen(canvas);
+        search.getBoundsInScreen(field);
+        return !field.isEmpty()&&canvas.contains(field);
+    }
+    private static AccessibilityNodeInfo childAt(AccessibilityNodeInfo node,int index){
+        return node!=null&&index<node.getChildCount()?node.getChild(index):null;
+    }
+    private static AccessibilityNodeInfo ancestorAt(AccessibilityNodeInfo node,int depth){
+        for(int i=0;i<depth&&node!=null;i++)node=node.getParent();
+        return node;
     }
     private static boolean adMarker(String value){
         return !value.isEmpty()&&AD_MARKER.matcher(normalizedLabel(value)).matches();
