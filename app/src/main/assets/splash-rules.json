@@ -16665,6 +16665,164 @@
         "versionName": "8.10.80.26895",
         "apkSha256": "8445fe47ca3b5c632cc9ccb0eaf21f3cde56eb865b8bc54f085cfb0d62126e30"
       }
+    },
+    {
+      "package": "com.coolapk.market",
+      "name": "酷安",
+      "group": "专用开屏页 · 跳过和倒计时并排",
+      "groupKey": 220,
+      "ruleIndex": 0,
+      "activityIds": [
+        "com.coolapk.market.view.splash.SplashAdActivity"
+      ],
+      "exactActivity": true,
+      "selector": "@TextView[text=\"跳过\"][childCount=0] + TextView[text.length=1]",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text",
+                    "=",
+                    "跳过"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "childCount",
+                    "=",
+                    0
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "TextView",
+            "tests": [
+              [
+                [
+                  [
+                    "text.length",
+                    "=",
+                    1
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            "+",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 0
+      },
+      "snapshots": [
+        "https://i.gkd.li/i/26328668"
+      ],
+      "required": [],
+      "requiredSelectors": [],
+      "evidence": "activity",
+      "tap": true,
+      "matchTime": 10000
+    },
+    {
+      "package": "com.coolapk.market",
+      "name": "酷安",
+      "group": "首页开屏 · 广告层中的跳过按钮",
+      "groupKey": 220,
+      "ruleIndex": 1,
+      "activityIds": [
+        "com.coolapk.market.view.main.MainActivity"
+      ],
+      "exactActivity": true,
+      "selector": "[vid=\"main_splash_ad\"] >n @[vid=\"anythink_myoffer_splash_skip_area\"][clickable=true] > [vid=\"anythink_myoffer_splash_skip\"]",
+      "targetSelector": {
+        "path": [
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "main_splash_ad"
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "anythink_myoffer_splash_skip_area"
+                  ]
+                ]
+              ],
+              [
+                [
+                  [
+                    "clickable",
+                    "=",
+                    true
+                  ]
+                ]
+              ]
+            ]
+          },
+          {
+            "class": "*",
+            "tests": [
+              [
+                [
+                  [
+                    "vid",
+                    "=",
+                    "anythink_myoffer_splash_skip"
+                  ]
+                ]
+              ]
+            ]
+          }
+        ],
+        "relations": [
+          [
+            ">",
+            []
+          ],
+          [
+            ">",
+            [
+              1
+            ]
+          ]
+        ],
+        "target": 1
+      },
+      "snapshots": [
+        "https://i.gkd.li/i/23097140"
+      ],
+      "required": [],
+      "requiredSelectors": [],
+      "evidence": "resource",
+      "requireClickable": true,
+      "matchTime": 10000
     }
   ],
   "sdkRules": [

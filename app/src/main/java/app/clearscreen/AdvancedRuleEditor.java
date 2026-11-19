@@ -46,6 +46,21 @@ final class AdvancedRuleEditor {
         }).setNegativeButton("取消", null).show();
     }
 
+    static void fromSample(MainActivity s,List<CustomSkipRule> rules,RuleSample sample,String mode,String condition){
+        AdvancedRuleEditor editor=new AdvancedRuleEditor(s,rules,-1,mode,false);
+        editor.packageField.setText(sample.pkg);Step step=editor.steps.get(0);
+        step.activity.setText(sample.page);step.target.setText(condition);editor.show();
+    }
+    static void reviewDraft(MainActivity screen, List<CustomSkipRule> rules, CustomSkipRule draft) {
+        AdvancedRuleEditor editor = new AdvancedRuleEditor(screen, rules, -1, draft.mode, false);
+        editor.packageField.setText(draft.pkg);
+        Step step = editor.steps.get(0);
+        step.target.setText(draft.label);
+        step.activity.setText(draft.activity);
+        if (step.prompt != null) step.prompt.setText(draft.context);
+        editor.show();
+    }
+
     static void edit(MainActivity screen, List<CustomSkipRule> rules, int index) {
         CustomSkipRule rule = rules.get(index);
         new AdvancedRuleEditor(screen, rules, index, rule.mode, rule.sequenceIndex >= 0).show();
@@ -70,7 +85,7 @@ final class AdvancedRuleEditor {
                 CustomSkipRule.MAX_RULES - rules.size() + original.size());
 
         content = screen.skipDialogContent();
-        screen.paragraph(content, "文字默认完整匹配。可用 ~ 表示包含、+ 表示开头、- 表示结尾，用 & 连接同一控件的条件。也可填写完整控件 ID。按范围匹配须指定页面，并与可见控件的实际边界一致。");
+        screen.paragraph(content, "文字默认完整匹配。结构条件可写 gkd:@[vid=\"skip\"] < [vid=\"ad_panel\"]。可用 ~ 表示包含、+ 表示开头、- 表示结尾，用 & 连接同一控件的条件。也可填写完整控件 ID。按范围匹配须指定页面，并与可见控件的实际边界一致。");
         if (sequence) screen.paragraph(content, "按顺序核对弹窗。观察步骤只检查当前画面，最后一步须执行关闭。");
         packageField = screen.skipRuleField(content, "应用包名", "com.example.app",
                 original.isEmpty() ? "" : original.get(0).pkg);

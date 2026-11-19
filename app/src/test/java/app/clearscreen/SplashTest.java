@@ -71,6 +71,21 @@ public class SplashTest {
         ad();
         assertEquals(skip,SplashSkipper.match(root));
     }
+    @Test public void neighboringWebAdBadgeCanIdentifyOtherwiseInertSkipLeaf(){
+        skip.setClickable(false);skip.setText("跳过");skip.setBoundsInScreen(new Rect(252,150,345,210));
+        AccessibilityNodeInfo badge=node("广告",false,new Rect(72,150,156,210));shadowOf(root).addChild(badge);
+        assertEquals(skip,SplashSkipper.match(root));
+        badge.setBoundsInScreen(new Rect(72,280,156,340));assertNull(SplashSkipper.match(root));
+        badge.setBoundsInScreen(new Rect(72,150,156,210));badge.setVisibleToUser(false);assertNull(SplashSkipper.match(root));
+    }
+    @Test public void compositeAdControlsRequireCompleteActionAndRejectImitations(){
+        for(String label:new String[]{"3 秒 | 跳过广告","广告｜跳过","关闭广告（５秒）","5s · Skip this ad"}){
+            skip.setText(label);assertEquals(label,skip,SplashSkipper.match(root));
+        }
+        for(String label:new String[]{"5秒后可跳过广告","广告设置 | 跳过教程","查看广告（5秒）","关闭广告个性化"}){
+            skip.setText(label);assertNull(label,SplashSkipper.match(root));
+        }
+    }
     @Test public void explicitAdSkipSupportsTraditionalEnglishAndCountdown(){for(String text:new String[]{"跳过广告","跳過廣告 (3秒)","Skip Ad 5s","5秒跳过"}){skip.setText(text);assertTrue(SplashSkipper.skipLabel(text));}skip.setText("Skip Ad 5s");assertEquals(skip,SplashSkipper.match(root));}
     @Test public void genericSplashAcceptsOnlyExplicitAdCloseLabels(){
         for(String text:new String[]{"关闭广告","关闭此广告","關閉廣告","關閉此廣告",

@@ -54,6 +54,12 @@ final class MissedAdReportPage {
         showMode(MissedAdCapture.Mode.SPLASH, "打开应用时显示", service);
         showMode(MissedAdCapture.Mode.POPUP, "进入应用后出现，例如首页弹窗或内容里的广告", service);
 
+        if(screen.networkFilterAvailable()) {
+            LinearLayout draft=screen.card(screen.body);
+            draft.addView(screen.bold("记得按钮写了什么？",18,MainActivity.INK));
+            screen.paragraph(draft,"为"+label+"起草一条规则。生成前可以核对发送的文字。");
+            screen.action(draft,"用 AI 起草规则",false,() -> AiRuleDraft.open(screen,screen.store.customSkipRules(),pkg));
+        }
         LinearLayout help = screen.card(screen.body);
         screen.paragraph(help, "广告不再出现时，也可以用应用版本和本机已有结果生成一份反馈。报告由你预览、复制或保存。");
         screen.linkAction(help, "生成基本反馈", () -> new AlertDialog.Builder(screen).setTitle("遇到的是哪种广告？")
@@ -129,9 +135,9 @@ final class MissedAdReportPage {
                 ? "先退出目标应用。开始后打开它，等出现开屏广告，再直接切回净屏。"
                 : "打开应用并走到出现广告的页面。广告出现后直接切回净屏，尽量不要先关闭它。")
                 + "\n\n只观察这一个应用的一次使用，最多 90 秒。基本报告含应用版本和处理结果。"
-                + "不会截屏，也不会保存界面上的文字或自动发送。报告在本机内存中保留 5 分钟。");
+                + "不会截屏或自动发送。勾选下方选项会临时保留控件树、资源 ID 和可识别的广告按钮文字；其他正文会隐去。报告在本机内存中保留 5 分钟。");
         CheckBox controls = new CheckBox(screen);
-        controls.setText("同时记录页面类名，以及候选控件的 ID、类型、位置和可点击状态（便于修复）");
+        controls.setText("记录脱敏页面样本，供检查控件和回放规则");
         controls.setMinHeight(screen.dp(48));
         content.addView(controls, new LinearLayout.LayoutParams(-1, -2));
         ScrollView scroll = new ScrollView(screen);
@@ -176,6 +182,9 @@ final class MissedAdReportPage {
         card.addView(screen.text(session.reference, 14, MainActivity.MUTED));
         screen.space(card, 6);
         screen.action(card, "预览、复制或保存报告", true, () -> preview(session));
+        if(session.sample!=null) screen.action(card,"打开样本实验室",false,() -> {
+            if(valid(session)) SampleInspector.open(screen,session);
+        });
         screen.linkAction(card, "打开官方反馈与进度", () -> officialFeedback(session));
         screen.linkAction(card, "清除本机报告", () -> { capture.clear(pkg); screen.render(); });
     }

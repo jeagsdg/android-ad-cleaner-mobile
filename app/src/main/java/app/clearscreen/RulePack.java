@@ -26,11 +26,12 @@ import org.json.JSONObject;
 final class RulePack {
     static final int MAX_ENVELOPE_BYTES = 900 * 1024;
     static final int MAX_RULES = 1024;
+    static final String OFFICIAL_PATH = "0-update/rules-v22.json";
     static final String CERTIFICATE_SHA256 = "40d36629d9780396e88d286fa6f43771f8d663fbc0b9e9f951ad84c5153ddf4e";
     private static final String PACKAGE = "app.clearscreen";
     private static final Pattern APP = Pattern.compile("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z][A-Za-z0-9_]*)+");
     private static final Pattern PUBLISHED_ID = Pattern.compile("official:[a-z0-9-]{1,64}");
-    private static final Pattern EVIDENCE_URL = Pattern.compile("https://(?:i\\.gkd\\.li/import/[0-9]+"
+    private static final Pattern EVIDENCE_URL = Pattern.compile("https://(?:i\\.gkd\\.li/(?:import|i)/[0-9]+"
             + "|github\\.com/(?:ganlinte/GKD-subscription|jeagsdg/android-ad-cleaner-mobile)/[A-Za-z0-9_./%#-]+)");
     private static final Set<String> RULE_FIELDS = fields("id", "package", "name", "group", "evidence", "activityIds",
             "exactActivity", "targetSelector", "required", "matchTime", "matchTimeMs", "requireClickable",

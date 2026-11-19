@@ -441,6 +441,8 @@ def main():
         evidencePackages=[entry['package'] for entry in huawei_evidence],
         snapshots=[url for entry in huawei_evidence for url in entry['snapshots']],
     ))
+    from reviewed_220 import extra_rules
+    entries.extend(extra_rules("splash",compile_selector))
     out = dict(
         source='https://github.com/ganlinte/GKD-subscription', sourcePath='dist/ganlin_gkd.json5',
         sourceCommit=SOURCE_COMMIT, sourceSha256=SOURCE_SHA, version=data['version'], license='MIT', retrieved='2026-11-03',

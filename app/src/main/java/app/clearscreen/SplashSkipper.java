@@ -42,14 +42,15 @@ final class SplashSkipper {
             "同意.*|允[许許].*|接受.*|确认支付|確認支付|立即授[权權]|allow(?: .*)?|i agree",Pattern.CASE_INSENSITIVE);
     private static final Pattern EXPLICIT_SKIP=Pattern.compile(
             "(?:跳过(?:此)?广告|跳過(?:此)?廣告|略过广告|略過廣告|skip(?:this)?ads?|skipadvertisement|広告をスキップ|광고건너뛰기)");
-    private static final Pattern AD_CLOSE_LABEL=Pattern.compile(
-            "关闭(?:此)?广告|關閉(?:此)?廣告|close (?:this )?ad|close advertisement|dismiss (?:this )?ad",
-            Pattern.CASE_INSENSITIVE);
     private static final String SKIP_WORD="(?:(?:点击|點擊|点此|點此)?(?:跳过|跳過)|略过|略過|skip|スキップ|건너뛰기)";
     private static final String COUNTDOWN="(?:[0-9]{1,2}(?:s|秒|초)?)";
-    private static final Pattern SKIP_LABEL=Pattern.compile(
-            "(?:"+EXPLICIT_SKIP.pattern()+"|"+SKIP_WORD+")(?:\\("+COUNTDOWN+"\\)|[·:|]?"+COUNTDOWN+")?"
-                    +"|"+COUNTDOWN+"[·:|]?"+SKIP_WORD);
+    private static final String TIMER="(?:[·:|,]?"+COUNTDOWN+"|\\("+COUNTDOWN+"\\))";
+    private static final String AD_ACTION="(?:"+EXPLICIT_SKIP.pattern()+"|(?:广告|廣告)[·:|,]?(?:跳过|跳過)|关闭(?:此)?广告|關閉(?:此)?廣告|(?:close|dismiss)(?:this)?ad(?:vertisement)?)";
+    private static Pattern timedLabel(String action){
+        return Pattern.compile("(?:"+action+")(?:"+TIMER+")?|(?:"+COUNTDOWN+"[·:|,]?)(?:"+action+")");
+    }
+    private static final Pattern SKIP_LABEL=timedLabel(SKIP_WORD);
+    private static final Pattern EXPLICIT_LABEL=timedLabel(AD_ACTION);
     private static final Pattern AD_MARKER=Pattern.compile(
             "广告|廣告|推广|推廣|ad|advertisement|広告|광고|广告\\|已wi-?fi预加载|品牌广告|启动图广告");
     private static final Pattern ONBOARDING_PAGE=Pattern.compile("onboarding|tutorial|setupwizard|userguide|walkthrough",Pattern.CASE_INSENSITIVE);
@@ -362,7 +363,8 @@ final class SplashSkipper {
     }
     private static boolean reviewedInAppSplash(String pkg,String activity){
         return (WECHAT_PACKAGE.equals(pkg)&&(WECHAT_PLUGIN_SPLASH.equals(activity)||WECHAT_MINI_APP_SPLASH.equals(activity)))
-                ||(OOKCAM_PACKAGE.equals(pkg)&&OOKCAM_AD_SPLASH.equals(activity));
+                ||(OOKCAM_PACKAGE.equals(pkg)&&OOKCAM_AD_SPLASH.equals(activity))
+                ||("com.coolapk.market".equals(pkg)&&"com.coolapk.market.view.splash.SplashAdActivity".equals(activity));
     }
     private void armSplash(long now,boolean exactActivityOnly){
         cancelDelayedSplash();
@@ -415,7 +417,7 @@ final class SplashSkipper {
     }
     private boolean excluded(String pkg){return pkg.equals(service.getPackageName())||pkg.equals(launcher)||pkg.equals("com.android.settings")||pkg.startsWith("com.android.launcher")||store.splashExcluded().contains(pkg);}
     private List<CustomSkipRule> customRules(){
-        try{return store.customSkipRules();}catch(IllegalArgumentException e){return Collections.emptyList();}
+        try{return store.activeRules();}catch(IllegalArgumentException e){return Collections.emptyList();}
     }
     private List<CustomSkipRule> popupRules(){
         if(CustomSkipRule.protectedPackage(foreground)||excluded(foreground)
@@ -1119,16 +1121,15 @@ final class SplashSkipper {
         if(belongsTo(root,pkg)&&displayId(root)==Display.DEFAULT_DISPLAY)feedback.show(message);
     }
     static boolean skipLabel(String value){
-        return !value.isEmpty()&&(AD_CLOSE_LABEL.matcher(value).matches()||SKIP_LABEL.matcher(normalizedLabel(value)).matches());
+        String normalized=normalizedLabel(value);
+        return SKIP_LABEL.matcher(normalized).matches()||EXPLICIT_LABEL.matcher(normalized).matches();
     }
     private static String normalizedLabel(String value){
         if(value.isEmpty()||value.length()>80)return "";
         return SPACE.matcher(Normalizer.normalize(value,Normalizer.Form.NFKC)).replaceAll("").toLowerCase(Locale.ROOT);
     }
     static boolean explicitAd(String value){
-        if(AD_CLOSE_LABEL.matcher(value).matches())return true;
-        String normalized=normalizedLabel(value);
-        return SKIP_LABEL.matcher(normalized).matches()&&EXPLICIT_SKIP.matcher(normalized).lookingAt();
+        return EXPLICIT_LABEL.matcher(normalizedLabel(value)).matches();
     }
     static boolean rewardAd(String value){
         return !value.isEmpty()&&REWARDED_AD.matcher(value).find();
@@ -1220,10 +1221,16 @@ final class SplashSkipper {
             if(!known&&!explicit&&onboarding){unsafe=true;continue;}
             if(!known&&!explicit&&!ad){missingAd=true;continue;}
             if(!node.isEnabled()||node.isCheckable()||!safeActionLabel(text)||!safeActionLabel(desc)){unsafe=true;continue;}
-            boolean tap=action==SplashRules.Action.TAP;
+            boolean paired=useGeneric && !known && !onboarding && !WECHAT_PACKAGE.equals(pkg) && ad && (skipLabel(text)||skipLabel(desc))
+                    && pairedAdBadge(node,nodes,pkg,window,screen);
+            boolean tap=action==SplashRules.Action.TAP || (paired && clickable(node)==null);
             if(tap&&!safeTouchLeaf(node)){unsafe=true;continue;}
             AccessibilityNodeInfo click=tap?node:userRule==null?clickable(node):ruleClickTarget(node,userRule);
             if(!belongsTo(click,pkg)||click.getWindowId()!=window){unsafe=true;continue;}
+            // A clickable search suggestion can literally be named “跳过广告”. Its row is content.
+            if(!known && click!=null && !node.equals(click) && inSearchResults(activity,click)){
+                unsafe=true;continue;
+            }
             click.getBoundsInScreen(bounds);
             boolean horizontal=bounds.left>=screen.left+screen.width()*.5||((explicit||known)&&bounds.right<=screen.left+screen.width()*.5);
             boolean bottom=bounds.top>=screen.top+screen.height()*.75;
@@ -1234,7 +1241,7 @@ final class SplashSkipper {
                     &&bounds.top>=screen.top+screen.height()*.60&&bounds.bottom<=screen.top+screen.height()*.86
                     &&bounds.height()<=screen.height()*.10
                     :corner||adFooter;
-            if(!screen.contains(bounds)||!placement
+            if(!screen.contains(bounds)||!(placement || paired && bounds.bottom<=screen.top+screen.height()*.27)
                     ||bounds.width()>screen.width()*.48||bounds.height()>screen.height()*.16||bounds.width()<12||bounds.height()<12
                     ||(!tap&&userRule==null&&!safeClickTarget(click))){unsafe=true;continue;}
             int priority=userRule!=null?4:known?3:explicit?2:1;
@@ -1286,6 +1293,32 @@ final class SplashSkipper {
     }
     private static boolean adMarker(String value){
         return !value.isEmpty()&&AD_MARKER.matcher(normalizedLabel(value)).matches();
+    }
+    // Web-rendered splash bars can expose two neighboring text leaves but no click action.
+    // Require the visible ad badge immediately to the left in the same compact header row.
+    private static boolean inSearchResults(String activity,AccessibilityNodeInfo target){
+        if(activity==null || !activity.toLowerCase(Locale.ROOT).contains("search"))return false;
+        for(AccessibilityNodeInfo p=target.getParent();p!=null;p=p.getParent()){
+            String cls=String.valueOf(p.getClassName()),id=String.valueOf(p.getViewIdResourceName());
+            if(cls.endsWith("RecyclerView")||cls.endsWith("ListView")||id.endsWith(":id/recycler_view"))return true;
+        }
+        return false;
+    }
+    private static boolean pairedAdBadge(AccessibilityNodeInfo target,List<AccessibilityNodeInfo> nodes,
+                                         String pkg,int window,Rect screen){
+        if(target.getChildCount()!=0)return false;
+        Rect button=new Rect(),badge=new Rect();target.getBoundsInScreen(button);
+        if(!screen.contains(button)||button.height()<12||button.height()>screen.height()/18
+                ||button.width()>screen.width()/4||button.bottom>screen.top+screen.height()/4)return false;
+        for(AccessibilityNodeInfo n:nodes){
+            if(n.getWindowId()!=window||!belongsTo(n,pkg)||!n.isVisibleToUser()||n.isClickable()
+                    ||n.getChildCount()!=0||!(adMarker(label(n.getText()))||adMarker(label(n.getContentDescription()))))continue;
+            n.getBoundsInScreen(badge);int gap=button.left-badge.right;
+            if(screen.contains(badge)&&badge.width()>0&&badge.width()<=screen.width()/5 && badge.height()>0
+                    && gap>=0 && gap<=screen.width()/10 && Math.abs(badge.centerY()-button.centerY())<=button.height()/4
+                    && badge.height()<=button.height()*2 && button.height()<=badge.height()*2)return true;
+        }
+        return false;
     }
     static boolean unsafeWindowNode(AccessibilityNodeInfo node,boolean anyInput){
         if(node.isEditable()&&(anyInput||node.isFocused()))return true;

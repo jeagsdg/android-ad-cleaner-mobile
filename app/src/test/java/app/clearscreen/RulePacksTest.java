@@ -8,6 +8,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +29,7 @@ public class RulePacksTest {
     @Rule public TemporaryFolder directory = new TemporaryFolder();
     private RulePack bundled;
     private byte[] official;
+    private byte[] legacy;
     private int clientVersion;
 
     @SuppressWarnings("deprecation")
@@ -34,7 +38,8 @@ public class RulePacksTest {
         bundled = RulePack.bundled(new Store(app));
         clientVersion = app.getPackageManager().getPackageInfo(app.getPackageName(), 0).versionCode;
         File project = new File(System.getProperty("clearscreen.artifacts")).getParentFile();
-        official = Files.readAllBytes(new File(project, "0-update/rules.json").toPath());
+        official = Files.readAllBytes(new File(project, RulePack.OFFICIAL_PATH).toPath());
+        legacy = Files.readAllBytes(new File(project, "0-update/rules.json").toPath());
     }
 
     @Test public void shippedFeedMatchesTheReleaseCertificateAndClient() throws Exception {
@@ -71,6 +76,39 @@ public class RulePacksTest {
         RulePacks replay = new RulePacks(storage, bundled, decoder -> decoder.verify(official), this::verify);
         assertEquals(RulePacks.Refresh.ROLLED_BACK, replay.refresh());
         assertEquals(0, replay.state().version);
+    }
+
+    @Test public void upgradingFromTheOlderFeedKeepsBundledAdditionsAndRuleToggles() throws Exception {
+        RulePack release = verify(official);
+        RulePack prior = RulePacks.verify(legacy, bundled, 21, RulePack.CERTIFICATE_SHA256);
+        assertEquals(3, prior.version);
+        assertTrue(release.version > prior.version);
+        assertTrue(release.entries.size() > prior.entries.size());
+        List<String> bundledIds = bundled.entries.stream().map(row -> row.id).collect(Collectors.toList());
+        assertEquals(bundledIds, release.entries.stream().map(row -> row.id).collect(Collectors.toList()));
+        Set<String> previousIds = prior.entries.stream().map(row -> row.id).collect(Collectors.toSet());
+        assertEquals(Set.of("https://i.gkd.li/i/26328668", "https://i.gkd.li/i/23097140",
+                        "https://i.gkd.li/i/19526000", "https://i.gkd.li/i/14322017"),
+                release.entries.stream().filter(row -> !previousIds.contains(row.id))
+                        .map(row -> row.sourceUrl).collect(Collectors.toSet()));
+        assertThrows(IOException.class, () -> verify(legacy));
+        assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 21, RulePack.CERTIFICATE_SHA256));
+
+        File storage = new File(directory.getRoot(), "history.bin");
+        RulePacks older = new RulePacks(storage, bundled, decoder -> decoder.verify(legacy),
+                bytes -> RulePacks.verify(bytes, bundled, 21, RulePack.CERTIFICATE_SHA256));
+        assertEquals(RulePacks.Refresh.UPDATED, older.refresh());
+        String disabled = popupEntry(older).id;
+        assertTrue(older.setRuleEnabled(disabled, false));
+
+        RulePacks upgraded = new RulePacks(storage, bundled, decoder -> decoder.verify(official), this::verify);
+        assertEquals(0, upgraded.state().version);
+        assertEquals(bundledIds.size(), upgraded.state().rules.size());
+        assertFalse(popupEntry(upgraded).enabled);
+        assertEquals(RulePacks.Refresh.UPDATED, upgraded.refresh());
+        assertEquals(release.version, upgraded.state().version);
+        assertEquals(bundledIds.size(), upgraded.state().rules.size());
+        assertFalse(popupEntry(upgraded).enabled);
     }
 
     @Test public void individualSelectionChangesMatcherAndSurvivesOfflineSwitch() {

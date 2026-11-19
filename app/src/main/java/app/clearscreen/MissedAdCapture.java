@@ -167,7 +167,10 @@ final class MissedAdCapture {
         }
         String pageName = codeName(page);
         int score = (found.isEmpty() ? 0 : found.get(0).score * 10 + found.size()) + (pageName.isEmpty() ? 0 : 1);
-        if (session.best == null || score > session.best.score) session.best = new Frame(pageName, found, score);
+        if (session.best == null || score > session.best.score) {
+            session.best = new Frame(pageName, found, score);
+            session.sample=found.isEmpty()?null:RuleSample.capture(pkg,pageName,window,nodes);
+        }
     }
 
     synchronized void defer(String pkg) {
@@ -250,6 +253,7 @@ final class MissedAdCapture {
         private int fastRetries, probes;
         private SkipDiagnostics.Phase phase;
         private Frame best;
+        RuleSample sample;
         private String basicResult;
 
         Session(String pkg, long version, String versionName, Mode mode, boolean details, long started) {

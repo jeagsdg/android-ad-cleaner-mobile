@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class MainActivity extends Activity {
     static final int BG = 0xfff5f6f0, INK = 0xff162e24, MUTED = 0xff51645a;
     static final int GREEN = 0xff16624c, MINT = 0xffe9f1e9, LIME = 0xffd9eea6;
+    static final int COMMUNITY_RULES=43;
     static final int SKIP_MANAGEMENT = 7, CUSTOM_RULES = 9, POPUP_MANAGEMENT = 10;
     static final int APP_ADS = 11, APP_AD_DETAIL = 12, UPDATE_PAGE = 13, ACCESSIBILITY_RECOVERY = 14;
     static final int SYSTEM_CLEAN_PREVIEW = 15, RULE_DIRECTORY = 16, APP_AD_MISS = 17;
@@ -262,7 +263,7 @@ public final class MainActivity extends Activity {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPaddingRelative(dp(12), 0, dp(12), 0);
-        String label = tab == 5 ? "返回权限设置" : tab == CUSTOM_RULES ? rulesParent == APP_AD_DETAIL
+        String label = tab == COMMUNITY_RULES ? "返回精选规则" : tab == 5 ? "返回权限设置" : tab == CUSTOM_RULES ? rulesParent == APP_AD_DETAIL
                 ? "返回应用详情" : rulesParent == POPUP_MANAGEMENT ? "返回弹窗管理" : "返回开屏管理"
                 : tab == APP_AD_DETAIL ? "返回应用列表" : tab == APP_AD_MISS ? appAdManagement.missedBackLabel()
                 : tab == APP_ADS && appAdsParent == SKIP_MANAGEMENT ? "返回开屏管理"
@@ -324,6 +325,7 @@ public final class MainActivity extends Activity {
         if (tab == 0) home(); else if (tab == 1) checks(); else if (tab == 2) history();
         else if (tab == 4) permissionSetup(); else if (tab == 5) permissionHelp(); else if(tab==6) networkPage();
         else if (tab == SKIP_MANAGEMENT) splashPage(); else if (tab == POPUP_MANAGEMENT) popupPage();
+        else if (tab == COMMUNITY_RULES) CommunityRulesPage.show(this);
         else if (tab == CUSTOM_RULES) customRulesPage();
         else if (tab == APP_ADS) appAdManagement.list(); else if (tab == APP_AD_DETAIL) appAdManagement.detail();
         else if (tab == APP_AD_MISS) appAdManagement.missedAd();
@@ -338,7 +340,7 @@ public final class MainActivity extends Activity {
         boolean fromAppDetail = tab == APP_AD_DETAIL;
         if (tab == APP_AD_MISS) appAdManagement.leaveMissedAd();
         if (tab == 4) returningFromAuthorization = false;
-        tab = tab == 5 ? 4 : tab == 4 ? permissionParent : tab == CUSTOM_RULES ? rulesParent
+        tab = tab == COMMUNITY_RULES ? RULE_DIRECTORY : tab == 5 ? 4 : tab == 4 ? permissionParent : tab == CUSTOM_RULES ? rulesParent
                 : tab == APP_AD_DETAIL ? APP_ADS : tab == APP_AD_MISS ? appAdManagement.missedParent() : tab == APP_ADS ? appAdsParent : tab == UPDATE_PAGE ? updateParent
                 : tab == ACCESSIBILITY_RECOVERY ? recoveryParent : tab == RULE_DIRECTORY ? directoryParent : 0;
         render();
@@ -895,9 +897,11 @@ public final class MainActivity extends Activity {
                 .setNeutralButton("导出文件", (dialog, which) -> saveDiagnosticFile(preview.getText().toString()))
                 .setNegativeButton("关闭", null).show();
     }
-    void saveDiagnosticFile(String report) {
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/plain")
-                .addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE, "净屏-诊断报告.txt");
+    void saveSample(String json){ saveDiagnosticFile(json,"application/json","净屏-页面样本.json"); }
+    void saveDiagnosticFile(String report){saveDiagnosticFile(report,"text/plain","净屏-诊断报告.txt");}
+    private void saveDiagnosticFile(String report,String type,String title) {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType(type)
+                .addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE, title);
         try {
             pendingDiagnosticReport = report;
             startActivityForResult(intent, 20);
@@ -1019,7 +1023,7 @@ public final class MainActivity extends Activity {
                 enabled -> AdFilterService.setKeepDomainDetails(this, enabled));
         linkAction(privacy, "查看数据与隐私说明", () -> new AlertDialog.Builder(this).setTitle("数据与隐私")
                 .setMessage("开屏、弹窗与自定义规则在这台设备上运行，没有账号、分析服务或自动上报。"
-                        + (network ? "\n\n启用网络过滤后，未拦截的 DNS 查询交给当前网络的 DNS。自动更新只查询公开的 GitHub 版本信息，可在下方关闭。" : "\n\n纯离线版没有 Android 联网权限。")
+                        + (network ? "\n\n启用网络过滤后，未拦截的 DNS 查询交给当前网络的 DNS。自动更新只查询公开的 GitHub 版本信息，可在下方关闭。只有你点击生成 AI 规则时，才会向你填写的服务发送目标包名和描述；密钥不会保存在净屏。" : "\n\n纯离线版没有 Android 联网权限。")
                         + "\n\n处理明细由你选择是否保留。关闭保留开关时清除已有明细，仍可查看累计次数。系统设置的恢复记录保存在本机，供你还原改动。"
                         + "\n\n诊断由你手动开启，先预览，再决定是否复制或导出。")
                 .setPositiveButton("知道了", null).show());
@@ -1693,6 +1697,16 @@ public final class MainActivity extends Activity {
         LinearLayout actions = card(body);
         actions.addView(bold("已保存 " + rules.size() + " / " + CustomSkipRule.MAX_RULES + " 条", 17, INK));
         action(actions, "添加规则", true, () -> editSkipRule(rules, -1));
+        if (networkFilterAvailable()) {
+            LinearLayout studio = card(body);
+            studio.addView(heading("描述广告，起草规则", 21, INK));
+            paragraph(studio,"写下按钮上的文字，让你的 AI 生成一份可修改的草稿。");
+            action(studio,"用 AI 起草规则",false,() -> AiRuleDraft.open(this,rules));
+        }
+        linkAction(actions,"打开页面样本",()->{
+            try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),47);}
+            catch(ActivityNotFoundException e){toast("未找到文件选择器");}
+        });
         linkAction(actions, "添加高级规则", () -> AdvancedRuleEditor.add(this, rules));
         if (RulePreview.LOCAL.hasSession()) linkAction(actions, "查看试运行结果", this::showRulePreview);
         linkAction(actions, "还原规则备份", this::importSkipRules);
@@ -2158,6 +2172,16 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if(request==47&&result==RESULT_OK&&data!=null&&data.getData()!=null){
+            android.net.Uri uri=data.getData();new Thread(()->{
+                try(java.io.InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){
+                    if(in==null)throw new java.io.IOException();byte[] buf=new byte[8192];int n;
+                    while((n=in.read(buf))!=-1){if(out.size()+n>4*1024*1024)throw new java.io.IOException();out.write(buf,0,n);}
+                    RuleSample sample=RuleSample.read(out.toString("UTF-8"));runOnUiThread(()->{if(!isDestroyed())new AlertDialog.Builder(this).setTitle("回放哪种规则？")
+                            .setItems(new String[]{"开屏规则","弹窗规则"},(d,i)->SampleInspector.show(this,sample,i==0?"splash":"popup",null)).show();});
+                }catch(Exception failure){runOnUiThread(()->toast("未能读取净屏样本，请选择导出的 JSON 文件"));}
+            },"sample-read").start();return;
+        }
         if (request == VPN_CONSENT) {
             if (result == RESULT_OK) startFilter();
             else {

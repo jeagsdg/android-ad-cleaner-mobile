@@ -80,6 +80,18 @@ public final class Store {
         }
         return cachedRules;
     }
+    private String lastSources;
+    private List<CustomSkipRule> lastLocal, effective;
+    synchronized List<CustomSkipRule> activeRules(){
+        List<CustomSkipRule> local=customSkipRules();
+        String sources=context.getSharedPreferences("community-rules",0).getString("sources","{}");
+        if(lastLocal!=local||!sources.equals(lastSources)){
+            try{effective=sources.equals("{}")?local:CommunityRules.active(new JSONObject(sources),local);}
+            catch(JSONException|IllegalArgumentException e){effective=local;}
+            lastLocal=local;lastSources=sources;
+        }
+        return effective;
+    }
     synchronized void saveCustomSkipRules(List<CustomSkipRule> rules){
         String json=CustomSkipRule.export(rules);
         CustomSkipRule.parse(json);

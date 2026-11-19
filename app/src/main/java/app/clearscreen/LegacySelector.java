@@ -8,12 +8,15 @@ import java.util.regex.Pattern;
 final class LegacySelector {
     private static final Pattern BOUNDS_PREFIX = Pattern.compile("-?[0-9]+(?: *, *-?[0-9]+){2} *,.*");
     private static final Pattern IMPORT_BOUNDS = Pattern.compile("-?[0-9]{1,5}(?: *, *-?[0-9]{1,5}){3}(?: *, *[01])?");
+    private final RuleSelector structured;
     private final String[] terms;
     private final Rect bounds;
     private final int checked;
     private final String fullId, idSuffix;
 
     LegacySelector(String value) {
+        structured=RuleSelector.structured(value)?new RuleSelector(value):null;
+        if(structured!=null){terms=new String[0];bounds=null;checked=-1;fullId=idSuffix="";return;}
         if (value.isEmpty()) throw new IllegalArgumentException("规则缺少选择器");
         if (value.matches("-?[0-9]{1,5}(,-?[0-9]{1,5}){3}(,[01])?")) {
             String[] coordinates = value.split(",");
@@ -50,6 +53,7 @@ final class LegacySelector {
     boolean usesBounds() { return bounds != null; }
 
     boolean matches(AccessibilityNodeInfo node) {
+        if(structured!=null)return structured.matches(node);
         if (bounds != null) {
             Rect actual = new Rect();
             node.getBoundsInScreen(actual);

@@ -538,6 +538,8 @@ def main():
         selector=ctrip, targetSelector=compiled, required=[],
     ))
     rules.extend(import_reviewed_samples(VENDOR / 'popup-samples.json'))
+    from reviewed_220 import extra_rules
+    rules.extend(extra_rules("popup",compile_selector))
     manifest = dict(source=SOURCE, sourceCommit=SOURCE_COMMIT, sourceSha256=SOURCE_SHA,
                     version=source['version'], license='MIT', rules=rules)
     (ASSETS / 'popup-ad-rules.json').write_text(

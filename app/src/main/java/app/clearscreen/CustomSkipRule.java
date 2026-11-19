@@ -83,6 +83,7 @@ final class CustomSkipRule {
         if (value.matches("(?i)x\\s*:\\s*-?[0-9]+\\s*y\\s*:\\s*-?[0-9]+")) {
             throw new IllegalArgumentException("请填写可见控件的文字、ID 或实际范围");
         }
+        if(RuleSelector.structured(value))return value;
         value = LegacySelector.forImport(value);
         if (new LegacySelector(value).usesBounds() || value.matches("[A-Za-z][A-Za-z0-9_.]*:id/[A-Za-z0-9_]+")) {
             return value;

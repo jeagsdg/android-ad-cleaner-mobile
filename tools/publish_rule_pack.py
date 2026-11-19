@@ -11,7 +11,8 @@ from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
 ASSETS = PROJECT / 'app/src/main/assets'
-FEED = PROJECT / '0-update/rules.json'
+FEED = PROJECT / '0-update/rules-v22.json'
+LEGACY_FEED = PROJECT / '0-update/rules.json'
 MAX_ENVELOPE_SIZE = 900 * 1024
 
 
@@ -52,7 +53,7 @@ def main():
             raise ValueError('Version must be positive and fit a signed 64-bit integer')
         if not 1 <= args.min_version_code <= args.max_version_code <= 2**31 - 1:
             raise ValueError('Invalid client version-code range')
-        for current in {FEED.resolve(), args.output.resolve()}:
+        for current in {LEGACY_FEED.resolve(), FEED.resolve(), args.output.resolve()}:
             if current.is_file():
                 wrapper = json.loads(current.read_bytes())
                 public_version = json.loads(base64.b64decode(wrapper['payload'], validate=True))['version']

@@ -85,6 +85,7 @@ final class RuleDirectoryPage {
         screen.header("", "精选规则", packageScope.isEmpty() ? "按应用查找经过审核的开屏和弹窗规则。"
                 : coverage == null ? packageScope : coverage.name);
         showPack(state);
+        screen.linkAction(screen.body,"我的订阅 · 导入与更新",()->screen.showPage(MainActivity.COMMUNITY_RULES));
         LinearLayout controls = screen.card(screen.body);
         controls.setFocusableInTouchMode(true);
         controls.requestFocus();
