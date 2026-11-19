@@ -60,7 +60,7 @@ final class PopupMatch {
             if (!node.isVisibleToUser() || !node.isEnabled()) continue;
             if (node.getWindowId() != window || !pkg.equals(String.valueOf(node.getPackageName()))) continue;
             for (CustomSkipRule rule : rules) {
-                if (!pkg.equals(rule.pkg)) continue;
+                if (!pkg.equals(rule.pkg) || TimedAd.lockedControl(node)) continue;
                 if (!(rule.backsOut() ? rule.matchesPrompt(node) : rule.matchesButton(node))) continue;
                 candidate = true;
                 AccessibilityNodeInfo click;
@@ -72,7 +72,7 @@ final class PopupMatch {
                     click = null;
                 } else {
                     click = SplashSkipper.ruleClickTarget(node, rule);
-                    if (click == null || click.getWindowId() != window || (!inPopup(root, click, screen, rule)
+                    if (click == null || click.getWindowId() != window || TimedAd.lockedControl(click) || (!inPopup(root, click, screen, rule)
                             && (!rule.matchesLegacyTargetResource(node) || !inFloatingAd(root, click, screen, rule)))) continue;
                 }
                 if (hit != null && (!java.util.Objects.equals(hit.target, click) || !hit.rule.context.equals(rule.context)
@@ -97,33 +97,56 @@ final class PopupMatch {
         String pkg = String.valueOf(root.getPackageName());
         if (CustomSkipRule.protectedPackage(pkg)) return null;
         if (!safeWindow(nodes)) return null;
+        boolean menuPossible=false;
         Set<String> markers = new java.util.LinkedHashSet<>();
         for (AccessibilityNodeInfo node : nodes) {
             String label = label(node.getText()), description = label(node.getContentDescription());
             if (SplashSkipper.rewardAd(label) || SplashSkipper.rewardAd(description)) return null;
             if (!node.isVisibleToUser()) continue;
             if (node.getWindowId() != root.getWindowId() || !pkg.equals(String.valueOf(node.getPackageName()))) continue;
+            menuPossible|=AdSurface.reportText(label)||AdSurface.reportText(description);
             if (AD_MARKERS.contains(label.toLowerCase(Locale.ROOT))) markers.add(label);
             if (AD_MARKERS.contains(description.toLowerCase(Locale.ROOT))) markers.add(description);
         }
+        // An ad's own options menu may replace the underlying badge. Pair its two
+        // explicit actions locally; only the dismissal is ever returned.
+        AdSurface.Exit menu=menuPossible?AdSurface.menuExit(root,nodes,screen):null;
+        if(menu!=null)return new PopupMatch(new CustomSkipRule(pkg,"",CustomSkipRule.POPUP,"",menu.action,menu.context),menu.button);
         if (markers.isEmpty()) return null;
-        PopupMatch hit = null;
+        TimedAd.Evidence frame=TimedAd.inspect(root,nodes,screen);
+        PopupMatch panelHit=null, fullHit=null;
+        boolean panelAmbiguous=false,fullAmbiguous=false;
         for (AccessibilityNodeInfo node : nodes) {
-            if (!node.isVisibleToUser() || !node.isEnabled()) continue;
-            String action = label(node.getText());
-            if (!AD_ACTIONS.contains(action.toLowerCase(Locale.ROOT))) action = label(node.getContentDescription());
-            if (!AD_ACTIONS.contains(action.toLowerCase(Locale.ROOT))) continue;
+            if (!node.isVisibleToUser() || !node.isEnabled() || TimedAd.lockedControl(node)) continue;
+            String action=adExit(node.getText());
+            if(action.isEmpty())action=adExit(node.getContentDescription());
+            if(action.isEmpty() || action.length()>48)continue;
+            boolean explicit=SplashSkipper.explicitAd(action)||AD_ACTIONS.contains(action.toLowerCase(Locale.ROOT));
             for (String marker : markers) {
                 CustomSkipRule rule = new CustomSkipRule(pkg, "", CustomSkipRule.POPUP, "", action, marker);
                 if (!rule.matchesButton(node)) continue;
                 AccessibilityNodeInfo click = SplashSkipper.ruleClickTarget(node, rule);
-                if (click == null || click.getWindowId() != root.getWindowId()
-                        || !inPopup(root, click, screen, rule, true)) continue;
-                if (hit != null && !hit.target.equals(click)) return null;
-                if (hit == null) hit = new PopupMatch(rule, click);
+                if (click == null || click.getWindowId() != root.getWindowId() || TimedAd.lockedControl(click)) continue;
+                boolean full = AdSurface.labelBelongsToButton(node,click) && frame!=null && (explicit || frame.seconds>=0)
+                        && TimedAd.fullPageExit(root,click,screen,frame);
+                // An exit beside its badge in a compact dialog is stronger evidence than
+                // an unrelated corner control behind it. Never combine those two surfaces.
+                if(explicit && inPopup(root,click,screen,rule,true)){
+                    if(panelHit==null)panelHit=new PopupMatch(rule,click);
+                    else if(!panelHit.target.equals(click))panelAmbiguous=true;
+                }else if(full){
+                    if(fullHit==null)fullHit=new PopupMatch(rule,click);
+                    else if(!fullHit.target.equals(click))fullAmbiguous=true;
+                }
             }
         }
-        return hit;
+        if(panelHit!=null)return panelAmbiguous?null:panelHit;
+        return fullAmbiguous?null:fullHit;
+    }
+
+    private static String adExit(CharSequence raw){
+        String s=label(raw);
+        return AD_ACTIONS.contains(s.toLowerCase(Locale.ROOT))||SplashSkipper.skipLabel(s)?s:"";
     }
 
     private static boolean safeWindow(List<AccessibilityNodeInfo> nodes) {

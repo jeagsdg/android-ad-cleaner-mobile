@@ -883,7 +883,7 @@ public class SplashSkipperTest {
         }
     }
 
-    @Test public void confirmedGenericPopupsCanContinueInTheSameWindowUpToTheVisitLimit() {
+    @Test public void confirmedGenericPopupsDoNotDisableTheNextAdInTheSameVisit() {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         ActiveRootService shadowService = Shadow.extract(service);
         Store store = new Store(service);
@@ -898,7 +898,7 @@ public class SplashSkipperTest {
         AccessibilityNodeInfo content = windowNode("普通内容", screen, window);
         SplashSkipper skipper = new SplashSkipper(service);
         try {
-            for (int index = 0; index < 6; index++) {
+            for (int index = 0; index < 8; index++) {
                 AccessibilityNodeInfo root = windowNode("", screen, window);
                 AccessibilityNodeInfo button = addGenericPopup(root, display, window);
                 shadowOf(button).setOnPerformActionListener((action, args) -> {
@@ -910,9 +910,9 @@ public class SplashSkipperTest {
                         : AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, PKG, window.getId());
                 shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
 
-                assertEquals("popup " + index, index < 5 ? List.of(AccessibilityNodeInfo.ACTION_CLICK) : List.of(),
+                assertEquals("popup " + index, List.of(AccessibilityNodeInfo.ACTION_CLICK),
                         shadowOf(button).getPerformedActions());
-                assertEquals(before + Math.min(index + 1, 5), store.popupCount());
+                assertEquals(before + index + 1, store.popupCount());
             }
         } finally {
             skipper.close();

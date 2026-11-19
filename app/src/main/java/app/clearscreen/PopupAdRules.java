@@ -144,10 +144,10 @@ final class PopupAdRules {
             if (!available.test(rule) || !rule.withinTime(elapsedMs) || !rule.activityMatches(activity)) continue;
             Boolean requirementsPresent = null;
             for (AccessibilityNodeInfo node : nodes) {
-                if (!node.isEnabled() || !rule.matchesTarget(node)) continue;
+                if (!node.isEnabled() || TimedAd.lockedControl(node) || !rule.matchesTarget(node)) continue;
                 AccessibilityNodeInfo target = rule.pageDown() ? ShortDramaAd.target(root, node, screen, nodes)
                         : clickTarget(root, node, pkg, screen);
-                if (target == null) continue;
+                if (target == null || TimedAd.lockedControl(target)) continue;
                 if (requirementsPresent == null) requirementsPresent = rule.requirementsPresent(nodes);
                 if (!requirementsPresent) break;
                 AccessibilityNodeInfo anchor = rule.pageDown() ? node : target;

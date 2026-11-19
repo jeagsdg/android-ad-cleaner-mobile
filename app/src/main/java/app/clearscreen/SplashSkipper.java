@@ -35,7 +35,6 @@ final class SplashSkipper {
     private static final int PREVIEW_RETRY_LIMIT=6;
     private static final long POPUP_PROBE_INTERVAL_MS=240;
     private static final long POPUP_COOLDOWN_MS=750;
-    private static final int GENERIC_POPUP_LIMIT_PER_VISIT=5;
     private static final long MEDIA_COOLDOWN_MS=1500;
     private static final Pattern SPACE=Pattern.compile("\\s+");
     private static final Pattern CONSENT=Pattern.compile(
@@ -75,7 +74,8 @@ final class SplashSkipper {
     private long deadline, foregroundVisit, nextPopupClick, nextGenericProbe, popupDue, userInteraction;
     private long scanAt=Long.MAX_VALUE, nextSplashProbe, lastSplashProbe;
     private long activitySince;
-    private long lastPageDownVisit=-1;
+    private long lastPageDownVisit=-1, launchStarted;
+    private final TimedAd.Watch launchAd=new TimedAd.Watch(), popupAd=new TimedAd.Watch();
     private long pauseUntil, nextPopupProbe, nextPreviewProbe, previewDue=Long.MAX_VALUE, lastHotSplash;
     private boolean exactActivitySplash;
     private int gesturesInFlight, activityWindow=-1;
@@ -98,7 +98,6 @@ final class SplashSkipper {
     private long nextMediaProbe;
     private final Set<CustomSkipRule> attemptedPopups=new HashSet<>();
     private final Map<CustomSkipRule,Integer> confirmedPopups=new HashMap<>();
-    private int genericPopupAttempts;
     private final Set<Integer> genericUnconfirmedWindows=new HashSet<>();
     private final Map<PopupAdRules.Rule,Integer> catalogAttempts=new HashMap<>();
     private final Set<PopupAdRules.Rule> catalogUnconfirmed=new HashSet<>();
@@ -219,6 +218,7 @@ final class SplashSkipper {
                 }
             }
             if(relevant){
+                if(inActiveWindow&&popupPending&&popupAd.sameWindow(activeWindow))popupDue=0;
                 if(inActiveWindow||type==AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED)missedCapture.requestProbe(pkg);
                 queueWindowContent(media);
             }
@@ -261,6 +261,8 @@ final class SplashSkipper {
         ownClickUntil=SystemClock.elapsedRealtime()+OWN_CLICK_ECHO_MS;
     }
     private void stopCurrentInput(){
+        launchAd.clear();
+        popupAd.clear();
         deadline=0;
         cancelWindowRetry();
         cancelDelayedSplash();
@@ -321,7 +323,6 @@ final class SplashSkipper {
             foregroundVisit++;
             stopCurrentInput();
             resetPopupProgress();
-            genericPopupAttempts=0;
             genericUnconfirmedWindows.clear();
             nextSplashProbe=0;
             lastSplashProbe=0;
@@ -338,6 +339,9 @@ final class SplashSkipper {
         String previousActivity=activity;
         boolean newActivity=rememberActivity(pkg,windowClass,windowId,launchAt>=0?launchAt:now);
         if(newWindow){
+            popupAd.clear();
+            launchAd.clear();
+            if(deadline>0)deadline=Math.min(deadline,launchStarted+WINDOW_MS);
             if(popupRootRetryPending){
                 popupPending=false;
                 popupRootRetryPending=false;
@@ -367,6 +371,8 @@ final class SplashSkipper {
                 ||("com.coolapk.market".equals(pkg)&&"com.coolapk.market.view.splash.SplashAdActivity".equals(activity));
     }
     private void armSplash(long now,boolean exactActivityOnly){
+        launchStarted=now;
+        launchAd.clear();
         cancelDelayedSplash();
         exactActivitySplash=exactActivityOnly;
         diagnosticAttempt=diagnostics.begin(foreground,diagnosticOwner);
@@ -437,8 +443,7 @@ final class SplashSkipper {
         return result;
     }
     private boolean genericPopupAllowed(){
-        return genericPopupAttempts<GENERIC_POPUP_LIMIT_PER_VISIT
-                &&!genericUnconfirmedWindows.contains(activeWindow)&&defaultPopupAllowed();
+        return !genericUnconfirmedWindows.contains(activeWindow)&&defaultPopupAllowed();
     }
     private boolean catalogPopupAllowed(){
         return defaultPopupAllowed()&&popupAds.hasRules(foreground,activity,activityAge(),this::catalogRuleAvailable);
@@ -568,10 +573,20 @@ final class SplashSkipper {
                     captureProtected?null:screen(root),nodes);
         }else if(checkCapture)missedCapture.defer(foreground);
         if(checkSplash){
+            long normalEnd=launchStarted+WINDOW_MS;
+            TimedAd.Evidence evidence=!exactActivitySplash&&activeWindow==root.getWindowId()
+                    ?TimedAd.inspect(root,nodes,screen(root)):null;
+            boolean stillSame=launchAd.matches(evidence,now);
+            if(now<normalEnd||stillSame){
+                deadline=Math.max(normalEnd,launchAd.observe(evidence,now));
+            }else{
+                deadline=0;
+                launchAd.clear();
+            }
             List<CustomSkipRule> custom=customRules();
             Consumer<SkipDiagnostics.Phase> trace=diagnostics.observes(foreground,diagnosticAttempt)
                     ||missedCapture.observing(foreground,MissedAdCapture.Mode.SPLASH)?this::note:null;
-            SplashHit hit=splashHit(root,rules,splashActivity(root),custom,launchAge(),trace,nodes,splashMode());
+            SplashHit hit=deadline>now?splashHit(root,rules,splashActivity(root),custom,launchAge(),trace,nodes,splashMode()):null;
             if(hit!=null){
                 if(checkPopup){
                     popupPending=true;
@@ -599,6 +614,12 @@ final class SplashSkipper {
             if(nodes.isEmpty())retryUnreadablePopup(retryingPopupRoot);
             else if(scanPopup(root,nodes))return;
             else if(popupRetries>0){popupRetries--;popupPending=true;}
+            else if((genericPopupAllowed()||catalogPopupAllowed())
+                    &&popupAd.observe(TimedAd.inspect(root,nodes,screen(root)),now)>now){
+                // Some SDKs change their exit without posting a new content event.
+                popupPending=true;
+                popupDue=now+650;
+            }
         }
         if(checkMedia){
             mediaPending=false;
@@ -688,7 +709,7 @@ final class SplashSkipper {
         delayedSplash=null;
         splashWaiting=false;
     }
-    private long launchAge(){return Math.max(0,WINDOW_MS-(deadline-SystemClock.elapsedRealtime()));}
+    private long launchAge(){return Math.max(0,SystemClock.elapsedRealtime()-launchStarted);}
     private void clickSplash(SplashHit expected){
         if(!scanSplash()||!ready(foregroundVisit)){schedule();return;}
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
@@ -816,7 +837,11 @@ final class SplashSkipper {
                     &&activityWindow==origin.id&&activeWindow==origin.id&&activity.equals(origin.hostActivity)
                     &&matchesWindow(current,pkg,origin.id)&&origin.matchesDisplayOf(current)
                     &&ShortDramaAd.resumed(pager,screen(current),UiDriver.walkComplete(current));
-            if(sameVisit)finishPopupVerification();
+            if(sameVisit){
+                // Playback, not merely a missing hint, proves this individual ad ended.
+                if(confirmed)lastPageDownVisit=-1;
+                finishPopupVerification();
+            }
             recordPopup(pkg,confirmed);
         },850);
     }
@@ -931,7 +956,6 @@ final class SplashSkipper {
         if(!matchesWindow(root,foreground,target.getWindowId())){schedule();return;}
         ConfirmationWindow origin=new ConfirmationWindow(root,activityWindow,activity);
         if(rule==null){
-            genericPopupAttempts++;
             genericUnconfirmedWindows.add(origin.id);
         }else {
             catalogAttempts.merge(rule, 1, Integer::sum);
@@ -1134,7 +1158,7 @@ final class SplashSkipper {
     static boolean rewardAd(String value){
         return !value.isEmpty()&&REWARDED_AD.matcher(value).find();
     }
-    private static String label(CharSequence value){
+    static String label(CharSequence value){
         return value==null?"":value.toString().trim();
     }
     static AccessibilityNodeInfo match(AccessibilityNodeInfo root){
@@ -1210,6 +1234,7 @@ final class SplashSkipper {
         for(AccessibilityNodeInfo node:nodes){
             if(!node.isVisibleToUser()||node.getWindowId()!=window||!belongsTo(node,pkg))continue;
             String text=label(node.getText()),desc=label(node.getContentDescription());
+            if(TimedAd.lockedControl(node))continue;
             CustomSkipRule userRule=null;
             for(CustomSkipRule rule:scoped)if(rule.matchesButton(node)){userRule=rule;break;}
             SplashRules.Action action=userRule==null&&defaults!=null?defaults.action(node,text.isEmpty()?desc:text):null;
@@ -1219,14 +1244,14 @@ final class SplashSkipper {
             readable=true;
             boolean explicit=explicitAd(text)||explicitAd(desc);
             if(!known&&!explicit&&onboarding){unsafe=true;continue;}
-            if(!known&&!explicit&&!ad){missingAd=true;continue;}
+            if(!known&&!explicit&&!ad&&!AdSurface.launchControl(root,node,screen)){missingAd=true;continue;}
             if(!node.isEnabled()||node.isCheckable()||!safeActionLabel(text)||!safeActionLabel(desc)){unsafe=true;continue;}
             boolean paired=useGeneric && !known && !onboarding && !WECHAT_PACKAGE.equals(pkg) && ad && (skipLabel(text)||skipLabel(desc))
                     && pairedAdBadge(node,nodes,pkg,window,screen);
             boolean tap=action==SplashRules.Action.TAP || (paired && clickable(node)==null);
             if(tap&&!safeTouchLeaf(node)){unsafe=true;continue;}
             AccessibilityNodeInfo click=tap?node:userRule==null?clickable(node):ruleClickTarget(node,userRule);
-            if(!belongsTo(click,pkg)||click.getWindowId()!=window){unsafe=true;continue;}
+            if(!belongsTo(click,pkg)||click.getWindowId()!=window||TimedAd.lockedControl(click)){unsafe=true;continue;}
             // A clickable search suggestion can literally be named “跳过广告”. Its row is content.
             if(!known && click!=null && !node.equals(click) && inSearchResults(activity,click)){
                 unsafe=true;continue;
@@ -1291,7 +1316,7 @@ final class SplashSkipper {
         for(int i=0;i<depth&&node!=null;i++)node=node.getParent();
         return node;
     }
-    private static boolean adMarker(String value){
+    static boolean adMarker(String value){
         return !value.isEmpty()&&AD_MARKER.matcher(normalizedLabel(value)).matches();
     }
     // Web-rendered splash bars can expose two neighboring text leaves but no click action.

@@ -60,6 +60,13 @@ public class DeviceChecks extends Instrumentation {
             finish(RESULT_OK,result);
             return;
         }
+        if (suite.equals("countdown-ad")) {
+            String report = countdownAdChecks(new Store(getTargetContext()), connectService());
+            result.putString("stream", report + "PASS: " + assertions + " countdown-ad assertions on Android "
+                    + Build.VERSION.RELEASE + "; isolated full-screen fixture only\n");
+            finish(RESULT_OK, result);
+            return;
+        }
         if (suite.equals("keepalive")) {
             keepAliveChecks(automation, connectService());
             result.putString("stream", "PASS: " + assertions + " keepalive assertions on Android "
@@ -69,7 +76,8 @@ public class DeviceChecks extends Instrumentation {
         }
         if (suite.equals("popup-generic")) {
             genericPopupChecks(new Store(getTargetContext()), connectService());
-            result.putString("stream", "PASS: " + assertions + " popup-generic assertions on Android "
+            result.putString("stream", "Fixture menu callback: 关闭此广告; plain controls stayed visible.\n"
+                    + "PASS: " + assertions + " popup-generic assertions on Android "
                     + Build.VERSION.RELEASE + "; isolated fixture only\n");
             finish(RESULT_OK, result);
             return;
@@ -359,6 +367,17 @@ public class DeviceChecks extends Instrumentation {
             long until = SystemClock.uptimeMillis() + 4_000;
             while (store.popupCount() == count && SystemClock.uptimeMillis() < until) Thread.sleep(100);
             require(store.popupCount() == count + 1, "generic ad confirmed once");
+
+            long splashCount = store.splashCount();
+            verifyPopupUnchanged(store, service, "popup-menu-plain", "跳过", count + 1, "plain menu");
+            require(fixtureShows(service, "关闭") && fixtureShows(service, "取消"),
+                    "plain menu close, skip and cancel remain untouched");
+            launchPopup("popup-menu-ad");
+            String action = waitForFixturePrefix(service, "菜单处理结果=", 6_000);
+            require("关闭此广告".equals(action), "the ad menu runs its close callback only: " + action);
+            require(waitUntil(() -> store.popupCount() >= count + 2)
+                            && store.popupCount() == count + 2 && store.splashCount() == splashCount,
+                    "the ad menu dismissal is confirmed once as a popup");
         } finally {
             store.setPopupEnabled(false);
             store.saveCustomSkipRules(rules);
@@ -367,6 +386,88 @@ public class DeviceChecks extends Instrumentation {
             store.setSplashEnabled(splash);
             store.setPopupEnabled(popup);
         }
+    }
+
+    private String countdownAdChecks(Store store, CleanerService service) throws Exception {
+        List<CustomSkipRule> rules = store.customSkipRules();
+        Set<String> shared = store.splashExcluded();
+        Set<String> splashExclusions = store.skipExcluded(CustomSkipRule.SPLASH);
+        Set<String> popupExclusions = store.skipExcluded(CustomSkipRule.POPUP);
+        boolean splash = store.splashEnabled(), popup = store.popupEnabled(), toast = store.skipToastEnabled();
+        StringBuilder report = new StringBuilder();
+        boolean passed = true;
+        try {
+            store.setSplashEnabled(true);
+            store.setPopupEnabled(true);
+            store.setSkipToastEnabled(false);
+            store.setSplashExcluded(Collections.emptySet());
+            store.setSkipExcluded(CustomSkipRule.SPLASH, Collections.emptySet());
+            store.setSkipExcluded(CustomSkipRule.POPUP, Collections.emptySet());
+            store.saveCustomSkipRules(Collections.emptyList());
+            for (String scenario : Arrays.asList("startup-close", "late-close", "late-locked")) {
+                report.append(scenario).append(' ');
+                try {
+                    verifyCountdownAd(store, service, !scenario.equals("startup-close"),
+                            scenario.equals("late-locked"), report);
+                } catch (AssertionError failure) {
+                    passed = false;
+                    report.append("FAIL: ").append(failure.getMessage()).append('\n');
+                }
+            }
+        } finally {
+            store.setSplashEnabled(false);
+            store.setPopupEnabled(false);
+            store.saveCustomSkipRules(rules);
+            store.setSplashExcluded(shared);
+            store.setSkipExcluded(CustomSkipRule.SPLASH, splashExclusions);
+            store.setSkipExcluded(CustomSkipRule.POPUP, popupExclusions);
+            store.setSkipToastEnabled(toast);
+            store.setSplashEnabled(splash);
+            store.setPopupEnabled(popup);
+        }
+        require(passed, report.toString());
+        return report.toString();
+    }
+
+    private void verifyCountdownAd(Store store, CleanerService service, boolean late, boolean locked,
+                                   StringBuilder report) throws Exception {
+        showNetScreen(service);
+        Thread.sleep(300);
+        long splashBefore = store.splashCount(), popupBefore = store.popupCount();
+        getTargetContext().startActivity(new Intent().setClassName(FIXTURE_PACKAGE,
+                        FIXTURE_PACKAGE + ".CountdownAdActivity")
+                .putExtra("late", late).putExtra("locked", locked)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+        if (late) require(waitForFixtureText(service, "隔离测试内容", 5_000), "host content visible first");
+        if (locked) {
+            require(waitForFixtureText(service, "15秒后可跳过", 17_000), "15-second countdown visible");
+            AccessibilityNodeInfo countdown = fixtureNode(service, "15秒后可跳过");
+            require(countdown != null && !countdown.isClickable(), "countdown has no click action");
+            require(waitForFixtureText(service, "2秒后可跳过", 14_000), "ad remains near the end of countdown");
+            require(fixtureNode(service, "跳过广告") == null && fixtureNode(service, "关闭广告") == null
+                    && store.splashCount() == splashBefore && store.popupCount() == popupBefore,
+                    "no enabled close or confirmed dismissal before unlock");
+        }
+
+        String payload = waitForFixturePrefix(service, "全屏广告关闭结果=", late && !locked ? 30_000 : 16_000);
+        require(payload != null, "ad callback never ran");
+        String[] fields = payload.split(",");
+        require(fields.length == 4, "fixture reports foreground age, unlock, callback, and attempts");
+        long age = Long.parseLong(fields[0]), ready = Long.parseLong(fields[1]);
+        long dismissed = Long.parseLong(fields[2]), attempts = Long.parseLong(fields[3]);
+        report.append("foreground=").append(age).append("ms, enabled=").append(ready)
+                .append("ms, callback=").append(dismissed).append("ms, locked actions=").append(attempts).append('\n');
+        require(late ? age >= 14_000 : age < 1_000, "ad appeared at the intended foreground age");
+        require(locked ? ready >= 15_000 && dismissed >= ready && dismissed - ready < 5_000
+                        : ready < 1_000 && dismissed >= ready && dismissed < 15_000,
+                "callback follows the first enabled close and respects the countdown");
+        require(attempts == 0, "no clicks or taps reached the countdown control");
+        require(fixtureNode(service, "广告") == null, "ad removed from the fixture window");
+        require(waitUntil(() -> store.popupCount() + store.splashCount() >= popupBefore + splashBefore + 1),
+                "production service confirms the dismissal");
+        require(late ? store.popupCount() == popupBefore + 1 && store.splashCount() == splashBefore
+                        : store.popupCount() + store.splashCount() == popupBefore + splashBefore + 1,
+                "exactly one dismissal counted in the expected scope");
     }
 
     private String adLatency(Store store,CleanerService service)throws Exception{
@@ -433,19 +534,8 @@ public class DeviceChecks extends Instrumentation {
     }
 
     private long waitForAdResult(CleanerService service,long timeout)throws InterruptedException{
-        final String prefix="关闭耗时毫秒=";
-        long until=SystemClock.uptimeMillis()+timeout;
-        while(SystemClock.uptimeMillis()<until){
-            AccessibilityNodeInfo root=service.getRootInActiveWindow();
-            if(root!=null&&FIXTURE_PACKAGE.equals(String.valueOf(root.getPackageName()))){
-                for(AccessibilityNodeInfo node:UiDriver.walk(root)){
-                    String label=UiDriver.text(node);
-                    if(node.isVisibleToUser()&&label.startsWith(prefix))return Long.parseLong(label.substring(prefix.length()));
-                }
-            }
-            Thread.sleep(50);
-        }
-        return -1;
+        String elapsed = waitForFixturePrefix(service, "关闭耗时毫秒=", timeout);
+        return elapsed == null ? -1 : Long.parseLong(elapsed);
     }
 
     private static long percentile(List<Long> sorted,int percentage){
@@ -478,12 +568,31 @@ public class DeviceChecks extends Instrumentation {
     }
 
     private boolean fixtureShows(CleanerService service, String text) {
+        return fixtureNode(service, text) != null;
+    }
+
+    private AccessibilityNodeInfo fixtureNode(CleanerService service, String text) {
         AccessibilityNodeInfo root = service.getRootInActiveWindow();
-        if (root == null || !FIXTURE_PACKAGE.equals(String.valueOf(root.getPackageName()))) return false;
+        if (root == null || !FIXTURE_PACKAGE.equals(String.valueOf(root.getPackageName()))) return null;
         for (AccessibilityNodeInfo node : UiDriver.walk(root)) {
-            if (node.isVisibleToUser() && text.equals(UiDriver.text(node))) return true;
+            if (node.isVisibleToUser() && text.equals(UiDriver.text(node))) return node;
         }
-        return false;
+        return null;
+    }
+
+    private String waitForFixturePrefix(CleanerService service, String prefix, long timeout) throws InterruptedException {
+        long deadline = SystemClock.uptimeMillis() + timeout;
+        do {
+            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            if (root != null && FIXTURE_PACKAGE.equals(String.valueOf(root.getPackageName()))) {
+                for (AccessibilityNodeInfo node : UiDriver.walk(root)) {
+                    String label = UiDriver.text(node);
+                    if (node.isVisibleToUser() && label.startsWith(prefix)) return label.substring(prefix.length());
+                }
+            }
+            Thread.sleep(50);
+        } while (SystemClock.uptimeMillis() < deadline);
+        return null;
     }
 
     private void feedbackPrivacyChecks(UiAutomation automation, Store store, CleanerService service) throws Exception {

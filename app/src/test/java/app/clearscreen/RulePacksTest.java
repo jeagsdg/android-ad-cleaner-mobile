@@ -135,6 +135,29 @@ public class RulePacksTest {
         assertTrue(again.state().popupRules.hasRules(APP, ACTIVITY));
     }
 
+    @Test public void upgradingFromVersions22And23KeepsThePublishedFeedAndDisabledRules() throws IOException {
+        assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 25, RulePack.CERTIFICATE_SHA256));
+        for (int previousVersion : new int[]{22, 23}) {
+            File storage = new File(directory.getRoot(), "version-" + previousVersion + ".bin");
+            RulePacks.Feed feed = decoder -> decoder.verify(official);
+            RulePacks installed = new RulePacks(storage, bundled, feed,
+                    bytes -> RulePacks.verify(bytes, bundled, previousVersion, RulePack.CERTIFICATE_SHA256));
+            assertEquals(RulePacks.Refresh.UPDATED, installed.refresh());
+            assertEquals(5, installed.state().version);
+            assertTrue(installed.setRuleEnabled(popupEntry(installed).id, false));
+
+            RulePacks upgraded = new RulePacks(storage, bundled, feed, this::verify);
+            assertEquals(5, upgraded.state().version);
+            assertFalse(popupEntry(upgraded).enabled);
+            assertEquals(RulePacks.Refresh.CURRENT, upgraded.refresh());
+            assertTrue(upgraded.rollback());
+
+            RulePacks restarted = new RulePacks(storage, bundled, feed, this::verify);
+            assertEquals(RulePacks.Refresh.ROLLED_BACK, restarted.refresh());
+            assertFalse(popupEntry(restarted).enabled);
+        }
+    }
+
     private RulePack verify(byte[] bytes) throws IOException {
         return RulePacks.verify(bytes, bundled, clientVersion, RulePack.CERTIFICATE_SHA256);
     }

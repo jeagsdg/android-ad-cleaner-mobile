@@ -53,7 +53,7 @@ public class ShortDramaAdTest {
         assertNull(rules.find(f.root, ACTIVITY, f.screen));
     }
 
-    @Test public void sendsOneNativePageActionAndCountsOnlyTheVerifiedPlaybackResult() {
+    @Test public void handlesNextAdOnlyAfterConfirmedPlaybackSeparatesTheTwo() {
         Fixture f = new Fixture();
         try {
             shadowOf(f.pager).setOnPerformActionListener((action, args) -> true);
@@ -69,12 +69,27 @@ public class ShortDramaAdTest {
             f.showAdAgain();
             assertNotNull(new PopupAdRules(f.service).find(f.root, ACTIVITY, f.screen));
             f.idle(2_000);
-            assertEquals(List.of(ShortDramaAd.PAGE_DOWN), shadowOf(f.pager).getPerformedActions());
+            assertEquals(List.of(ShortDramaAd.PAGE_DOWN,ShortDramaAd.PAGE_DOWN), shadowOf(f.pager).getPerformedActions());
+            assertEquals(1,f.store.popupCount()); // no confirmation for the second ad
+            f.send(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED);
+            f.idle(2_000);
+            assertEquals(2,shadowOf(f.pager).getPerformedActions().size());
         } finally {
             f.skipper.close();
         }
     }
 
+    @Test public void lockedFifteenSecondHintIsObservedUntilItActuallyUnlocksWithoutAnotherEvent(){
+        Fixture f=new Fixture();
+        try{
+            shadowOf(f.pager).setOnPerformActionListener((action,args)->true);
+            f.hint.setText("15秒后可继续上滑观看短剧");f.open();f.idle(15000);
+            assertTrue(shadowOf(f.pager).getPerformedActions().isEmpty());
+            f.hint.setText("上滑继续观看短剧");f.idle(1100);
+            assertEquals(List.of(ShortDramaAd.PAGE_DOWN),shadowOf(f.pager).getPerformedActions());
+            assertTrue(shadowOf(f.reward).getPerformedActions().isEmpty());
+        }finally{f.skipper.close();}
+    }
     @Test public void matchesWhenAndroidOmitsTheInternalRecyclerView() {
         Fixture f = new Fixture(false);
         assertEquals(f.pager, new PopupAdRules(f.service).find(f.root, ACTIVITY, f.screen).target);

@@ -139,7 +139,10 @@ final class RulePack {
         long version = integer(contents.opt("version"), 1, Long.MAX_VALUE);
         long min = integer(contents.opt("minVersionCode"), 1, Integer.MAX_VALUE);
         long max = integer(contents.opt("maxVersionCode"), min, Integer.MAX_VALUE);
-        require(clientVersion >= min && clientVersion <= max, "规则包不适用于当前净屏版本");
+        // Codes 23 and 24 share the audited rows and schema of the signed v5 feed for code 22.
+        boolean compatiblePreviousFeed = (clientVersion == 23 || clientVersion == 24)
+                && version == 5 && min == 22 && max == 22;
+        require((clientVersion >= min && clientVersion <= max) || compatiblePreviousFeed, "规则包不适用于当前净屏版本");
         Map<String, Entry> reviewed = new HashMap<>();
         for (Entry entry : bundled.entries) reviewed.put(entry.id, entry);
         List<Entry> entries = new ArrayList<>();

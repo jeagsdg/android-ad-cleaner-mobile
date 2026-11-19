@@ -14,6 +14,10 @@ public class SplashActivity extends Activity {
             showBenchmark(page, mode);
             return;
         }
+        if (mode.startsWith("popup-menu")) {
+            showMenuFixture(page, mode);
+            return;
+        }
         if (mode.startsWith("popup")) {
             showPopupFixture(page, mode);
             return;
@@ -68,6 +72,35 @@ public class SplashActivity extends Activity {
 
     private void benchmarkResult(TextView content, long shown) {
         content.setText("关闭耗时毫秒=" + (SystemClock.elapsedRealtime() - shown));
+    }
+
+    private void showMenuFixture(FrameLayout page, String mode) {
+        TextView content = new TextView(this);
+        content.setGravity(Gravity.CENTER);
+        content.setText("隔离测试内容");
+        page.addView(content, new FrameLayout.LayoutParams(-1, -1));
+        LinearLayout menu = new LinearLayout(this);
+        menu.setOrientation(LinearLayout.VERTICAL);
+        menu.setBackgroundColor(0xffffffff);
+        boolean adMenu = mode.equals("popup-menu-ad");
+        String[] actions = adMenu ? new String[]{"关闭此广告", "举报广告", "取消"}
+                : new String[]{"关闭", "跳过", "取消"};
+        int rowHeight = Math.round(48 * getResources().getDisplayMetrics().density);
+        for (String action : actions) {
+            TextView row = new TextView(this);
+            row.setGravity(Gravity.CENTER);
+            row.setText(action);
+            row.setOnClickListener(view -> {
+                page.removeView(menu);
+                content.setText("菜单处理结果=" + action);
+            });
+            menu.addView(row, new LinearLayout.LayoutParams(-1, rowHeight));
+        }
+        page.postDelayed(() -> {
+            if (!isFinishing() && !isDestroyed()) {
+                page.addView(menu, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+            }
+        }, 1_000);
     }
 
     private void showPopupFixture(FrameLayout page, String mode) {
