@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import android.os.*;
 import android.view.Gravity;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.*;
 
 /** Ad-like UI fixture with optional delayed dialogs, no ads or external network. */
@@ -12,6 +13,10 @@ public class SplashActivity extends Activity {
     @Override public void onCreate(Bundle state){super.onCreate(state);FrameLayout page=new FrameLayout(this);page.setBackgroundColor(0xffe0eee6);setContentView(page);String mode=getIntent().getStringExtra("mode");if(mode==null)mode="ad";
         if (mode.startsWith("bench-")) {
             showBenchmark(page, mode);
+            return;
+        }
+        if (mode.startsWith("popup-menu-two-step")) {
+            showTwoStepMenuFixture(page, mode);
             return;
         }
         if (mode.startsWith("popup-menu")) {
@@ -101,6 +106,65 @@ public class SplashActivity extends Activity {
                 page.addView(menu, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
             }
         }, 1_000);
+    }
+
+    private void showTwoStepMenuFixture(FrameLayout page, String mode) {
+        TextView content = new TextView(this);
+        content.setGravity(Gravity.CENTER);
+        content.setText("隔离测试内容");
+        page.addView(content, new FrameLayout.LayoutParams(-1, -1));
+
+        boolean ad = !mode.equals("popup-menu-two-step-ordinary");
+        boolean ordinaryMenu = mode.equals("popup-menu-two-step-wrong-menu");
+        LinearLayout badge = new LinearLayout(this);
+        badge.setId(R.id.layout_logo);
+        badge.setGravity(Gravity.CENTER_VERTICAL);
+        badge.setBackgroundColor(0xffdce1e4);
+
+        TextView label = new TextView(this);
+        label.setId(R.id.tv_ad_logo);
+        label.setGravity(Gravity.CENTER);
+        label.setText(ad ? "广告" : "选项");
+        badge.addView(label, new LinearLayout.LayoutParams(dp(38), -1));
+
+        ImageView icon = new ImageView(this);
+        icon.setId(R.id.icon_close);
+        icon.setImageResource(android.R.drawable.ic_menu_close_clear_cancel);
+        icon.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+        badge.addView(icon, new LinearLayout.LayoutParams(dp(24), dp(24)));
+
+        LinearLayout menu = new LinearLayout(this);
+        menu.setOrientation(LinearLayout.VERTICAL);
+        menu.setBackgroundColor(0xffffffff);
+        String[] actions = ordinaryMenu ? new String[]{"关闭", "举报", "取消"}
+                : new String[]{"关闭此广告", "举报广告", "取消"};
+        for (String action : actions) {
+            TextView row = new TextView(this);
+            row.setGravity(Gravity.CENTER);
+            row.setText(action);
+            row.setOnClickListener(view -> {
+                page.removeView(menu);
+                if (action.equals("关闭此广告")) page.removeView(badge);
+                content.setText("两步菜单处理结果=" + action);
+            });
+            menu.addView(row, new LinearLayout.LayoutParams(-1, dp(48)));
+        }
+        badge.setOnClickListener(view -> {
+            if (menu.getParent() != null) return;
+            content.setText("已打开两步菜单");
+            page.addView(menu, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+        });
+        FrameLayout.LayoutParams placement = new FrameLayout.LayoutParams(dp(70), dp(36),
+                Gravity.TOP | Gravity.RIGHT);
+        placement.topMargin = dp(88);
+        placement.rightMargin = dp(16);
+        page.postDelayed(() -> {
+            if (!isFinishing() && !isDestroyed()) page.addView(badge, placement);
+        }, 1_000);
+    }
+
+    private int dp(int size) {
+        return Math.round(size * getResources().getDisplayMetrics().density);
     }
 
     private void showPopupFixture(FrameLayout page, String mode) {

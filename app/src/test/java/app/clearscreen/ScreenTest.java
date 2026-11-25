@@ -114,7 +114,7 @@ public class ScreenTest {
     }
     @Test public void popupRulesAndPermissionReturnToPopupManagement() {
         MainActivity activity = Robolectric.buildActivity(MainActivity.class).setup().get();
-        clickFeature(activity, "应用内弹窗");
+        clickFeature(activity, "使用中广告");
         assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
         find(activity.getWindow().getDecorView(), "管理自定义规则").performClick();
         assertEquals(MainActivity.CUSTOM_RULES, activity.tab);
@@ -160,7 +160,7 @@ public class ScreenTest {
             clickFeature(activity, "暂停开屏跳过");
             assertFalse(store.splashEnabled());
             assertTrue(store.popupEnabled());
-            assertNotNull(find(activity.body, "开启自动跳过"));
+            assertNotNull(find(activity.body, "开启开屏跳过"));
         } finally {
             controller.pause().stop().destroy();
             service.onDestroy();

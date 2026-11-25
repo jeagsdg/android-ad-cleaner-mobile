@@ -106,9 +106,22 @@ public final class MainActivity extends Activity {
         }
         render();
     }
+    private boolean setRecentVisibility(boolean hidden){
+        ActivityManager manager=getSystemService(ActivityManager.class);
+        if(manager==null)return false;
+        try{
+            for(ActivityManager.AppTask task:manager.getAppTasks()){
+                ActivityManager.RecentTaskInfo info=task.getTaskInfo();
+                int id=Build.VERSION.SDK_INT>=29?info.taskId:info.id;
+                if(id==getTaskId()){task.setExcludeFromRecents(hidden);return true;}
+            }
+        }catch(IllegalArgumentException|SecurityException ignored){ }
+        return false;
+    }
     @Override protected void onResume() {
         super.onResume();
         inForeground = true;
+        if(store.hideRecents())setRecentVisibility(true);
         updateScreen = new WeakReference<>(this);
         lastPermissionState = PermissionAccess.state(this);
         if (store != null) SkipKeepAliveService.onForeground(this);
@@ -390,9 +403,9 @@ public final class MainActivity extends Activity {
         LinearLayout splash = card(body);
         splash.setBackground(shape(0xff163f32, 22));
         splash.setPaddingRelative(dp(18), dp(12), dp(18), dp(8));
-        splash.addView(heading("开屏广告跳过", 24, Color.WHITE));
+        splash.addView(text("广告跳过",14,0xffdcf1e5));
         space(splash, 5);
-        homeSplashStatus = bold("", 13, LIME);
+        homeSplashStatus = heading("", 26, Color.WHITE);
         homeSplashStatus.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
         splash.addView(homeSplashStatus);
         space(splash, 7);
@@ -404,18 +417,17 @@ public final class MainActivity extends Activity {
         homeOpenApp.setTextColor(INK);
         homeOpenApp.setBackground(touchBackground(LIME, 14, 0x20162e24));
         homeSplashButton = button("", true, () -> {
-            if (store.splashEnabled() && CleanerService.get() == null
+            if ((store.splashEnabled() || store.popupEnabled()) && CleanerService.get() == null
                     && PermissionAccess.state(this) == PermissionAccess.State.DISCONNECTED
                     && AccessibilityRecovery.supported()) openRecoveryPage();
-            else if (store.splashEnabled() && CleanerService.get() == null) beginAccessibility();
+            else if ((store.splashEnabled() || store.popupEnabled()) && CleanerService.get() == null) beginAccessibility();
             else toggleSplash();
         });
         splash.addView(homeSplashButton, new LinearLayout.LayoutParams(-1, -2));
         LinearLayout actions = new LinearLayout(this);
         actions.addView(homeTextButton("管理开屏跳过", () -> showPage(SKIP_MANAGEMENT)),
                 new LinearLayout.LayoutParams(0, -2, 1));
-        homeMissed = homeTextButton("刚才没跳过", () -> chooseInstalledApp(
-                appAdManagement::openMissedFromHome, "暂未找到可诊断的应用"));
+        homeMissed = homeTextButton("刚才没跳过", this::openRecentMiss);
         actions.addView(homeMissed, new LinearLayout.LayoutParams(0, -2, 1));
         splash.addView(actions);
         if (AccessibilityRecovery.supported()) {
@@ -437,11 +449,11 @@ public final class MainActivity extends Activity {
 
         LinearLayout features = card(body);
         features.setPadding(dp(9), dp(4), dp(9), dp(4));
+        homePopupStatus = featureRow(features, R.drawable.ic_popup, "使用中广告", () -> showPage(POPUP_MANAGEMENT));
         featureRow(features, R.drawable.ic_apps, "应用广告管理", this::openAppAds)
                 .setText("规则与排除项");
         featureRow(features, R.drawable.ic_apps, "精选规则", this::openRuleDirectory)
                 .setText("查找并启停单条规则");
-        homePopupStatus = featureRow(features, R.drawable.ic_popup, "应用内弹窗", () -> showPage(POPUP_MANAGEMENT));
         if (networkFilterAvailable())
             filterStatus = featureRow(features, R.drawable.ic_network, "网络广告过滤", () -> showPage(6));
         homeCleanStatus = featureRow(features, R.drawable.ic_settings, "系统广告设置", () -> {
@@ -550,13 +562,14 @@ public final class MainActivity extends Activity {
         boolean splash = store.splashEnabled();
         boolean active = splash && connected;
         PermissionAccess.State access = connected ? PermissionAccess.State.READY : PermissionAccess.state(this);
-        boolean unbound = splash && access == PermissionAccess.State.DISCONNECTED;
-        boolean unknown = splash && access == PermissionAccess.State.UNKNOWN;
-        updateText(homeSplashStatus, !splash ? "未开启" : unbound ? "开关已开启，服务未连接"
+        boolean anyMode=splash||store.popupEnabled();
+        boolean unbound = anyMode && access == PermissionAccess.State.DISCONNECTED;
+        boolean unknown = anyMode && access == PermissionAccess.State.UNKNOWN;
+        updateText(homeSplashStatus, !anyMode ? "尚未开启" : unbound ? "开关已开启，服务未连接"
                 : unknown ? "暂时无法读取系统开关" : !connected ? "无障碍开关已关闭"
-                : busy ? "清理期间暂停" : "已开启");
-        String buttonLabel = !splash ? "开启自动跳过" : unbound && AccessibilityRecovery.supported() ? "检查并重新连接"
-                : !connected ? "打开手机设置" : "暂停开屏跳过";
+                : busy ? "清理期间暂停" : "正在运行");
+        String buttonLabel = !anyMode ? "开启自动跳过" : unbound && AccessibilityRecovery.supported() ? "检查并重新连接"
+                : !connected ? "打开手机设置" : !splash ? "开启开屏跳过" : "暂停开屏跳过";
         if (!buttonLabel.contentEquals(homeSplashButton.getText())) {
             homeSplashButton.setText(buttonLabel);
             homeSplashButton.setTextColor(active ? 0xffe5f1e8 : INK);
@@ -564,14 +577,16 @@ public final class MainActivity extends Activity {
                     : touchBackground(LIME, 14, 0x20162e24));
         }
         long count = store.splashCount();
-        String guidance = active ? busy ? "系统设置清理结束后会继续。"
-                : count > 0 ? "已确认跳过 " + count + " 次" : "像平时一样打开应用，净屏会尝试跳过广告。"
-                : connected ? "开启后，净屏会自动尝试跳过开屏广告。" : "点下方按钮，再在手机设置里开启「净屏」。";
-        if (unbound) guidance = "正在等待系统连接。连接前无法跳过开屏广告。";
-        if (unknown) guidance = "可在手机的无障碍设置中查看「净屏」的开关。";
-        if (active && !busy) {
-            String recovery = recentRecoveryNote();
-            if (!recovery.isEmpty()) guidance = count > 0 ? "已确认跳过 " + count + " 次 · " + recovery : recovery;
+        String guidance;
+        if(unbound)guidance="等待系统重新连接。连接前不能跳过广告。";
+        else if(unknown)guidance="可在手机的无障碍设置中查看净屏的开关。";
+        else if(!connected&&anyMode)guidance="请在手机的无障碍设置中重新开启净屏。";
+        else if(!anyMode)guidance="开启后，净屏会帮你点广告上的跳过按钮。";
+        else if(busy)guidance="系统设置清理结束后会继续。";
+        else {
+            String modes=splash?(store.popupEnabled()?"开屏广告、使用中广告":"开屏广告"):"使用中广告";
+            guidance="已开启："+modes+"。"+(splash&&count>0?" 已确认跳过 "+count+" 次。":"");
+            String recovery=recentRecoveryNote();if(!recovery.isEmpty())guidance+=" "+recovery;
         }
         updateText(homeSplashCount, guidance);
         homeMissed.setVisibility(splash || store.popupEnabled() ? View.VISIBLE : View.GONE);
@@ -1000,6 +1015,13 @@ public final class MainActivity extends Activity {
         boolean network = networkFilterAvailable();
         boolean channels = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
         header("", "使用说明", "净屏 " + store.appVersion() + (network ? " · 完整版" : " · 纯离线版"));
+        LinearLayout visibility=card(body);
+        historyToggle(visibility,"在最近任务中隐藏",store.hideRecents(),hidden->{
+            if(setRecentVisibility(hidden))store.setHideRecents(hidden);
+            else toast("系统未能修改最近任务设置，请重新打开净屏再试。");
+            render();
+        });
+        paragraph(visibility,"只隐藏净屏的任务卡片。仍可从桌面打开，在这里恢复显示。");
         LinearLayout capability = card(body);
         capability.addView(bold("净屏能做什么", 18, INK));
         space(capability, 8);
@@ -1565,7 +1587,7 @@ public final class MainActivity extends Activity {
         showPage(CUSTOM_RULES);
     }
     void popupPage() {
-        header("自动处理", "应用内弹窗", "匹配广告标识和关闭按钮，或使用应用专用规则。");
+        header("自动处理", "使用中广告", "匹配广告标识和关闭按钮，或使用应用专用规则。");
         boolean enabled = store.popupEnabled();
         boolean connected = CleanerService.get() != null;
         LinearLayout state = card(body);
@@ -1576,6 +1598,9 @@ public final class MainActivity extends Activity {
         action(state, enabled ? "关闭弹窗处理" : "开启弹窗处理", true, this::togglePopup);
         if (enabled && !connected) linkAction(state, "继续授权", this::accessibility);
 
+        LinearLayout feedback=card(body);
+        historyToggle(feedback,"允许用「不感兴趣」收起微博广告",store.allowAdDislike(),store::setAllowAdDislike);
+        paragraph(feedback,"仅限净屏刚打开的微博广告菜单。开启会向微博提交不感兴趣，并影响推荐；不会举报或屏蔽博主。");
         LinearLayout options = card(body);
         options.addView(bold("记录与规则", 17, INK));
         linkAction(options, "最近弹窗处理记录", () -> skipHistory(true));
@@ -1598,6 +1623,12 @@ public final class MainActivity extends Activity {
                     if (!PermissionAccess.openBatterySettings(this, this::startActivity)) toast("请从系统设置手动打开净屏应用详情");
                 }).setNegativeButton("关闭", null).show();
     }
+    void chooseMissedApp(){ chooseInstalledApp(appAdManagement::openMissedFromHome,"暂未找到可诊断的应用"); }
+    private void openRecentMiss(){
+        CleanerService service=CleanerService.get();String recent=service==null?"":service.recentAdApp();
+        if(!recent.isEmpty()&&launcherApps().containsKey(recent))appAdManagement.openMissedFromHome(recent);
+        else chooseMissedApp();
+    }
     void toggleSplash(){
         if (store.splashEnabled()) {
             store.setSplashEnabled(false);
@@ -1607,13 +1638,13 @@ public final class MainActivity extends Activity {
         }
         boolean offerBoth = tab == 0 && !store.popupEnabled();
         String explanation = "净屏会在你打开应用时尝试跳过开屏广告。"
-                + (offerBoth ? "也可以一并开启应用内广告弹窗处理。" : "")
+                + (offerBoth ? "推荐同时开启使用中广告，刷视频或看短剧时也能处理已适配的广告。" : "")
                 + "需要在手机设置中允许无障碍服务。";
-        AlertDialog.Builder enable = new AlertDialog.Builder(this).setTitle("开启开屏广告跳过？")
+        AlertDialog.Builder enable = new AlertDialog.Builder(this).setTitle(offerBoth?"要处理哪些广告？":"开启开屏广告跳过？")
                 .setMessage(explanation)
-                .setPositiveButton(offerBoth ? "只跳过开屏" : "开启", (dialog, which) -> enableAdFeatures(true, false))
+                .setPositiveButton(offerBoth ? "同时开启" : "开启", (dialog, which) -> enableAdFeatures(true, offerBoth))
                 .setNegativeButton("取消", null);
-        if (offerBoth) enable.setNeutralButton("同时开启弹窗", (dialog, which) -> enableAdFeatures(true, true));
+        if (offerBoth) enable.setNeutralButton("只跳开屏", (dialog, which) -> enableAdFeatures(true, false));
         enable.show();
     }
     void togglePopup() {
@@ -1623,7 +1654,7 @@ public final class MainActivity extends Activity {
             render();
             return;
         }
-        new AlertDialog.Builder(this).setTitle("允许处理应用内弹窗？")
+        new AlertDialog.Builder(this).setTitle("开启使用中广告处理？")
                 .setMessage("开启后，净屏会通过无障碍服务识别明确的广告弹窗，也会检查内置与自定义规则。匹配时会点击关闭控件，已有兼容规则也可能执行返回操作。你可以随时关闭或排除某个应用。")
                 .setPositiveButton("开启", (dialog, which) -> enableAdFeatures(false, true))
                 .setNegativeButton("取消", null).show();

@@ -36,10 +36,13 @@ final class PopupMatch {
 
     final CustomSkipRule rule;
     final AccessibilityNodeInfo target;
+    final boolean touch;
 
     private PopupMatch(CustomSkipRule rule, AccessibilityNodeInfo target) {
-        this.rule = rule;
-        this.target = target;
+        this(rule,target,false);
+    }
+    private PopupMatch(CustomSkipRule rule,AccessibilityNodeInfo target,boolean touch){
+        this.rule=rule;this.target=target;this.touch=touch;
     }
 
     static PopupMatch find(AccessibilityNodeInfo root, Rect screen, List<CustomSkipRule> rules) {
@@ -90,6 +93,17 @@ final class PopupMatch {
 
     static PopupMatch findGenericAd(AccessibilityNodeInfo root, Rect screen) {
         return findGenericAd(root, screen, UiDriver.walkComplete(root));
+    }
+
+    static PopupMatch findUsingApp(AccessibilityNodeInfo root,String activity,Rect screen,List<AccessibilityNodeInfo> nodes){
+        if(root==null||("com.tencent.qqlive".contentEquals(String.valueOf(root.getPackageName()))&&PlayerAd.blockedPlayer(nodes)))return null;
+        LiveRoomAd.Hit live=LiveRoomAd.find(root,activity,screen,nodes);
+        if(live!=null)return new PopupMatch(new CustomSkipRule(String.valueOf(root.getPackageName()),"",CustomSkipRule.POPUP,
+                "","关闭广告","直播广告控件"),live.target,live.touch);
+        AccessibilityNodeInfo exit=PlayerAd.videoExit(root,activity,screen,nodes);
+        if(exit!=null)return new PopupMatch(new CustomSkipRule(String.valueOf(root.getPackageName()),"",CustomSkipRule.POPUP,
+                "",label(exit.getText()),"视频广告播放控件"),exit);
+        return findGenericAd(root,screen,nodes);
     }
 
     static PopupMatch findGenericAd(AccessibilityNodeInfo root, Rect screen, List<AccessibilityNodeInfo> nodes) {

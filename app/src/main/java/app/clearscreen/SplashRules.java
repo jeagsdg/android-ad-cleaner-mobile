@@ -111,6 +111,8 @@ final class SplashRules {
                 return Action.CLICK;
             }
             for (JSONObject rule : active) {
+                if ("com.tencent.mm".equals(pkg) && rule.optBoolean("exactActivity") && rule.optBoolean("tap")
+                        && (PlayerAd.miniWebExit(node,nodes)||PlayerAd.miniLeftExit(node,nodes))) return Action.TAP;
                 if (rule.optBoolean("requireClickable") && !node.isClickable()) continue;
                 String evidence = rule.optString("evidence");
                 if (evidence.equals("structure") || evidence.equals("activity") || evidence.equals("page")) {

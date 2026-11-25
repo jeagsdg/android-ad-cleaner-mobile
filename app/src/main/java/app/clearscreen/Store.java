@@ -17,6 +17,10 @@ public final class Store {
     public String asset(String name){try(var in=context.getAssets().open(name);var out=new java.io.ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);return new String(out.toByteArray(),StandardCharsets.UTF_8);}catch(Exception e){throw new IllegalStateException("规则文件无法读取",e);}}
     public Policy policy(){try{return new Policy(new JSONObject(asset("policy.json")));}catch(JSONException e){throw new IllegalStateException(e);}}
     private SharedPreferences prefs(){return context.getSharedPreferences("local-ledger",Context.MODE_PRIVATE);}
+    boolean allowAdDislike(){return prefs().getBoolean("allow-ad-dislike",false);}
+    void setAllowAdDislike(boolean enabled){prefs().edit().putBoolean("allow-ad-dislike",enabled).apply();}
+    boolean hideRecents(){return prefs().getBoolean("hide-task-card",false);}
+    void setHideRecents(boolean hidden){prefs().edit().putBoolean("hide-task-card",hidden).apply();}
     public boolean splashEnabled(){return prefs().getBoolean("splash-enabled",false);}
     public void setSplashEnabled(boolean enabled){prefs().edit().putBoolean("splash-enabled",enabled).apply();}
     public boolean popupEnabled(){return prefs().getBoolean("popup-enabled",false);}

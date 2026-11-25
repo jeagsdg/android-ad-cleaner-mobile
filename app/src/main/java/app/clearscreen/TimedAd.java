@@ -24,9 +24,24 @@ final class TimedAd {
     static boolean locked(AccessibilityNodeInfo n){return n!=null&&(locked(n.getText())||locked(n.getContentDescription()));}
     static boolean lockedControl(AccessibilityNodeInfo n){
         if(locked(n))return true;
-        // Some SDKs keep the old clickable ID on a parent whose only child is the countdown.
-        if(n!=null && n.getChildCount()==1)return locked(n.getChild(0));
+        if(n==null||!n.isClickable()||n.getChildCount()==0||n.getChildCount()>6)return false;
+        // A close button can contain an icon AND a locked caption. Check the small
+        // button subtree, not its ad panel: an independent true exit must remain usable.
+        Rect button=new Rect();n.getBoundsInScreen(button);
+        for(int i=0;i<n.getChildCount();i++){
+            AccessibilityNodeInfo child=n.getChild(i);
+            if(child==null||child.isClickable()||!child.isVisibleToUser()||!inside(n,child,button))continue;
+            if(locked(child))return true;
+            if(child.getChildCount()==1){
+                AccessibilityNodeInfo caption=child.getChild(0);
+                if(caption!=null&&!caption.isClickable()&&caption.isVisibleToUser()&&inside(n,caption,button)&&locked(caption))return true;
+            }
+        }
         return false;
+    }
+    private static boolean inside(AccessibilityNodeInfo button,AccessibilityNodeInfo part,Rect bounds){
+        if(button.getWindowId()!=part.getWindowId()||!android.text.TextUtils.equals(button.getPackageName(),part.getPackageName()))return false;
+        Rect r=new Rect();part.getBoundsInScreen(r);return !r.isEmpty()&&bounds.contains(r);
     }
     static int seconds(CharSequence v){
         String s=normalized(v);if(s.isEmpty())return -1;

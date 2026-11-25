@@ -135,9 +135,9 @@ public class RulePacksTest {
         assertTrue(again.state().popupRules.hasRules(APP, ACTIVITY));
     }
 
-    @Test public void upgradingFromVersions22And23KeepsThePublishedFeedAndDisabledRules() throws IOException {
-        assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 25, RulePack.CERTIFICATE_SHA256));
-        for (int previousVersion : new int[]{22, 23}) {
+    @Test public void upgradingFromVersions22Through24KeepsThePublishedFeedAndDisabledRules() throws IOException {
+        assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 26, RulePack.CERTIFICATE_SHA256));
+        for (int previousVersion : new int[]{22, 23, 24}) {
             File storage = new File(directory.getRoot(), "version-" + previousVersion + ".bin");
             RulePacks.Feed feed = decoder -> decoder.verify(official);
             RulePacks installed = new RulePacks(storage, bundled, feed,

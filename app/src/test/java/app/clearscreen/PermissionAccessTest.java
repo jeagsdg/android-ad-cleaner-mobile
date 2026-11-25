@@ -146,7 +146,7 @@ public class PermissionAccessTest {
         try {
             MainActivity activity = controller.get();
             activity.store.enableAdFeatures(false, true);
-            ScreenTest.clickFeature(activity, "应用内弹窗");
+            ScreenTest.clickFeature(activity, "使用中广告");
             ScreenTest.clickFeature(activity, "继续授权");
             ScreenTest.clickFeature(activity, "开启遇到问题");
             ScreenTest.clickFeature(activity, "打开无障碍设置");
@@ -166,7 +166,7 @@ public class PermissionAccessTest {
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1));
 
             assertEquals(MainActivity.POPUP_MANAGEMENT, activity.tab);
-            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "应用内弹窗"));
+            assertNotNull(ScreenTest.find(activity.getWindow().getDecorView(), "使用中广告"));
             assertFalse(service.busy);
             assertEquals(0, activity.store.read("journal").length());
         } finally {

@@ -192,7 +192,7 @@ final class PopupAdRules {
             if (!node.isVisibleToUser()) continue;
             if (SplashSkipper.unsafeWindowNode(node, false)) return false;
             String text = label(node.getText()), desc = label(node.getContentDescription());
-            if (CustomSkipRule.sensitiveText(text)) return false;
+            if (CustomSkipRule.sensitiveText(text) && !LiveRoomAd.passiveChatNotice(node,hit.target)) return false;
             if (CustomSkipRule.sensitiveText(desc) && !isWeiboNewsDescription(node, desc, hit)) return false;
         }
         return true;

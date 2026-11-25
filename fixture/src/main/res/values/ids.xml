@@ -1,1 +1,6 @@
-<resources><item type="id" name="tt_splash_skip_btn"/></resources>
+<resources>
+    <item type="id" name="tt_splash_skip_btn" />
+    <item type="id" name="layout_logo" />
+    <item type="id" name="tv_ad_logo" />
+    <item type="id" name="icon_close" />
+</resources>

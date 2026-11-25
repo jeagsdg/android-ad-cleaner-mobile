@@ -26,6 +26,8 @@ public final class CleanerService extends AccessibilityService {
     private final Handler main=new Handler(Looper.getMainLooper());
     private LinearLayout overlay;private TextView overlayText;
     private SplashSkipper skipper;
+    String lastAdOutcome(String pkg,boolean splash){return skipper==null?"":skipper.lastOutcome(pkg,splash);}
+    String recentAdApp(){return skipper==null?"":skipper.recentApp();}
     boolean startRulePreview(List<CustomSkipRule> drafts) {
         return skipper != null && skipper.startRulePreview(drafts);
     }

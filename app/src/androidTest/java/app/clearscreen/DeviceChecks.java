@@ -15,6 +15,10 @@ import java.util.function.BooleanSupplier;
 /** Real Android execution against a separate disposable fixture, never OEM evidence. */
 public class DeviceChecks extends Instrumentation {
     private static final String FIXTURE_PACKAGE = "app.clearscreen.testfixture";
+    private static final String HUYA_FIXTURE = "com.duowan.kiwi";
+    private static final String DOUYU_FIXTURE = "air.tv.douyu.android";
+    private static final String LIVE_RESULT = "直播广告关闭结果=";
+    private static final String DOUYU_RESULT = "斗鱼关闭结果=";
     private static final String POPUP_PROMPT = "有新版本可用";
     private static final String POPUP_DISMISSED = "已关闭测试弹窗";
     int assertions=0;
@@ -65,6 +69,20 @@ public class DeviceChecks extends Instrumentation {
             result.putString("stream", report + "PASS: " + assertions + " countdown-ad assertions on Android "
                     + Build.VERSION.RELEASE + "; isolated full-screen fixture only\n");
             finish(RESULT_OK, result);
+            return;
+        }
+        if (suite.equals("huya-live")) {
+            String report = huyaLiveChecks(new Store(getTargetContext()), connectService());
+            result.putString("stream", report + "PASS: " + assertions + " huya-live assertions on Android "
+                    + Build.VERSION.RELEASE + "; isolated package fixture only\n");
+            finish(RESULT_OK, result);
+            return;
+        }
+        if (suite.equals("douyu-layered")) {
+            String report = douyuLayeredChecks(new Store(getTargetContext()), connectService());
+            result.putString("stream", report + "PASS: " + assertions + " douyu-layered assertions on Android "
+                    + Build.VERSION.RELEASE + "; isolated package fixture only\n");
+            finish(RESULT_OK,result);
             return;
         }
         if (suite.equals("keepalive")) {
@@ -378,6 +396,30 @@ public class DeviceChecks extends Instrumentation {
             require(waitUntil(() -> store.popupCount() >= count + 2)
                             && store.popupCount() == count + 2 && store.splashCount() == splashCount,
                     "the ad menu dismissal is confirmed once as a popup");
+
+            launchPopup("popup-menu-two-step");
+            String twoStep = waitForFixturePrefix(service, "两步菜单处理结果=", 8_000);
+            require("关闭此广告".equals(twoStep) && !fixtureShows(service, "广告"),
+                    "the badge opens the menu and only close removes the ad: " + twoStep);
+            require(waitUntil(() -> store.popupCount() >= count + 3)
+                            && store.popupCount() == count + 3 && store.splashCount() == splashCount,
+                    "opening the ad menu adds no count; the confirmed close adds one popup");
+
+            launchPopup("popup-menu-two-step-wrong-menu");
+            require(waitForFixtureText(service, "已打开两步菜单", 8_000),
+                    "the exact ad badge can open its initial menu");
+            Thread.sleep(1_300);
+            require(fixtureShows(service, "已打开两步菜单") && fixtureShows(service, "关闭")
+                            && fixtureShows(service, "举报") && fixtureShows(service, "取消")
+                            && store.popupCount() == count + 3,
+                    "ambiguous close, report and cancel actions remain untouched");
+
+            launchPopup("popup-menu-two-step-ordinary");
+            require(waitForFixtureText(service, "选项", 5_000), "ordinary badge visible");
+            Thread.sleep(1_300);
+            require(fixtureShows(service, "隔离测试内容") && fixtureShows(service, "选项")
+                            && !fixtureShows(service, "已打开两步菜单") && store.popupCount() == count + 3,
+                    "the same icon without the ad label never opens a menu");
         } finally {
             store.setPopupEnabled(false);
             store.saveCustomSkipRules(rules);
@@ -427,6 +469,126 @@ public class DeviceChecks extends Instrumentation {
         }
         require(passed, report.toString());
         return report.toString();
+    }
+
+    private String huyaLiveChecks(Store store, CleanerService service) throws Exception {
+        boolean splash = store.splashEnabled(), popup = store.popupEnabled();
+        long previousPopup = store.popupCount(), previousSplash = store.splashCount();
+        try {
+            store.setSplashEnabled(true);
+            store.setPopupEnabled(false);
+            launchLiveFixture(service, "ad");
+            require(waitUntil(() -> liveResult(service) != null), "Huya landscape live ad is visible");
+            AccessibilityNodeInfo close = liveNode(service, "关闭", false);
+            require(close != null && close.getText() == null && close.getContentDescription() != null
+                            && !close.isClickable() && close.getParent() != null && !close.getParent().isClickable()
+                            && close.getParent().getChildCount() == 3,
+                    "close is a description-only leaf under the three-child nonclickable row");
+            require(liveNode(service, "广告", false) != null && liveNode(service, "开通VIP免广告", false) != null,
+                    "ad marker and separate VIP control are present");
+            Thread.sleep(1_600);
+            require("0,0,0,0,0,-1".equals(liveResult(service)) && store.popupCount() == previousPopup,
+                    "splash-only mode does not touch the live ad or unrelated targets");
+
+            store.setSplashEnabled(false);
+            store.setPopupEnabled(true);
+            launchLiveFixture(service, "outside-mark");
+            require(waitUntil(() -> liveResult(service) != null), "live panel with a marker outside it is visible");
+            Thread.sleep(1_600);
+            require("0,0,0,0,0,-1".equals(liveResult(service)) && store.popupCount() == previousPopup,
+                    "an unrelated ad marker cannot authorize a live-panel gesture");
+
+            launchLiveFixture(service, "ordinary");
+            require(waitUntil(() -> liveResult(service) != null), "unmarked live panel visible");
+            Thread.sleep(1_600);
+            require("0,0,0,0,0,-1".equals(liveResult(service)) && store.popupCount() == previousPopup,
+                    "unmarked live panel and separate controls remain untouched");
+
+            launchLiveFixture(service, "ad");
+            require(waitUntil(() -> {
+                String current = liveResult(service);
+                return current != null && current.startsWith("1,");
+            }), "explicit close receives the only coordinate tap");
+            String result = liveResult(service);
+            require(result != null && result.startsWith("1,0,0,0,0,"),
+                    "no accessibility click, card click, VIP click or player-close click: " + result);
+            long elapsed = Long.parseLong(result.substring(result.lastIndexOf(',') + 1));
+            require(elapsed >= 0 && elapsed < 13_000 && liveNode(service, "广告", false) == null
+                            && liveNode(service, "隔离直播内容", false) != null,
+                    "the available close works while the ad countdown remains, then normal live content remains visible");
+            require(waitUntil(() -> store.popupCount() >= previousPopup + 1)
+                            && store.popupCount() == previousPopup + 1 && store.splashCount() == previousSplash,
+                    "only the confirmed in-use advertisement increments its count");
+            Thread.sleep(500);
+            require(result.equals(liveResult(service)) && store.popupCount() == previousPopup + 1,
+                    "no follow-up click reaches the VIP entry or player exit");
+            return "Live fixture close after " + elapsed + " ms. "
+                    + "Coordinate close/accessibility close/card/VIP/player exit counts: " + result + "\n";
+        } finally {
+            store.setSplashEnabled(splash);
+            store.setPopupEnabled(popup);
+        }
+    }
+
+    private void launchLiveFixture(CleanerService service, String mode) throws InterruptedException {
+        showNetScreen(service);
+        getTargetContext().startActivity(new Intent().setClassName(HUYA_FIXTURE, HUYA_FIXTURE + ".liveroom.ChannelPage")
+                .putExtra("mode", mode).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+    }
+
+    private String douyuLayeredChecks(Store store, CleanerService service) throws InterruptedException {
+        boolean splash = store.splashEnabled(), popup = store.popupEnabled();
+        long previousPopup = store.popupCount(), previousSplash = store.splashCount();
+        try {
+            store.setSplashEnabled(false);
+            store.setPopupEnabled(true);
+            showNetScreen(service);
+            getTargetContext().startActivity(new Intent().setClassName(DOUYU_FIXTURE,
+                            "com.douyu.module.player.p.rambobase.RamboPlayerActivity")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+            require(waitUntil(() -> liveNode(service, DOUYU_FIXTURE, DOUYU_RESULT, true) != null),
+                    "both independently dismissible ads are presented together");
+            require(waitUntil(() -> {
+                AccessibilityNodeInfo result = liveNode(service, DOUYU_FIXTURE, DOUYU_RESULT, true);
+                return result != null && UiDriver.text(result).endsWith(",12");
+            }), "banner closes first and the independent download card closes second");
+            AccessibilityNodeInfo result = liveNode(service, DOUYU_FIXTURE, DOUYU_RESULT, true);
+            require(result != null && UiDriver.text(result).equals(DOUYU_RESULT + "1,1,0,0,0,12"),
+                    "one close per ad with no CTA, large-card or external control actions");
+            require(liveNode(service, DOUYU_FIXTURE, "正常直播内容", false) != null
+                            && liveNode(service, DOUYU_FIXTURE, "更多直播", false) != null
+                            && liveNode(service, DOUYU_FIXTURE, "横幅广告", false) == null
+                            && liveNode(service, DOUYU_FIXTURE, "下载广告", false) == null,
+                    "both ad panels are gone and the ordinary live controls are still present");
+            require(waitUntil(() -> store.popupCount() >= previousPopup + 2)
+                            && store.popupCount() == previousPopup + 2 && store.splashCount() == previousSplash,
+                    "two confirmed in-use ad closes and no splash dismissal are recorded");
+            return "Douyu callback order: banner, download card. CTA / card / external clicks: 0 / 0 / 0.\n";
+        } finally {
+            store.setSplashEnabled(splash);
+            store.setPopupEnabled(popup);
+        }
+    }
+
+    private String liveResult(CleanerService service) {
+        AccessibilityNodeInfo payload = liveNode(service, LIVE_RESULT, true);
+        return payload == null ? null : UiDriver.text(payload).substring(LIVE_RESULT.length());
+    }
+
+    private AccessibilityNodeInfo liveNode(CleanerService service, String label, boolean prefix) {
+        return liveNode(service, HUYA_FIXTURE, label, prefix);
+    }
+
+    private AccessibilityNodeInfo liveNode(CleanerService service, String pkg, String label, boolean prefix) {
+        AccessibilityNodeInfo root = service.getRootInActiveWindow();
+        if (root == null || !pkg.equals(String.valueOf(root.getPackageName()))) return null;
+        for (AccessibilityNodeInfo node : UiDriver.walk(root)) {
+            String value = UiDriver.text(node);
+            if (node.isVisibleToUser() && (prefix ? value.startsWith(label) : label.equals(value))) {
+                if (!label.equals("关闭") || !node.isClickable()) return node;
+            }
+        }
+        return null;
     }
 
     private void verifyCountdownAd(Store store, CleanerService service, boolean late, boolean locked,
@@ -659,7 +821,7 @@ public class DeviceChecks extends Instrumentation {
                     CustomSkipRule.SPLASH, "", "跳过 5", "");
             Context context = getTargetContext();
             context.startActivity(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            require(waitUntil(() -> appNode(service, "开屏广告跳过") != null), "preview starts from NetScreen");
+            require(waitUntil(() -> appNode(service, "管理开屏跳过") != null), "preview starts from NetScreen");
             java.util.concurrent.atomic.AtomicBoolean started = new java.util.concurrent.atomic.AtomicBoolean();
             require(waitUntil(() -> {
                 runOnMainSync(() -> started.set(service.startRulePreview(Collections.singletonList(draft))));

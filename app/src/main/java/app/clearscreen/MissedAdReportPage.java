@@ -29,6 +29,7 @@ final class MissedAdReportPage {
     void render() {
         capture.stop(pkg, true);
         screen.header("", "刚才没跳过", label + " · 查看本机结果或重现一次广告。");
+        screen.linkAction(screen.body,"换一个应用",screen::chooseMissedApp);
         MissedAdCapture.Session session = capture.session(pkg);
         if (session != null) {
             showSession(session);
@@ -87,6 +88,9 @@ final class MissedAdReportPage {
         screen.paragraph(card, subtitle + "\n" + status(mode));
         if (service != null && !service.busy && allowed(mode))
             screen.linkAction(card, mode == MissedAdCapture.Mode.SPLASH ? "重现开屏广告" : "重现应用内广告", () -> consent(mode));
+        else if (mode==MissedAdCapture.Mode.POPUP&&!screen.store.popupEnabled()
+                &&!screen.store.splashExcluded().contains(pkg)&&!screen.store.skipExcluded(mode.key).contains(pkg))
+            screen.linkAction(card,"开启使用中广告",screen::togglePopup);
         else if (!allowed(mode)) screen.linkAction(card, "检查此应用的处理设置",
                 () -> screen.showPage(MainActivity.APP_AD_DETAIL));
     }
@@ -109,6 +113,9 @@ final class MissedAdReportPage {
             String recent = SkipDiagnostics.LOCAL.recentResult(pkg, screen.store.packageVersion(pkg));
             if (!recent.isEmpty()) return "本次开屏诊断：" + recent + "。";
         }
+        CleanerService live=CleanerService.get();
+        String observed=live==null?"":live.lastAdOutcome(pkg,mode==MissedAdCapture.Mode.SPLASH);
+        if(!observed.isEmpty())return observed;
         if (screen.store.keepsSkipDetails()) {
             try {
                 JSONArray history = screen.store.read(mode.key + "-history");
@@ -124,7 +131,7 @@ final class MissedAdReportPage {
                 }
             } catch (IllegalStateException ignored) { /* Do not give a result from unreadable history. */ }
         }
-        return "本机没有这次广告的处理结果。";
+        return "这次没观察到广告。可以打开应用重现一次。";
     }
 
     private void consent(MissedAdCapture.Mode mode) {

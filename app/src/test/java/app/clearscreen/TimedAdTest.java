@@ -43,4 +43,15 @@ public class TimedAdTest {
         assertFalse(TimedAd.locked("15s | 跳过"));assertEquals(15,TimedAd.seconds("Skip in 15s"));
         assertEquals(-1,TimedAd.seconds("00:15"));assertEquals(-1,TimedAd.seconds("看15秒领金币"));
     }
+    @Test public void countdownInsideCompositeButtonBlocksThatButtonOnly(){
+        AccessibilityNodeInfo root=add(null,"",false,VIEW);
+        AccessibilityNodeInfo button=add(root,"跳过广告",true,EXIT),img=add(button,"",false,EXIT);
+        AccessibilityNodeInfo wrapper=add(button,"",false,EXIT);
+        AccessibilityNodeInfo timer=add(wrapper,"15秒后可跳过",false,EXIT);
+        assertTrue(TimedAd.lockedControl(button));
+        timer.setVisibleToUser(false);assertFalse(TimedAd.lockedControl(button));
+        timer.setVisibleToUser(true);timer.setBoundsInScreen(new Rect(0,2000,300,2090));assertFalse(TimedAd.lockedControl(button));
+        assertFalse(TimedAd.lockedControl(img));
+    }
+
 }
