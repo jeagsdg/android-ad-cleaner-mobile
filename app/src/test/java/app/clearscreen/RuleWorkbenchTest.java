@@ -34,8 +34,8 @@ public class RuleWorkbenchTest {
     }
     @Test public void subscriptionNeverDropsUnknownConstraintsOrOverridesLocalRules() throws Exception {
         String doc="{\"name\":\"样本\",\"version\":3,\"apps\":[{\"id\":\""+PKG+"\",\"groups\":[{\"name\":\"开屏广告\",\"rules\":[{\"matches\":\"[vid='skip']\"},{\"matches\":\"[vid='close']\",\"excludeMatches\":\"[text='设置']\"}]}]}]}";
-        CommunityRules.Preview p=CommunityRules.parse(doc);assertEquals(1,p.rules.size());assertEquals(1,p.omitted.size());
+        CommunityRules.Preview p=CommunityRules.parse(doc);assertEquals(2,p.rules.size());assertEquals(0,p.omitted.size());
         JSONObject src=CommunityRules.stage(p,true);JSONObject all=new JSONObject().put("source",src);
-        assertEquals(1,CommunityRules.active(all,p.rules).size());src.put("enabled",false);assertTrue(CommunityRules.active(all,Collections.emptyList()).isEmpty());
+        assertEquals(2,CommunityRules.active(all,p.rules).size());src.put("enabled",false);assertTrue(CommunityRules.active(all,Collections.emptyList()).isEmpty());
     }
 }

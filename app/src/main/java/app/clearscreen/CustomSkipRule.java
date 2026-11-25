@@ -31,6 +31,8 @@ final class CustomSkipRule {
             + "立即.*|安装.*|安裝.*|登录.*|登入.*|删除.*|刪除.*|领取.*|領取.*|"
             + "ok|yes|agree.*|allow.*|accept.*|confirm.*|continue|install.*|buy.*|delete.*)", Pattern.CASE_INSENSITIVE);
     final String pkg, activity, mode, viewId, label, context;
+    RuleScope scope;
+    boolean fromSubscription;
     final boolean legacy, replaceDefaults, gesture;
     final int delayMs, searches, times, sequenceIndex;
     private final LegacySelector legacyTarget, legacyPrompt;
@@ -74,6 +76,7 @@ final class CustomSkipRule {
                 || (rule.legacyPrompt != null && rule.legacyPrompt.usesBounds()))) {
             throw new IllegalArgumentException("按控件范围匹配时须填写完整页面类名");
         }
+        if(previous!=null)rule.scope=previous.scope;
         return rule;
     }
 
@@ -209,8 +212,10 @@ final class CustomSkipRule {
 
     private static String nodeText(CharSequence text) { return text == null ? "" : text.toString().trim(); }
 
-    static List<CustomSkipRule> parse(String input) {
-        if (input.length() > MAX_JSON_LENGTH) throw new IllegalArgumentException("规则文本过长");
+    static List<CustomSkipRule> parse(String input) {return parse(input,false);}
+    static List<CustomSkipRule> subscriptionRules(String input){return parse(input,true);}
+    private static List<CustomSkipRule> parse(String input,boolean subscription) {
+        if (input.length() > (subscription?4*1024*1024:MAX_JSON_LENGTH)) throw new IllegalArgumentException("规则文本过长");
         try {
             JSONTokener reader = new JSONTokener(input);
             Object value = reader.nextValue();
@@ -227,14 +232,14 @@ final class CustomSkipRule {
                 throw new IllegalArgumentException("仅支持净屏规则格式 1");
             }
             JSONArray array = document.getJSONArray("rules");
-            if (array.length() > MAX_RULES) throw new IllegalArgumentException("最多保存 " + MAX_RULES + " 条规则");
+            if (!subscription && array.length() > MAX_RULES) throw new IllegalArgumentException("最多保存 " + MAX_RULES + " 条规则");
             List<CustomSkipRule> rules = new ArrayList<>();
             Set<String> seen = new HashSet<>();
             for (int i = 0; i < array.length(); i++) {
                 try {
                     JSONObject rule = array.getJSONObject(i);
                     rule.keys().forEachRemaining(key -> {
-                        if (!key.matches("package|activity|mode|viewId|label|context|legacy|replaceDefaults|gesture|delayMs|searches|times|sequenceIndex")) {
+                        if (!key.matches("package|activity|mode|viewId|label|context|legacy|replaceDefaults|gesture|delayMs|searches|times|sequenceIndex|scope")) {
                             throw new IllegalArgumentException("不支持字段 " + key);
                         }
                     });
@@ -243,6 +248,9 @@ final class CustomSkipRule {
                             bool(rule, "legacy"), bool(rule, "replaceDefaults"), integer(rule, "delayMs", 0),
                             bool(rule, "gesture"), integer(rule, "searches", 1), integer(rule, "times", 1),
                             integer(rule, "sequenceIndex", -1));
+                    if(rule.has("scope")){
+                        entry.scope=new RuleScope(rule.getJSONObject("scope"));
+                    }
                     if (!seen.add(entry.json().toString())) throw new IllegalArgumentException("规则重复");
                     rules.add(entry);
                 } catch (JSONException | IllegalArgumentException e) {
@@ -306,6 +314,7 @@ final class CustomSkipRule {
     private JSONObject json() throws JSONException {
         JSONObject rule = new JSONObject().put("package", pkg).put("activity", activity).put("mode", mode)
                 .put("viewId", viewId).put("label", label).put("context", context);
+        if(scope!=null)rule.put("scope",scope.json());
         if (legacy) rule.put("legacy", true).put("replaceDefaults", replaceDefaults).put("gesture", gesture)
                 .put("delayMs", delayMs).put("searches", searches);
         if (times != 1) rule.put("times", times);

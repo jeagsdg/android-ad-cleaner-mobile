@@ -86,11 +86,24 @@ final class RuleSample {
         return new JSONObject().put("schema","clearscreen.sample.1").put("package",pkg).put("activity",page)
                 .put("complete",complete).put("nodes",nodes);
     }
-    String replay(String expression){
+    static final class Result {
+        int count;String first="";
+        String explanation(){return count==0?"未命中：检查属性、页面层级或节点是否可见。":count==1?"唯一命中："+first:"命中 "+count+" 个控件，请补充父节点或相邻控件条件。";}
+    }
+    Result evaluate(String expression){
         if(!RuleSelector.structured(expression))throw new IllegalArgumentException("请使用 gkd: 开头的选择器");
-        RuleSelector r=new RuleSelector(expression);int count=0;String first="";
-        for(Item i:items)if(SelectorNode.matches(pkg,i,r.compiled,true)){if(count++==0)first=i.title();}
-        return (count==0?"未命中：检查属性、页面层级或节点是否可见。":count==1?"唯一命中："+first:"命中 "+count+" 个控件，请补充父节点或相邻控件条件。")
-                +"\n在 "+items.size()+" 个样本节点上回放；非广告正文已隐去"+(complete?"。":"，部分子树不可读。")+"未执行点击。";
+        RuleSelector r=new RuleSelector(expression);Result result=new Result();
+        for(Item i:items)if(SelectorNode.matches(pkg,i,r.compiled,true)){if(result.count++==0)result.first=i.title();}
+        return result;
+    }
+    String compare(RuleSample negative,String expression){
+        if(!pkg.equals(negative.pkg))throw new IllegalArgumentException("请选择同一应用的普通页面作为反例");
+        Result a=evaluate(expression),b=negative.evaluate(expression);
+        boolean eligible=complete&&negative.complete&&a.count==1&&b.count==0;
+        return (eligible?"本次对照通过":"本次对照未通过")+"\n广告页："+a.explanation()+"\n普通页："+b.count+" 个匹配"
+            +(!complete||!negative.complete?"\n样本不完整，不能确认排除条件。":"")+"\n只比较本机样本中可见的属性；没有执行点击。";
+    }
+    String replay(String expression){
+        return evaluate(expression).explanation()+"\n在 "+items.size()+" 个样本节点上回放；非广告正文已隐去"+(complete?"。":"，部分子树不可读。")+"未执行点击。";
     }
 }

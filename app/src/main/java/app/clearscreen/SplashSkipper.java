@@ -77,7 +77,7 @@ final class SplashSkipper {
     private long lastPageDownVisit=-1, launchStarted;
     private final TimedAd.Watch launchAd=new TimedAd.Watch(), popupAd=new TimedAd.Watch();
     private long pauseUntil, nextPopupProbe, nextPreviewProbe, previewDue=Long.MAX_VALUE, lastHotSplash;
-    private boolean exactActivitySplash;
+    private boolean exactActivitySplash,verifiedLayerOnly;
     private int gesturesInFlight, activityWindow=-1;
     private final ArrayDeque<ClickEcho> ownClicks=new ArrayDeque<>();
     private static final class ClickEcho {
@@ -334,6 +334,7 @@ final class SplashSkipper {
         boolean newVisit=!pkg.equals(foreground);
         boolean newWindow=activeWindow!=windowId;
         if(newVisit){
+            appBudgets.clear();pageBudgets.clear();
             useCurrentCatalog();
             feedback.clear();
             foreground=pkg;
@@ -360,6 +361,7 @@ final class SplashSkipper {
         }
         String previousActivity=activity;
         boolean newActivity=rememberActivity(pkg,windowClass,windowId,launchAt>=0?launchAt:now);
+        if(newActivity||newWindow)pageBudgets.clear();
         if(newWindow){
             popupAd.clear();
             launchAd.clear();
@@ -372,7 +374,10 @@ final class SplashSkipper {
             nextGenericProbe=0;
             nextPopupProbe=0;
         }
-        if(!newVisit&&newActivity&&newWindow&&launchAt>=0&&!splashVerifying
+        if(!newVisit&&newActivity&&launchAt>=0&&!splashVerifying&&BiliAd.PKG.equals(pkg)&&BiliAd.HOME.equals(activity)
+                &&!activity.equals(previousActivity)&&now>=pauseUntil){
+            attempted=false;nextSplashProbe=now;armSplash(launchAt,false);verifiedLayerOnly=true;
+        }else if(!newVisit&&newActivity&&newWindow&&launchAt>=0&&!splashVerifying
                 &&reviewedInAppSplash(pkg,activity)&&!activity.equals(previousActivity)){
             // Some apps open a separate ad window without leaving the foreground package.
             attempted=false;
@@ -393,7 +398,7 @@ final class SplashSkipper {
                 ||("com.coolapk.market".equals(pkg)&&"com.coolapk.market.view.splash.SplashAdActivity".equals(activity));
     }
     private void armSplash(long now,boolean exactActivityOnly){
-        launchStarted=now;
+        verifiedLayerOnly=false;launchStarted=now;
         launchAd.clear();
         cancelDelayedSplash();
         exactActivitySplash=exactActivityOnly;
@@ -447,6 +452,22 @@ final class SplashSkipper {
     private List<CustomSkipRule> customRules(){
         try{return store.activeRules();}catch(IllegalArgumentException e){return Collections.emptyList();}
     }
+    private static final class Budget {int attempts;long last;}
+    private final Map<CustomSkipRule,Budget> appBudgets=new IdentityHashMap<>(),pageBudgets=new IdentityHashMap<>();
+    private List<CustomSkipRule> splashRulesNow(){
+        List<CustomSkipRule> rules=customRules();if(appBudgets.isEmpty()&&pageBudgets.isEmpty())return rules;
+        List<CustomSkipRule> result=new ArrayList<>();long now=SystemClock.elapsedRealtime();
+        for(CustomSkipRule r:rules){
+            Budget b=r.scope==null?null:(r.scope.resetByApp?appBudgets:pageBudgets).get(r);
+            if(b==null||b.attempts<r.scope.maximum&&now-b.last>=r.scope.cooldown)result.add(r);
+        }
+        return result;
+    }
+    private void used(CustomSkipRule rule){
+        if(rule==null||rule.scope==null)return;
+        Budget b=(rule.scope.resetByApp?appBudgets:pageBudgets).computeIfAbsent(rule,k->new Budget());
+        b.attempts++;b.last=SystemClock.elapsedRealtime();
+    }
     private List<CustomSkipRule> popupRules(){
         if(CustomSkipRule.protectedPackage(foreground)||excluded(foreground)
                 ||store.skipExcluded(CustomSkipRule.POPUP).contains(foreground))return Collections.emptyList();
@@ -455,7 +476,7 @@ final class SplashSkipper {
         if(custom!=popupRuleSnapshot){popupRuleSnapshot=custom;resetPopupProgress();}
         boolean customized=false;
         for(CustomSkipRule rule:custom)if(rule.appliesTo(foreground,activity,CustomSkipRule.POPUP)){
-            customized=true;
+            if(!rule.fromSubscription)customized=true;
             if(!attemptedPopups.contains(rule)&&(rule.sequenceIndex<0||rule.sequenceIndex==popupStep)
                     &&(!rule.legacy||rule.times==0||confirmedPopups.getOrDefault(rule,0)<rule.times))result.add(rule);
         }
@@ -478,7 +499,7 @@ final class SplashSkipper {
     private boolean defaultPopupAllowed(){
         if(foreground.isEmpty()||CustomSkipRule.protectedPackage(foreground)||excluded(foreground)
                 ||store.skipExcluded(CustomSkipRule.POPUP).contains(foreground))return false;
-        for(CustomSkipRule rule:customRules())if(rule.appliesTo(foreground,activity,CustomSkipRule.POPUP))return false;
+        for(CustomSkipRule rule:customRules())if(!rule.fromSubscription&&rule.appliesTo(foreground,activity,CustomSkipRule.POPUP))return false;
         return true;
     }
     private void resetPopupProgress(){
@@ -595,7 +616,7 @@ final class SplashSkipper {
                     captureProtected?null:screen(root),nodes);
         }else if(checkCapture)missedCapture.defer(foreground);
         if(checkSplash){
-            long normalEnd=launchStarted+WINDOW_MS;
+            long normalEnd=verifiedLayerOnly?deadline:launchStarted+WINDOW_MS;
             TimedAd.Evidence evidence=!exactActivitySplash&&activeWindow==root.getWindowId()
                     ?TimedAd.inspect(root,nodes,screen(root)):null;
             if(evidence!=null&&evidence.seconds>=0)recentOutcome.observe(foreground,true,"上次观察到广告倒计时，尚未确认关闭。");
@@ -606,7 +627,7 @@ final class SplashSkipper {
                 deadline=0;
                 launchAd.clear();
             }
-            List<CustomSkipRule> custom=customRules();
+            List<CustomSkipRule> custom=splashRulesNow();
             Consumer<SkipDiagnostics.Phase> trace=diagnostics.observes(foreground,diagnosticAttempt)
                     ||missedCapture.observing(foreground,MissedAdCapture.Mode.SPLASH)?this::note:null;
             SplashHit hit=deadline>now?splashHit(root,rules,splashActivity(root),custom,launchAge(),trace,nodes,splashMode()):null;
@@ -684,7 +705,7 @@ final class SplashSkipper {
     }
     private long popupReadyAt(){return Math.max(nextPopupProbe,Math.max(popupDue,nextPopupClick));}
     private String splashActivity(AccessibilityNodeInfo root){return root.getWindowId()==activityWindow?activity:"";}
-    private SplashMatch splashMode(){return exactActivitySplash?SplashMatch.EXACT_ACTIVITY_ONLY:SplashMatch.NORMAL;}
+    private SplashMatch splashMode(){return verifiedLayerOnly?SplashMatch.VERIFIED_LAYER:exactActivitySplash?SplashMatch.EXACT_ACTIVITY_ONLY:SplashMatch.NORMAL;}
     private boolean inspectPreview(){
         List<CustomSkipRule> drafts=preview.rulesFor(foreground);
         if(drafts.isEmpty())return false;
@@ -738,7 +759,7 @@ final class SplashSkipper {
         if(!scanSplash()||!ready(foregroundVisit)){schedule();return;}
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         SplashHit hit=matchesWindow(root,foreground,expected.target.getWindowId())
-                ?splashHit(root,rules,splashActivity(root),customRules(),launchAge(),null,UiDriver.walkComplete(root),splashMode()):null;
+                ?splashHit(root,rules,splashActivity(root),splashRulesNow(),launchAge(),null,UiDriver.walkComplete(root),splashMode()):null;
         if(hit==null||hit.rule!=expected.rule||hit.usesGesture()!=expected.usesGesture()
                 ||!hit.target.equals(expected.target)){
             note(SkipDiagnostics.Phase.TARGET_CHANGED);schedule();return;
@@ -763,20 +784,28 @@ final class SplashSkipper {
         Runnable verify=()->main.postDelayed(()->verifySplash(pkg,visit,interaction,attempt,target,origin,false),350);
         if(gesture!=null){
             boolean sent=sendGesture(gesture,verify,()->finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.CANCELLED));
-            if(sent){rememberClick(target);note(SkipDiagnostics.Phase.SENT);}
+            if(sent){used(hit.rule);rememberClick(target);note(SkipDiagnostics.Phase.SENT);}
             else finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.REJECTED);
         }else if(target.performAction(AccessibilityNodeInfo.ACTION_CLICK)){
-            rememberClick(target);
+            used(hit.rule);rememberClick(target);
             note(SkipDiagnostics.Phase.SENT);
             verify.run();
         }else{
             finishSplash(pkg,visit,attempt,SkipDiagnostics.Phase.REJECTED);
         }
     }
+    private List<CustomSkipRule> applicablePopups(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){
+        List<CustomSkipRule> rows=popupRules();RuleScope.Window window=null;
+        for(Iterator<CustomSkipRule> i=rows.iterator();i.hasNext();){CustomSkipRule rule=i.next();if(rule.scope==null)continue;
+            if(window==null)window=new RuleScope.Window(root,nodes);
+            if(!rule.scope.allows(activity,activityAge(),window))i.remove();
+        }
+        return rows;
+    }
     private boolean scanPopup(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){
         if(PopupAdRules.protectedActivity(activity)||nodes.isEmpty()
                 ||("com.tencent.qqlive".equals(foreground)&&PlayerAd.blockedPlayer(nodes)))return false;
-        List<CustomSkipRule> available=popupRules();
+        List<CustomSkipRule> available=applicablePopups(root,nodes);
         Rect display=screen(root);
         if(display.isEmpty())return false;
         PopupMatch hit=available.isEmpty()?null:PopupMatch.find(root,display,available,nodes,null);
@@ -826,10 +855,14 @@ final class SplashSkipper {
         }else clickPopup(hit,window);
         return true;
     }
+    private AccessibilityNodeInfo menuTrigger(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes,Rect screen,boolean dislike){
+        if(BiliAd.owns(root))return store.allowBiliFeedback()?BiliAd.entry(root,activity,nodes,screen):null;
+        return AdMenuEntry.find(root,nodes,screen,dislike);
+    }
     private boolean beginAdMenu(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes,Rect display){
         boolean dislike=store.allowAdDislike()&&("com.sina.weibo.feed.DetailWeiboActivity".equals(activity)
                 ||"com.sina.weibo.feed.SubCommentActiity".equals(activity));
-        AccessibilityNodeInfo trigger=AdMenuEntry.find(root,nodes,display,dislike);
+        AccessibilityNodeInfo trigger=menuTrigger(root,nodes,display,dislike);
         if(trigger==null||!ready(foregroundVisit)||menuVisit==foregroundVisit&&trigger.equals(lastMenuTrigger))return false;
         String host=activity,pkg=foreground;long visit=foregroundVisit,input=userInteraction;
         ConfirmationWindow origin=new ConfirmationWindow(root,activityWindow,activity);
@@ -841,7 +874,7 @@ final class SplashSkipper {
             long started=SystemClock.uptimeMillis();
             if(input!=userInteraction||!ready(visit)||!store.popupEnabled()||!defaultPopupAllowed()
                     ||!host.equals(activity)||!matchesWindow(latest,pkg,origin.id)
-                    ||!trigger.equals(AdMenuEntry.find(latest,UiDriver.walkComplete(latest),display,dislike))
+                    ||!trigger.equals(menuTrigger(latest,UiDriver.walkComplete(latest),display,dislike))
                     ||!trigger.performAction(AccessibilityNodeInfo.ACTION_CLICK)){popupVerifying=false;schedule();return;}
             ownClicks.addLast(new ClickEcho(trigger,started,"",true));
             awaitMenu(visit,input,host,pkg,origin,trigger,SystemClock.elapsedRealtime()+2400);
@@ -859,6 +892,7 @@ final class SplashSkipper {
             if(matchesWindow(root,pkg,activeWindow)&&origin.matchesDisplayOf(root)){
                 List<AccessibilityNodeInfo> nodes=UiDriver.walkComplete(root);
                 AdSurface.Exit exit=AdSurface.menuExit(root,nodes,screen(root));
+                if(exit==null&&store.allowBiliFeedback()&&BiliAd.PKG.equals(pkg))exit=BiliAd.feedback(root,host,nodes,screen(root));
                 if(exit==null&&store.allowAdDislike()&&"com.sina.weibo".equals(pkg))exit=AdMenuEntry.dislike(root,nodes,screen(root),host);
                 if(exit!=null){
                     String clickLabel=uniqueClickLabel(root,exit.button);
@@ -882,7 +916,7 @@ final class SplashSkipper {
             List<AccessibilityNodeInfo> nodes=same?UiDriver.walkComplete(root):Collections.emptyList();
             // The host can recycle the same view object for a content row. Verify actual
             // ad/menu semantics as well as host identity instead of treating a reused node ID as an ad.
-            boolean confirmed=!nodes.isEmpty()&&AdMenuEntry.find(root,nodes,screen(root),store.allowAdDislike())==null
+            boolean confirmed=!nodes.isEmpty()&&menuTrigger(root,nodes,screen(root),store.allowAdDislike())==null
                     &&AdSurface.menuExit(root,nodes,screen(root))==null&&!visibleNode(nodes,exit);
             if(!confirmed&&input==userInteraction&&attempt<2){confirmAdMenu(visit,input,host,pkg,origin,trigger,exit,attempt+1);return;}
             if(!confirmed)android.util.Log.i("ClearScreenMenu","Menu result unconfirmed: sameHost="+host.equals(activity)
@@ -1020,7 +1054,8 @@ final class SplashSkipper {
         if(!store.popupEnabled()||!ready(visit)){schedule();return;}
         AccessibilityNodeInfo root=service.getRootInActiveWindow();
         if(!matchesWindow(root,foreground,window)){schedule();return;}
-        PopupMatch hit=PopupMatch.find(root,screen(root),popupRules());
+        List<AccessibilityNodeInfo> visible=UiDriver.walkComplete(root);
+        PopupMatch hit=PopupMatch.find(root,screen(root),applicablePopups(root,visible),visible,null);
         if(hit==null||hit.rule!=expected.rule||!Objects.equals(hit.target,expected.target)){schedule();return;}
         attemptedPopups.add(hit.rule);
         nextPopupClick=SystemClock.elapsedRealtime()+POPUP_COOLDOWN_MS;
@@ -1222,7 +1257,15 @@ final class SplashSkipper {
     }
     private void finishSplash(String pkg,long visit,SkipDiagnostics.Attempt attempt,SkipDiagnostics.Phase phase){
         if(closed)return;
-        if(visit==foregroundVisit&&pkg.equals(foreground)){splashVerifying=false;schedule();}
+        if(visit==foregroundVisit&&pkg.equals(foreground)){
+            splashVerifying=false;
+            if(phase==SkipDiagnostics.Phase.CONFIRMED&&!exactActivitySplash&&automationAllowed()){
+                // Confirmed exit, then short recheck only for another independently identified ad layer.
+                long now=SystemClock.elapsedRealtime();
+                verifiedLayerOnly=true;attempted=false;deadline=now+1800;nextSplashProbe=now+160;
+            }
+            schedule();
+        }
         diagnostics.note(pkg,attempt,phase);
         if(visit==foregroundVisit)missedCapture.note(pkg,MissedAdCapture.Mode.SPLASH,phase);
         boolean confirmed=phase==SkipDiagnostics.Phase.CONFIRMED;
@@ -1294,7 +1337,7 @@ final class SplashSkipper {
         }
         boolean usesGesture(){return tap||(rule!=null&&rule.gesture);}
     }
-    private enum SplashMatch { NORMAL, CUSTOM_ONLY, EXACT_ACTIVITY_ONLY }
+    private enum SplashMatch { NORMAL, CUSTOM_ONLY, EXACT_ACTIVITY_ONLY, VERIFIED_LAYER }
     private static SplashHit splashHit(AccessibilityNodeInfo root,SplashRules rules,String activity,List<CustomSkipRule> custom,long elapsed){
         return splashHit(root,rules,activity,custom,elapsed,null,UiDriver.walkComplete(root),SplashMatch.NORMAL);
     }
@@ -1313,7 +1356,15 @@ final class SplashSkipper {
         if(nodes.isEmpty())return noHit(trace,SkipDiagnostics.Phase.TREE_UNAVAILABLE);
         if("com.tencent.qqlive".equals(pkg)&&PlayerAd.blockedPlayer(nodes))return noHit(trace,SkipDiagnostics.Phase.GUARDED);
         List<CustomSkipRule> scoped=new ArrayList<>();
-        for(CustomSkipRule rule:custom)if(rule.appliesTo(pkg,activity,CustomSkipRule.SPLASH))scoped.add(rule);
+        RuleScope.Window query=null;
+        for(CustomSkipRule rule:custom)if(rule.appliesTo(pkg,activity,CustomSkipRule.SPLASH)){
+            if(rule.scope!=null){
+                if(query==null)query=new RuleScope.Window(root,nodes);
+                if(!rule.scope.allows(activity,elapsed,query))continue;
+            }
+            scoped.add(rule);
+        }
+        if(scoped.size()>1)scoped.sort((a,b)->RuleScope.compare(a,b,elapsed));
         if((mode==SplashMatch.CUSTOM_ONLY&&scoped.isEmpty())||(exactActivityOnly&&!scoped.isEmpty()))
             return noHit(trace,SkipDiagnostics.Phase.PAGE_MISMATCH);
         boolean useDefaults=mode!=SplashMatch.CUSTOM_ONLY&&scoped.stream().noneMatch(rule->rule.replaceDefaults);
@@ -1349,6 +1400,9 @@ final class SplashSkipper {
             for(CustomSkipRule rule:scoped)if(rule.matchesButton(node)){userRule=rule;break;}
             SplashRules.Action action=userRule==null&&defaults!=null?defaults.action(node,text.isEmpty()?desc:text):null;
             if(coveredSearch!=null&&(action!=SplashRules.Action.CLICK||!coversQiyiLiteSearch(node,coveredSearch)))continue;
+            if(useGeneric&&action==null&&BiliAd.PKG.equals(pkg)&&BiliAd.splash(root,activity,node,screen))action=SplashRules.Action.CLICK;
+            if(mode==SplashMatch.VERIFIED_LAYER && (!useDefaults || !(BiliAd.PKG.equals(pkg)?BiliAd.splash(root,activity,node,screen):
+                    (skipLabel(text)||skipLabel(desc))&&AdSurface.launchControl(root,node,screen))))continue;
             boolean known=userRule!=null||action!=null;
             if(!known&&(!useGeneric||(!skipLabel(text)&&!skipLabel(desc))))continue;
             readable=true;
@@ -1380,10 +1434,11 @@ final class SplashSkipper {
                     ||bounds.width()>screen.width()*.48||bounds.height()>screen.height()*.16||bounds.width()<12||bounds.height()<12
                     ||(!tap&&userRule==null&&!safeClickTarget(click))){unsafe=true;continue;}
             int priority=userRule!=null?4:known?3:explicit?2:1;
-            if(best==null||best.priority<priority){
+            int ordered=best!=null&&priority==best.priority?RuleScope.compare(userRule,best.rule,elapsed):0;
+            if(best==null||best.priority<priority||ordered<0){
                 best=new SplashHit(click,userRule,priority,tap);
                 ambiguous=false;
-            }else if(best.priority==priority&&!best.target.equals(click)){
+            }else if(best.priority==priority&&ordered==0&&!best.target.equals(click)){
                 ambiguous=true;
             }
         }

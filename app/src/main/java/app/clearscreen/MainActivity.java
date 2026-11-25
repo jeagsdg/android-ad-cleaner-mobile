@@ -131,6 +131,7 @@ public final class MainActivity extends Activity {
         permissionHandler.postDelayed(permissionRefresh, 1000);
         if (store != null && store.updateChecksEnabled()) checkForUpdates(false);
         directoryPage.foregroundCheck();
+        SourceChecks.onForeground(this);
     }
     @Override protected void onPostResume() {
         super.onPostResume();
@@ -1601,6 +1602,8 @@ public final class MainActivity extends Activity {
         LinearLayout feedback=card(body);
         historyToggle(feedback,"允许用「不感兴趣」收起微博广告",store.allowAdDislike(),store::setAllowAdDislike);
         paragraph(feedback,"仅限净屏刚打开的微博广告菜单。开启会向微博提交不感兴趣，并影响推荐；不会举报或屏蔽博主。");
+        historyToggle(feedback,"允许用反馈收起哔哩哔哩广告",store.allowBiliFeedback(),store::setAllowBiliFeedback);
+        paragraph(feedback,"只处理净屏自己打开的广告菜单。选择不感兴趣会影响推荐；不会投诉或屏蔽 UP 主。");
         LinearLayout options = card(body);
         options.addView(bold("记录与规则", 17, INK));
         linkAction(options, "最近弹窗处理记录", () -> skipHistory(true));
@@ -1734,6 +1737,8 @@ public final class MainActivity extends Activity {
             paragraph(studio,"写下按钮上的文字，让你的 AI 生成一份可修改的草稿。");
             action(studio,"用 AI 起草规则",false,() -> AiRuleDraft.open(this,rules));
         }
+        linkAction(actions,"本机样本库",()->SampleLibrary.open(this,sample->new AlertDialog.Builder(this)
+                .setTitle("回放哪种规则？").setItems(new String[]{"开屏规则","弹窗规则"},(d,i)->SampleInspector.show(this,sample,i==0?"splash":"popup",null)).show(),null));
         linkAction(actions,"打开页面样本",()->{
             try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),47);}
             catch(ActivityNotFoundException e){toast("未找到文件选择器");}
@@ -2188,8 +2193,8 @@ public final class MainActivity extends Activity {
         });
         if (history.length() > 0) dialog.setNeutralButton("清除记录", (d, w) -> {
             try {
-                store.save(key, new JSONArray());
-                toast("已清除记录，累计次数保留");
+                store.clearAdDetails(popup?"popup":"splash");
+                toast("已清除该类明细和应用统计，总累计次数保留");
             } catch (IllegalStateException failure) { toast(failure.getMessage()); }
         });
         dialog.show();
@@ -2201,16 +2206,25 @@ public final class MainActivity extends Activity {
         render();
         toast("已排除此应用");
     }
+    private java.util.function.Consumer<RuleSample> comparison;
+    void clearComparison(){comparison=null;}
+    void pickComparison(java.util.function.Consumer<RuleSample> selected){
+        comparison=selected;
+        try{startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),48);}
+        catch(ActivityNotFoundException e){comparison=null;toast("未找到文件选择器");}
+    }
     @Override protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
-        if(request==47&&result==RESULT_OK&&data!=null&&data.getData()!=null){
+        if(request==49){if(result==RESULT_OK&&data!=null&&data.getData()!=null)CommunityRulesPage.readFile(this,data.getData());return;}
+        if(request==48&&result!=RESULT_OK){clearComparison();return;}
+        if((request==47||request==48)&&result==RESULT_OK&&data!=null&&data.getData()!=null){
             android.net.Uri uri=data.getData();new Thread(()->{
-                try(java.io.InputStream in=getContentResolver().openInputStream(uri);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream()){
-                    if(in==null)throw new java.io.IOException();byte[] buf=new byte[8192];int n;
-                    while((n=in.read(buf))!=-1){if(out.size()+n>4*1024*1024)throw new java.io.IOException();out.write(buf,0,n);}
-                    RuleSample sample=RuleSample.read(out.toString("UTF-8"));runOnUiThread(()->{if(!isDestroyed())new AlertDialog.Builder(this).setTitle("回放哪种规则？")
+                try(java.io.InputStream in=getContentResolver().openInputStream(uri)){
+                    RuleSample sample=SnapshotImport.read(in);runOnUiThread(()->{
+                        if(request==48){java.util.function.Consumer<RuleSample> use=comparison;clearComparison();if(use!=null&&!isDestroyed())use.accept(sample);return;}
+                        if(!isDestroyed())new AlertDialog.Builder(this).setTitle("回放哪种规则？")
                             .setItems(new String[]{"开屏规则","弹窗规则"},(d,i)->SampleInspector.show(this,sample,i==0?"splash":"popup",null)).show();});
-                }catch(Exception failure){runOnUiThread(()->toast("未能读取净屏样本，请选择导出的 JSON 文件"));}
+                }catch(Exception failure){runOnUiThread(()->toast("未能读取样本：请选择净屏 JSON 或不含输入控件的 GKD 快照 JSON / ZIP"));}
             },"sample-read").start();return;
         }
         if (request == VPN_CONSENT) {

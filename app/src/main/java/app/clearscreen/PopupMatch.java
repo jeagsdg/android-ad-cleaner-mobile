@@ -97,6 +97,12 @@ final class PopupMatch {
 
     static PopupMatch findUsingApp(AccessibilityNodeInfo root,String activity,Rect screen,List<AccessibilityNodeInfo> nodes){
         if(root==null||("com.tencent.qqlive".contentEquals(String.valueOf(root.getPackageName()))&&PlayerAd.blockedPlayer(nodes)))return null;
+        if(BiliAd.owns(root)){
+            AccessibilityNodeInfo target=BiliAd.direct(root,activity,nodes,screen);
+            if(target!=null)return new PopupMatch(new CustomSkipRule(BiliAd.PKG,"",CustomSkipRule.POPUP,"","关闭广告","哔哩哔哩广告控件"),target);
+        }
+        AccessibilityNodeInfo paused=PauseAd.find(root,activity,screen,nodes);
+        if(paused!=null)return new PopupMatch(new CustomSkipRule(String.valueOf(root.getPackageName()),"",CustomSkipRule.POPUP,"","关闭广告","暂停广告控件"),paused);
         LiveRoomAd.Hit live=LiveRoomAd.find(root,activity,screen,nodes);
         if(live!=null)return new PopupMatch(new CustomSkipRule(String.valueOf(root.getPackageName()),"",CustomSkipRule.POPUP,
                 "","关闭广告","直播广告控件"),live.target,live.touch);

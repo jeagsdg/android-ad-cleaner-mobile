@@ -257,12 +257,23 @@ abstract class SelectorNode {
             case "desc.length":
                 return node.getContentDescription() != null
                         && compare(node.getContentDescription().length(), operator, condition.optInt(2));
+            case "name":return compare(node.getClassName(),condition);
+            case "index":{
+                SelectorNode parent=node.getParent();
+                int index=parent==null?0:childIndex(parent,node);
+                return index>=0&&compare(index,operator,condition.optInt(2));
+            }
+            case "depth":{
+                int depth=0;SelectorNode p=node;
+                while((p=p.getParent())!=null){if(++depth>96)return false;}
+                return compare(depth,operator,condition.optInt(2));
+            }
             case "childCount":
                 return compare(node.getChildCount(), operator, condition.optInt(2));
             case "visibleToUser":
-                return node.isVisibleToUser() == condition.optBoolean(2);
+                return (node.isVisibleToUser()==condition.optBoolean(2))!=operator.equals("!=");
             case "clickable":
-                return node.isClickable() == condition.optBoolean(2);
+                return (node.isClickable()==condition.optBoolean(2))!=operator.equals("!=");
             default:
                 return false;
         }
@@ -289,6 +300,7 @@ abstract class SelectorNode {
     private static boolean compare(int actual, String operator, int expected) {
         switch (operator) {
             case "=": return actual == expected;
+            case "!=": return actual != expected;
             case "<": return actual < expected;
             case "<=": return actual <= expected;
             case ">": return actual > expected;

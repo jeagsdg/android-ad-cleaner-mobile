@@ -63,7 +63,7 @@ final class PlayerAd {
     static boolean blockedPlayer(List<AccessibilityNodeInfo> nodes){
         for(AccessibilityNodeInfo n:nodes)if(n.isVisibleToUser()&&"com.tencent.qqlive".contentEquals(String.valueOf(n.getPackageName()))){
             String t=SplashSkipper.label(n.getText()),d=SplashSkipper.label(n.getContentDescription());
-            if(protectedAdText(t)||protectedAdText(d)||SplashSkipper.rewardAd(t)||SplashSkipper.rewardAd(d))return true;
+            if(blockedText(t)||blockedText(d)||SplashSkipper.rewardAd(t)||SplashSkipper.rewardAd(d))return true;
         }
         return false;
     }
@@ -76,7 +76,7 @@ final class PlayerAd {
         for(AccessibilityNodeInfo n:nodes){
             if(!TimedAd.onPage(root,n,screen))continue;
             String t=SplashSkipper.label(n.getText()),d=SplashSkipper.label(n.getContentDescription());
-            if(n.isPassword()||n.isEditable()||SplashSkipper.unsafeWindowNode(n,true)||protectedAdText(t)||protectedAdText(d))return null;
+            if(n.isPassword()||n.isEditable()||SplashSkipper.unsafeWindowNode(n,true)||blockedText(t)||blockedText(d))return null;
             play|=t.equals("继续播放");details|=t.equals("了解详情");
             if(!n.isEnabled()||!n.isClickable()||n.getChildCount()!=0||!String.valueOf(n.getClassName()).endsWith(".TextView")
                     ||!"com.tencent.qqlive:id/arg".equals(n.getViewIdResourceName()))continue;
@@ -87,7 +87,7 @@ final class PlayerAd {
         }
         return vipPage||play&&details?exit:null;
     }
-    private static boolean protectedAdText(String t){return (t.contains("广告")&&(t.contains("领金币")||t.contains("领奖励")))||t.contains("看广告免费看")||t.contains("放弃权益")||t.contains("解锁奖励")||CustomSkipRule.sensitiveText(t);}
+    static boolean blockedText(String t){return (t.contains("广告")&&(t.contains("领金币")||t.contains("领奖励")))||t.contains("看广告免费看")||t.contains("放弃权益")||t.contains("解锁奖励")||CustomSkipRule.sensitiveText(t);}
     private static boolean hasVipNeighbor(AccessibilityNodeInfo n){
         AccessibilityNodeInfo p=n.getParent();if(p==null||p.getChildCount()!=3)return false;
         for(int i=0;i<3;i++){AccessibilityNodeInfo c=p.getChild(i);

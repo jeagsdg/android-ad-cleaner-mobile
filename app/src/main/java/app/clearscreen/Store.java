@@ -17,6 +17,8 @@ public final class Store {
     public String asset(String name){try(var in=context.getAssets().open(name);var out=new java.io.ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);return new String(out.toByteArray(),StandardCharsets.UTF_8);}catch(Exception e){throw new IllegalStateException("规则文件无法读取",e);}}
     public Policy policy(){try{return new Policy(new JSONObject(asset("policy.json")));}catch(JSONException e){throw new IllegalStateException(e);}}
     private SharedPreferences prefs(){return context.getSharedPreferences("local-ledger",Context.MODE_PRIVATE);}
+    boolean allowBiliFeedback(){return prefs().getBoolean("bilibili-ad-feedback",false);}
+    void setAllowBiliFeedback(boolean on){prefs().edit().putBoolean("bilibili-ad-feedback",on).apply();}
     boolean allowAdDislike(){return prefs().getBoolean("allow-ad-dislike",false);}
     void setAllowAdDislike(boolean enabled){prefs().edit().putBoolean("allow-ad-dislike",enabled).apply();}
     boolean hideRecents(){return prefs().getBoolean("hide-task-card",false);}
@@ -66,7 +68,10 @@ public final class Store {
     void setKeepSkipDetails(boolean enabled){
         synchronized(SKIP_HISTORY_LOCK){
             SharedPreferences.Editor update=prefs().edit().putBoolean("keep-skip-details",enabled);
-            if(!enabled)update.remove("splash-history").remove("popup-history");
+            if(!enabled){
+                update.remove("splash-history").remove("popup-history");
+                for(String key:prefs().getAll().keySet())if(key.startsWith("ad-stat:"))update.remove(key);
+            }
             update.apply();
         }
     }
@@ -113,6 +118,9 @@ public final class Store {
             SharedPreferences data=prefs();
             SharedPreferences.Editor update=data.edit();
             if(keepsSkipDetails()){
+                String stat="ad-stat:"+kind+":"+pkg;
+                if(confirmed)update.putLong(stat,data.getLong(stat,0)+1);
+                update.putLong(stat+":last",System.currentTimeMillis());
                 JSONArray old=read(history),next=new JSONArray();JSONObject item=new JSONObject();
                 CleanerService.put(item,"package",pkg);CleanerService.put(item,"confirmed",confirmed);
                 CleanerService.put(item,"time",System.currentTimeMillis());next.put(item);
@@ -121,6 +129,15 @@ public final class Store {
             }
             if(confirmed)update.putLong(count,data.getLong(count,0)+1);
             update.apply();
+        }
+    }
+    long confirmedFor(String pkg,String mode){return prefs().getLong("ad-stat:"+mode+":"+pkg,0);}
+    long lastAttemptFor(String pkg){return Math.max(prefs().getLong("ad-stat:splash:"+pkg+":last",0),prefs().getLong("ad-stat:popup:"+pkg+":last",0));}
+    void clearAdDetails(String mode){
+        synchronized(SKIP_HISTORY_LOCK){
+            SharedPreferences.Editor edit=prefs().edit().remove(mode+"-history");
+            for(String k:prefs().getAll().keySet())if(k.startsWith("ad-stat:"+mode+":"))edit.remove(k);
+            edit.apply();
         }
     }
     public long splashCount(){return prefs().getLong("splash-confirmed",0);}

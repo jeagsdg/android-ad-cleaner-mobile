@@ -8,11 +8,12 @@ import org.json.*;
 final class RuleSelector {
     private static final Pattern NODE=Pattern.compile("(@)?(\\*|[A-Za-z][A-Za-z0-9_.]*)?");
     private static final Pattern REL=Pattern.compile("(<<|[<>+\\-])(n|[1-9][0-9]*|\\([1-9][0-9]*(?:,[1-9][0-9]*)*\\))?\\s+");
-    private static final Pattern TEST=Pattern.compile("\\s*(text\\.length|desc\\.length|childCount|clickable|visibleToUser|text|desc|id|vid)\\s*(\\^=|\\$=|\\*=|!=|<=|>=|=|<|>)\\s*(?:\"([^\"\\\\]*)\"|'([^'\\\\]*)'|(null|true|false|[0-9]+))\\s*");
+    private static final Pattern TEST=Pattern.compile("\\s*(text\\.length|desc\\.length|childCount|index|depth|name|clickable|visibleToUser|text|desc|id|vid)\\s*(\\^=|\\$=|\\*=|!=|<=|>=|=|<|>)\\s*(?:\"([^\"\\\\]*)\"|'([^'\\\\]*)'|(null|true|false|[0-9]+))\\s*");
     final JSONObject compiled;
+    final String expression;
     static boolean structured(String s){return s.startsWith("gkd:");}
     RuleSelector(String expression) {
-        String s=expression.substring(4).trim(); int at=0,target=-1;
+        this.expression=expression;String s=expression.substring(4).trim(); int at=0,target=-1;
         JSONArray path=new JSONArray(),relations=new JSONArray();
         try {
             while(at<s.length()){
@@ -24,10 +25,10 @@ final class RuleSelector {
                     while(true){Matcher t=TEST.matcher(s).region(at,s.length());if(!t.lookingAt())throw syntax(at);
                         String f=t.group(1),op=t.group(2),v=t.group(5);Object operand;
                         if(f.equals("clickable")||f.equals("visibleToUser")){
-                            if(!op.equals("=")||!("true".equals(v)||"false".equals(v)))throw syntax(at);
+                            if(!(op.equals("=")||op.equals("!="))||!("true".equals(v)||"false".equals(v)))throw syntax(at);
                             operand=Boolean.valueOf(v);
-                        }else if(f.endsWith(".length")||f.equals("childCount")){
-                            if(v==null||!v.matches("[0-9]+")||!op.matches("=|<=|>=|<|>"))throw syntax(at);
+                        }else if(f.endsWith(".length")||f.equals("childCount")||f.equals("index")||f.equals("depth")){
+                            if(v==null||!v.matches("[0-9]+")||!op.matches("=|!=|<=|>=|<|>"))throw syntax(at);
                             operand=Integer.valueOf(v);
                         }else{
                             if(!op.matches("=|!=|\\^=|\\$=|\\*=")||(v!=null&&!(v.equals("null")&&(op.equals("=")||op.equals("!=")))))throw syntax(at);

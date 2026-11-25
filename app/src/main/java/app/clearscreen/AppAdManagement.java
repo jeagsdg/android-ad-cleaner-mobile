@@ -185,6 +185,13 @@ final class AppAdManagement {
         }
 
         LinearLayout help = screen.card(screen.body);
+        if(screen.store.keepsSkipDetails()){
+            long last=screen.store.lastAttemptFor(selected);
+            help.addView(screen.bold("本机处理记录",18,MainActivity.INK));
+            screen.paragraph(help,last==0?"开启明细后尚未记录此应用。":
+                "已确认开屏 "+screen.store.confirmedFor(selected,"splash")+" 次 · 使用中 "+screen.store.confirmedFor(selected,"popup")+" 次\n最近尝试："
+                +android.text.format.DateUtils.getRelativeTimeSpanString(last,System.currentTimeMillis(),android.text.format.DateUtils.MINUTE_IN_MILLIS));
+        }
         screen.action(help, "刚才没跳过", true, () -> {
             missedFromHome = false;
             screen.showPage(MainActivity.APP_AD_MISS);

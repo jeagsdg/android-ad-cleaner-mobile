@@ -169,7 +169,7 @@ final class MissedAdCapture {
         int score = (found.isEmpty() ? 0 : found.get(0).score * 10 + found.size()) + (pageName.isEmpty() ? 0 : 1);
         if (session.best == null || score > session.best.score) {
             session.best = new Frame(pageName, found, score);
-            session.sample=found.isEmpty()?null:RuleSample.capture(pkg,pageName,window,nodes);
+            session.sample=RuleSample.capture(pkg,pageName,window,nodes);
         }
     }
 
