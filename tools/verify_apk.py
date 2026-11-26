@@ -1,5 +1,6 @@
 """Validate packaged assets and, when requested, a build candidate's identity."""
 import argparse
+import base64
 import gzip
 import hashlib
 import json
@@ -125,8 +126,11 @@ def verify_package(apk, project, variant, build_type, expected_signer=None):
 
     java_home = os.environ.get('JAVA_HOME')
     java = Path(java_home) / 'bin' / ('java.exe' if os.name == 'nt' else 'java') if java_home else Path('java')
-    certificates = run_tool(java, '-jar', signer, 'verify', '--print-certs', apk)
-    digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest: ([\da-fA-F]{64})$', certificates, re.M)
+    certificates = run_tool(java, '-jar', signer, 'verify', '--print-certs-pem', apk)
+    # Hash the certificates actually returned by a successful signature verification.
+    # Human-readable signer labels vary between build-tools versions and signing schemes.
+    blocks = re.findall(r'-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----', certificates, re.S)
+    digests = [hashlib.sha256(base64.b64decode(''.join(block.split()), validate=True)).hexdigest() for block in blocks]
     if not digests:
         raise ValueError('No verified APK signing certificate was found')
     if expected_signer and [value.lower() for value in digests] != [expected_signer.lower()]:

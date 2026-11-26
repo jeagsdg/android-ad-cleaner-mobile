@@ -38,7 +38,10 @@ jobs:
         env:
           CLEARSCREEN_BUILD_TOOLS: '35.0.1'
         run: |
-          sdkmanager --install "build-tools;${CLEARSCREEN_BUILD_TOOLS}"
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT}}"
+          if [[ ! -f "$sdk_root/build-tools/$CLEARSCREEN_BUILD_TOOLS/lib/apksigner.jar" ]]; then
+            "$sdk_root/cmdline-tools/latest/bin/sdkmanager" --install "build-tools;${CLEARSCREEN_BUILD_TOOLS}"
+          fi
           python3 tools/verify_apk.py app/build/outputs/apk/debug/app-debug.apk --variant ${{ matrix.edition }} --build-type debug
       - name: Save test and lint reports
         if: always()
