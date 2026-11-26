@@ -17,6 +17,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -35,26 +36,35 @@ public final class SkipKeepAliveService extends Service {
     private static final int NOTIFICATION_ID = 40;
     static final int ACCESSIBILITY_OFF_NOTICE_ID = 42;
     private static final long LEGACY_NOTIFICATION_CHECK_MS = 30_000;
-    private static final long RECOVERY_CHECK_MS = 30_000;
+    private static final long[] RECONNECT_DELAYS_MS = {5_000, 10_000, 20_000, 40_000, 80_000, 160_000};
+    private static final long PASSIVE_RECHECK_MS = 15 * 60_000L;
     private static final long SYSTEM_SETTLE_MS = 1_500;
     private static volatile SkipKeepAliveService active;
     private static boolean recoveryFailed;
     private static long nextRecoveryRequest;
     private static long pendingRecoveryRequest;
-    enum RecoveryConnection { CONNECTED, WAITING_FOR_SYSTEM, RESTORED }
+    enum RecoveryConnection { INACTIVE, CONNECTED, WAITING_FOR_SYSTEM, RESTORED, UNKNOWN }
+    enum WatchStart { USER, SYSTEM_RESTART, FOREGROUND_SAME_PROCESS, FOREGROUND_RESOURCE_EXIT }
 
     private final Handler notificationHandler = new Handler(Looper.getMainLooper());
     private boolean recovering;
     private boolean observingRecovery;
     private boolean eventCheckQueued;
+    private int nextDelay;
+    private int timedChecks;
+    private long waitingSinceElapsed = -1;
     private RecoveryConnection recoveryConnection = RecoveryConnection.CONNECTED;
-    private final Runnable recoveryCheck = this::checkRecovery;
+    private final Runnable recoveryCheck = () -> {
+        timedChecks++;
+        checkRecovery();
+    };
     private final Runnable eventCheck = () -> {
         eventCheckQueued = false;
         checkRecovery();
     };
     private final ContentObserver accessibilityChanges = new ContentObserver(notificationHandler) {
         @Override public void onChange(boolean selfChange) {
+            nextDelay = 0;
             checkRecovery();
         }
     };
@@ -82,7 +92,8 @@ public final class SkipKeepAliveService extends Service {
     }
 
     static boolean recoveryRunning() {
-        return active != null && active.recovering;
+        SkipKeepAliveService service = active;
+        return service != null && service.recovering;
     }
 
     static boolean recoveryFailed() {
@@ -91,7 +102,14 @@ public final class SkipKeepAliveService extends Service {
 
     static RecoveryConnection recoveryConnection() {
         SkipKeepAliveService service = active;
-        return service == null ? RecoveryConnection.CONNECTED : service.recoveryConnection;
+        if (service == null || !service.recovering) return RecoveryConnection.INACTIVE;
+        if (recoveryFailed) return RecoveryConnection.UNKNOWN;
+        return CleanerService.get() == null ? RecoveryConnection.WAITING_FOR_SYSTEM : service.recoveryConnection;
+    }
+
+    static int timedRecoveryChecks() {
+        SkipKeepAliveService service = active;
+        return service != null && service.recovering ? service.timedChecks : 0;
     }
 
     static boolean startRecovery(Context context) {
@@ -268,7 +286,7 @@ public final class SkipKeepAliveService extends Service {
             // A queued foreground start must be acknowledged even if settings changed in the meantime.
             boolean starting = active != this;
             if (startRecovery && canRecover(this) && AccessibilityRecovery.configured(this)) {
-                enableRecovery(false);
+                enableRecovery(WatchStart.USER);
             } else {
                 if ((systemRestart || foregroundRestart) && AccessibilityRecovery.watching(this)) {
                     Resume disposition = AccessibilityRecovery.resumeDisposition(this);
@@ -278,7 +296,12 @@ public final class SkipKeepAliveService extends Service {
                         if (starting) showNotification();
                         stopRunning();
                         return START_NOT_STICKY;
-                    } else if (systemRestart || disposition == Resume.ALLOWED) enableRecovery(true);
+                    } else if (systemRestart) {
+                        enableRecovery(WatchStart.SYSTEM_RESTART);
+                    } else if (disposition == Resume.ALLOWED) {
+                        enableRecovery(AccessibilityRecovery.ownedByCurrentProcess(this)
+                                ? WatchStart.FOREGROUND_SAME_PROCESS : WatchStart.FOREGROUND_RESOURCE_EXIT);
+                    }
                 }
                 if (starting && !recovering) showNotification();
                 if (startRecovery) noteRecoveryFailure(this);
@@ -298,9 +321,11 @@ public final class SkipKeepAliveService extends Service {
         return recovering ? START_STICKY : START_NOT_STICKY;
     }
 
-    private void enableRecovery(boolean resuming) {
+    private void enableRecovery(WatchStart trigger) {
         if (recovering) return;
         recovering = true;
+        timedChecks = 0;
+        startObservingUnbound();
         showNotification();
         IntentFilter wake = new IntentFilter(Intent.ACTION_SCREEN_ON);
         wake.addAction(Intent.ACTION_USER_PRESENT);
@@ -309,26 +334,35 @@ public final class SkipKeepAliveService extends Service {
         observingRecovery = true;
         getContentResolver().registerContentObserver(AccessibilityRecovery.settingUri(), false, accessibilityChanges);
         AccessibilityRecovery.takeOwnership(this);
-        if (!resuming) new Store(this).setSkipKeepAliveEnabled(true);
+        if (trigger == WatchStart.USER) new Store(this).setSkipKeepAliveEnabled(true);
         recoveryFailed = false;
-        if (resuming) AccessibilityReliability.record(this, Kind.RECOVERY_RESUMED);
+        if (trigger != WatchStart.USER) AccessibilityReliability.resumed(this, trigger);
         scheduleEventCheck();
-        notificationHandler.postDelayed(recoveryCheck, RECOVERY_CHECK_MS);
+    }
+
+    private void startObservingUnbound() {
+        if (waitingSinceElapsed < 0 && CleanerService.get() == null) {
+            waitingSinceElapsed = SystemClock.elapsedRealtime();
+        }
     }
 
     private void scheduleEventCheck() {
-        if (!recovering || eventCheckQueued) return;
+        if (!recovering) return;
+        startObservingUnbound();
+        if (eventCheckQueued) return;
+        nextDelay = 0;
         eventCheckQueued = true;
         notificationHandler.postDelayed(eventCheck, SYSTEM_SETTLE_MS);
     }
 
     private void checkRecovery() {
         if (active != this || !recovering) return;
-        if (!canResume(this)) {
-            endRecovery();
-            return;
-        }
+        notificationHandler.removeCallbacks(recoveryCheck);
         try {
+            if (!canResume(this)) {
+                endRecovery();
+                return;
+            }
             if (!AccessibilityRecovery.configured(this)) {
                 // A missing selection may be a deliberate revocation. Wait for a new opt-in.
                 stopRunning();
@@ -336,12 +370,14 @@ public final class SkipKeepAliveService extends Service {
                 return;
             }
             if (CleanerService.get() == null) {
+                startObservingUnbound();
                 if (recoveryConnection != RecoveryConnection.WAITING_FOR_SYSTEM) {
                     AccessibilityReliability.record(this, Kind.RECOVERY_WAITING);
                     updateRecoveryConnection(RecoveryConnection.WAITING_FOR_SYSTEM);
                 }
-            } else if (recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM) {
-                AccessibilityReliability.record(this, Kind.RECOVERED);
+            } else if (waitingSinceElapsed >= 0) {
+                AccessibilityReliability.recovered(this, SystemClock.elapsedRealtime() - waitingSinceElapsed);
+                waitingSinceElapsed = -1;
                 updateRecoveryConnection(RecoveryConnection.RESTORED);
             }
             recoveryFailed = false;
@@ -351,8 +387,10 @@ public final class SkipKeepAliveService extends Service {
                 noteRecoveryFailure(this);
             }
         }
-        notificationHandler.removeCallbacks(recoveryCheck);
-        notificationHandler.postDelayed(recoveryCheck, RECOVERY_CHECK_MS);
+        if (waitingSinceElapsed >= 0 || recoveryFailed) {
+            long delay = nextDelay < RECONNECT_DELAYS_MS.length ? RECONNECT_DELAYS_MS[nextDelay++] : PASSIVE_RECHECK_MS;
+            notificationHandler.postDelayed(recoveryCheck, delay);
+        }
     }
 
     private void updateRecoveryConnection(RecoveryConnection connection) {
@@ -364,6 +402,8 @@ public final class SkipKeepAliveService extends Service {
     private void stopWatching() {
         recovering = false;
         recoveryConnection = RecoveryConnection.CONNECTED;
+        waitingSinceElapsed = -1;
+        nextDelay = 0;
         notificationHandler.removeCallbacks(recoveryCheck);
         notificationHandler.removeCallbacks(eventCheck);
         eventCheckQueued = false;
@@ -401,7 +441,7 @@ public final class SkipKeepAliveService extends Service {
                 .setSmallIcon(R.drawable.ic_app)
                 .setContentTitle(recovering ? "净屏 · 无障碍连接守护" : "净屏 · 跳过保活")
                 .setContentText(!recovering ? "点击管理开屏与弹窗跳过"
-                        : recoveryConnection == RecoveryConnection.WAITING_FOR_SYSTEM ? "无障碍已开启，等待系统连接"
+                        : CleanerService.get() == null ? "无障碍已开启，等待系统连接"
                         : "正在检查净屏的无障碍服务")
                 .setContentIntent(open)
                 .setDeleteIntent(recovering ? stop : null)

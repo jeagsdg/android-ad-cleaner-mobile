@@ -29,10 +29,22 @@ final class CustomSkipRule {
     private static final Pattern UNSAFE_BUTTON = Pattern.compile(
             "(同意.*|允许.*|允許.*|接受.*|确认.*|確認.*|确定|確定|继续|繼續|"
             + "立即.*|安装.*|安裝.*|登录.*|登入.*|删除.*|刪除.*|领取.*|領取.*|"
+            + "(?:取消|停止|暂停|暫停|终止|終止)(?:下载|下載|上传|上傳|传输|傳輸|分享|任务|任務).*|"
+            + "(?:分享|共享|移除|清空)(?:此|该|這個|这个|所选|選取的)?(?:文件|檔案|任务|任務).*|"
+            + "(?:cancel|stop|pause|abort) (?:this |the )?(?:upload|download|transfer|task).*|"
+            + "(?:share|remove) (?:this |the )?(?:file|folder|task).*|"
             + "ok|yes|agree.*|allow.*|accept.*|confirm.*|continue|install.*|buy.*|delete.*)", Pattern.CASE_INSENSITIVE);
     final String pkg, activity, mode, viewId, label, context;
     RuleScope scope;
     boolean fromSubscription;
+    boolean paused;
+    CustomSkipRule withPaused(boolean value){
+        if(paused==value)return this;
+        CustomSkipRule copy=new CustomSkipRule(pkg,activity,mode,viewId,label,context,legacy,replaceDefaults,
+                delayMs,gesture,searches,times,sequenceIndex);
+        copy.scope=scope;copy.fromSubscription=fromSubscription;copy.paused=value;
+        return copy;
+    }
     final boolean legacy, replaceDefaults, gesture;
     final int delayMs, searches, times, sequenceIndex;
     private final LegacySelector legacyTarget, legacyPrompt;
@@ -191,13 +203,15 @@ final class CustomSkipRule {
                 && (viewId.isEmpty() || viewId.equals(node.getViewIdResourceName()))
                 && (legacy ? legacyTarget.matches(node)
                 : label.isEmpty() || label.equals(nodeText(node.getText())) || label.equals(nodeText(node.getContentDescription())))
+                && (scope==null || scope.permits(node,legacyTarget==null||legacyTarget.targetAtEnd()))
                 && !unsafeButton(nodeText(node.getText())) && !unsafeButton(nodeText(node.getContentDescription()));
     }
 
     boolean backsOut() { return legacy && POPUP.equals(mode) && BACK.equals(label); }
 
     boolean matchesPrompt(AccessibilityNodeInfo node) {
-        return legacy ? legacyPrompt != null && legacyPrompt.matches(node) : context.equals(nodeText(node.getText()));
+        return (legacy ? legacyPrompt != null && legacyPrompt.matches(node) : context.equals(nodeText(node.getText())))
+                && (scope==null || scope.permits(node,legacyPrompt==null||legacyPrompt.targetAtEnd()));
     }
 
     boolean matchesLegacyTargetResource(AccessibilityNodeInfo node) {
@@ -213,6 +227,14 @@ final class CustomSkipRule {
     private static String nodeText(CharSequence text) { return text == null ? "" : text.toString().trim(); }
 
     static List<CustomSkipRule> parse(String input) {return parse(input,false);}
+    static List<CustomSkipRule> appendNew(List<CustomSkipRule> current,List<CustomSkipRule> incoming){
+        Set<String> keys=new HashSet<>();
+        List<CustomSkipRule> merged=new ArrayList<>(current);
+        for(CustomSkipRule rule:current)keys.add(CommunityRules.key(rule));
+        for(CustomSkipRule rule:incoming)if(keys.add(CommunityRules.key(rule)))merged.add(rule);
+        // Preserve complete sequences, including their common enabled state.
+        return parse(export(merged));
+    }
     static List<CustomSkipRule> subscriptionRules(String input){return parse(input,true);}
     private static List<CustomSkipRule> parse(String input,boolean subscription) {
         if (input.length() > (subscription?4*1024*1024:MAX_JSON_LENGTH)) throw new IllegalArgumentException("规则文本过长");
@@ -239,7 +261,7 @@ final class CustomSkipRule {
                 try {
                     JSONObject rule = array.getJSONObject(i);
                     rule.keys().forEachRemaining(key -> {
-                        if (!key.matches("package|activity|mode|viewId|label|context|legacy|replaceDefaults|gesture|delayMs|searches|times|sequenceIndex|scope")) {
+                        if (!key.matches("package|activity|mode|viewId|label|context|legacy|replaceDefaults|gesture|delayMs|searches|times|sequenceIndex|scope|paused")) {
                             throw new IllegalArgumentException("不支持字段 " + key);
                         }
                     });
@@ -252,6 +274,7 @@ final class CustomSkipRule {
                         entry.scope=new RuleScope(rule.getJSONObject("scope"));
                     }
                     if (!seen.add(entry.json().toString())) throw new IllegalArgumentException("规则重复");
+                    entry.paused=bool(rule,"paused");
                     rules.add(entry);
                 } catch (JSONException | IllegalArgumentException e) {
                     throw new IllegalArgumentException("第 " + (i + 1) + " 条规则：" + e.getMessage(), e);
@@ -273,6 +296,8 @@ final class CustomSkipRule {
             }
         }
         for (java.util.TreeMap<Integer, CustomSkipRule> group : groups.values()) {
+            if(group.values().stream().anyMatch(r->r.paused!=group.firstEntry().getValue().paused))
+                throw new IllegalArgumentException("连续弹窗的步骤必须一起启用或暂停");
             if (group.size() < 2 || group.firstKey() != 0 || group.lastKey() != group.size() - 1
                     || group.lastEntry().getValue().times == 0) {
                 throw new IllegalArgumentException("联合规则必须从第 1 步连续排列，并以关闭动作为最后一步");
@@ -315,6 +340,7 @@ final class CustomSkipRule {
         JSONObject rule = new JSONObject().put("package", pkg).put("activity", activity).put("mode", mode)
                 .put("viewId", viewId).put("label", label).put("context", context);
         if(scope!=null)rule.put("scope",scope.json());
+        if(paused)rule.put("paused",true);
         if (legacy) rule.put("legacy", true).put("replaceDefaults", replaceDefaults).put("gesture", gesture)
                 .put("delayMs", delayMs).put("searches", searches);
         if (times != 1) rule.put("times", times);

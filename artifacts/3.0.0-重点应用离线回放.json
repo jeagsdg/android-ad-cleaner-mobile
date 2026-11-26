@@ -1,0 +1,465 @@
+{
+  "baseline": "2.4.0 (26)",
+  "candidate": "3.0.0 (27)",
+  "note": "Each result triple is splash, catalog popup, generic popup, with -1 for no node. Static replay never calls ACTION_CLICK. An unlabelled scene is outside the denominator.",
+  "observations": [
+    {
+      "id": "12882892",
+      "source": "https://i.gkd.li/i/12882892",
+      "sourceSha256": "025b9bf28f1bae4246b935819600cccc80eac9018f785a38566a7a184e7456f7",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.07.0.9140",
+      "expectedTarget": 40,
+      "label": "ad",
+      "baseline": [
+        -1,
+        40,
+        -1
+      ],
+      "candidate": [
+        -1,
+        40,
+        -1
+      ]
+    },
+    {
+      "id": "12882988",
+      "source": "https://i.gkd.li/i/12882988",
+      "sourceSha256": "f335a403475da07dac378b10c5db7dd105f8c0ba6d228cece2fe93690c9c59ab",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.07.0.9140",
+      "expectedTarget": 56,
+      "label": "ad",
+      "baseline": [
+        -1,
+        56,
+        -1
+      ],
+      "candidate": [
+        -1,
+        56,
+        -1
+      ]
+    },
+    {
+      "id": "13228423",
+      "source": "https://i.gkd.li/i/13228423",
+      "sourceSha256": "8f05c6c1d10f0fc8dd52be008195e9533394996aa2336c620b380dd3b714fcee",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.07.0.9146",
+      "expectedTarget": 19,
+      "label": "ad",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        19,
+        -1
+      ]
+    },
+    {
+      "id": "13627826",
+      "source": "https://i.gkd.li/i/13627826",
+      "sourceSha256": "5007d8e88df3dc9e6c62da1502d438e30b1d4550ab65cfc54237c62d0f29a57a",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.3.2",
+      "expectedTarget": 5,
+      "label": "ad",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        5,
+        -1
+      ]
+    },
+    {
+      "id": "13627830",
+      "source": "https://i.gkd.li/i/13627830",
+      "sourceSha256": "3737d5e5f194b35a13aa291bbe783756125d05222f23282acdddbd582ad06cec",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.3.2",
+      "expectedTarget": null,
+      "label": "negative",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "13627832",
+      "source": "https://i.gkd.li/i/13627832",
+      "sourceSha256": "ebdad0cad8405a23dd46008881d91943a057115e01af3032253c7451b11fc7d8",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.3.2",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "13627834",
+      "source": "https://i.gkd.li/i/13627834",
+      "sourceSha256": "9f9703e13e1e120ffb1760c5ef774b8fd756d2f731cc3c491fb19c0bc0e564c8",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.3.2",
+      "expectedTarget": 36,
+      "label": "ad",
+      "baseline": [
+        -1,
+        36,
+        -1
+      ],
+      "candidate": [
+        -1,
+        36,
+        -1
+      ]
+    },
+    {
+      "id": "14297700",
+      "source": "https://i.gkd.li/i/14297700",
+      "sourceSha256": "60ef2d18e1c0dad205172a08521024a0f017c560a9e6509631e2e7f43460a7b1",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.4.3",
+      "expectedTarget": null,
+      "label": "negative",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "14549523",
+      "source": "https://i.gkd.li/i/14549523",
+      "sourceSha256": "19c9d2ed27c8ee32ef5795ab0324cb33b53be665907c0869c36d3c03712c2de5",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.5.1",
+      "expectedTarget": null,
+      "label": "negative",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "14732062",
+      "source": "https://i.gkd.li/i/14732062",
+      "sourceSha256": "420eed3cad3371affb54b50804c1c777ccc677eb8015af51b52e20dfc7f4c6e6",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.5.1",
+      "expectedTarget": null,
+      "label": "negative",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "14882447",
+      "source": "https://i.gkd.li/i/14882447",
+      "sourceSha256": "f89f7eebc0bd88fe527142a2d7dc0d9831587d9d67c2504ed9f8ddda3589f0b0",
+      "package": "com.chinamobile.mcloud",
+      "version": "mCloud10.5.0",
+      "expectedTarget": null,
+      "label": "negative",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "15048354",
+      "source": "https://i.gkd.li/i/15048354",
+      "sourceSha256": "0ce433dde959f598920b262f301cf6074cb342487595ff00d8ebf81969bf3280",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.07.0.9151",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "15048376",
+      "source": "https://i.gkd.li/i/15048376",
+      "sourceSha256": "f3e8652afb6ae5f79d3a8abb71c3bb78ab54e108ff983bcdd8451c8436a945b0",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.07.0.9151",
+      "expectedTarget": null,
+      "label": "negative",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "15048416",
+      "source": "https://i.gkd.li/i/15048416",
+      "sourceSha256": "f8d64de4fb0e116e20f40670d3534a626e94761bd8f60f8ec6b75ed469d85ce3",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.15.0.9305",
+      "expectedTarget": 32,
+      "label": "ad",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        32,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "15048443",
+      "source": "https://i.gkd.li/i/15048443",
+      "sourceSha256": "1f4eab03acbf40dece552b228ea766403ef5c039b8e02df4049df8a52505a249",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.15.0.9305",
+      "expectedTarget": 16,
+      "label": "ad",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        16,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "16388890",
+      "source": "https://i.gkd.li/i/16388890",
+      "sourceSha256": "23de64bc0d87d648c2fdd6b8c93241307853b06f849b19aa99e30efba628efe3",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.16.0.9323",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "16388942",
+      "source": "https://i.gkd.li/i/16388942",
+      "sourceSha256": "38e95628aca12ea0f562f31acbbee6fad1817a7a2714a465d74a1fa41dfd1925",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.16.0.9323",
+      "expectedTarget": 31,
+      "label": "ad",
+      "baseline": [
+        -1,
+        31,
+        -1
+      ],
+      "candidate": [
+        -1,
+        31,
+        -1
+      ]
+    },
+    {
+      "id": "23762793",
+      "source": "https://i.gkd.li/i/23762793",
+      "sourceSha256": "cfaaa4c7e4fe534acee176e06a76d9fd5359a2081330910acef439fb9d37f100",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.48.0.1057",
+      "expectedTarget": 89,
+      "label": "ad",
+      "baseline": [
+        -1,
+        89,
+        -1
+      ],
+      "candidate": [
+        -1,
+        89,
+        -1
+      ]
+    },
+    {
+      "id": "23762972",
+      "source": "https://i.gkd.li/i/23762972",
+      "sourceSha256": "826c7faef86edd592e24e52b6d9f1441928b80a0e27fffc52671994253079c34",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.48.0.1057",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "23845065",
+      "source": "https://i.gkd.li/i/23845065",
+      "sourceSha256": "bd1894512151f9a92ce41ea9422b9dc27bc4feefa18c3db050e92600ab7b0fc3",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.48.0.1060",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "23845066",
+      "source": "https://i.gkd.li/i/23845066",
+      "sourceSha256": "f650ac81b5b72447b0113451731b0e8ea6409faf5e9c03bcf1630c381f1cfe1a",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.48.0.1060",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    },
+    {
+      "id": "24539634",
+      "source": "https://i.gkd.li/i/24539634",
+      "sourceSha256": "d110757eef1e97bcac42b8f11cf3d4aea495a1ed4e609c78e66920cac7b6b0c3",
+      "package": "com.xunlei.downloadprovider",
+      "version": "8.50.0.1085",
+      "expectedTarget": null,
+      "label": "observation",
+      "baseline": [
+        -1,
+        -1,
+        -1
+      ],
+      "candidate": [
+        -1,
+        -1,
+        -1
+      ]
+    }
+  ],
+  "metrics": {
+    "historical_node_replay_labeled_subset": {
+      "cases": 15,
+      "actionable_success": {
+        "hits": 0,
+        "denominator": 9,
+        "unknown_outcome": 9,
+        "unknown_denominator": 0,
+        "ratio": null
+      },
+      "recognition_recall": {
+        "hits": 9,
+        "denominator": 9,
+        "unknown_outcome": 0,
+        "unknown_denominator": 0,
+        "ratio": 1.0
+      },
+      "processing_coverage": {
+        "hits": 0,
+        "denominator": 9,
+        "unknown_outcome": 9,
+        "unknown_denominator": 0,
+        "ratio": null
+      },
+      "post_action_success": {
+        "hits": 0,
+        "denominator": 0,
+        "unknown_outcome": 0,
+        "unknown_denominator": 15,
+        "ratio": null
+      },
+      "normal_page_wrong_action": {
+        "hits": 0,
+        "denominator": 6,
+        "unknown_outcome": 6,
+        "unknown_denominator": 0,
+        "ratio": null
+      }
+    }
+  }
+}

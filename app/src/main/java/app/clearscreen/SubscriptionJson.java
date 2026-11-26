@@ -9,6 +9,7 @@ final class SubscriptionJson {
     static JSONObject read(String source)throws JSONException{
         if(source==null||source.length()>4*1024*1024)throw new JSONException("订阅过大");
         StringBuilder out=new StringBuilder(source.length());int i=0,last=-1;
+        char[] nesting=new char[64];int depth=0;
         while(i<source.length()){
             char c=source.charAt(i++);
             if(Character.isWhitespace(c)||c=='\ufeff'){out.append(' ');continue;}
@@ -37,9 +38,16 @@ final class SubscriptionJson {
                 if(!closed)throw new JSONException("字符串未结束");
                 out.append(JSONObject.quote(value.toString()));last=out.length()-1;continue;
             }
+            if(c=='{'||c=='['){
+                if(depth==nesting.length)throw new JSONException("订阅层级过深");
+                nesting[depth++]=c=='{'?'}':']';
+            }else if(c=='}'||c==']'){
+                if(depth==0||nesting[--depth]!=c)throw new JSONException("订阅层级不完整");
+            }
             if((c=='}'||c==']')&&last>=0&&out.charAt(last)==',')out.setCharAt(last,' ');
             out.append(c);last=out.length()-1;
         }
+        if(depth!=0)throw new JSONException("订阅层级不完整");
         JSONTokener tok=new JSONTokener(out.toString());Object root=tok.nextValue();
         if(!(root instanceof JSONObject)||tok.nextClean()!=0)throw new JSONException("需要一份完整的订阅对象");
         return (JSONObject)root;

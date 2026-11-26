@@ -27,16 +27,28 @@ final class CommunityRules {
         if(j.has("id")){Object id=j.get("id");if(!(id instanceof Integer)&&!(id instanceof Long))throw new JSONException("订阅 ID 应为整数");p.subscriptionId=((Number)id).longValue();}
         if(j.has("schemaVersion")){p.rules.addAll(CustomSkipRule.subscriptionRules(j.toString()));return p;}
         JSONArray apps=j.optJSONArray("apps");if(apps==null)apps=new JSONArray();else apps=new JSONArray(apps.toString());Set<String> seen=new HashSet<>();
+        int localAppCount=apps.length();
+        int expandedRules=0;
+        long expandedChars=0;
         // Expand a shared group only into the ordinary apps the source explicitly enabled.
         for(Object item:list(j.opt("globalGroups"))){
             if(!(item instanceof JSONObject))continue;JSONObject global=(JSONObject)item;
             if(global.optBoolean("matchAnyApp",true)||global.optBoolean("matchLauncher")||global.optBoolean("matchSystemApp")
                     ||global.has("disableIfAppGroupMatch")){p.omitted.add(global.optString("name")+"：未启用不限应用或系统范围");continue;}
+            JSONObject template=new JSONObject(global.toString());
+            for(String k:new String[]{"apps","matchAnyApp","matchLauncher","matchSystemApp"})template.remove(k);
+            String shared=template.toString();
+            int perApp=list(template.opt("rules")).size();
             for(Object target:list(global.opt("apps")))if(target instanceof JSONObject){
                 JSONObject spec=(JSONObject)target;
                 if(!spec.optBoolean("enable",true))continue;
                 if(!allows(spec,"id|enable|activityIds|excludeActivityIds")){p.omitted.add(spec.optString("id")+"：全局组应用范围不能完整转换");continue;}
-                JSONObject scoped=new JSONObject(global.toString());for(String k:new String[]{"apps","matchAnyApp","matchLauncher","matchSystemApp"})scoped.remove(k);
+                if (++expandedRules > 4096 || perApp > 4096-expandedRules)
+                    throw new JSONException("全局规则展开后超过 4096 项");
+                expandedRules+=perApp;
+                expandedChars+=shared.length()+spec.toString().length();
+                if(expandedChars>4L*1024*1024)throw new JSONException("展开后的共享规则文本超过 4 MiB");
+                JSONObject scoped=new JSONObject(shared);
                 for(String k:new String[]{"activityIds","excludeActivityIds"})if(spec.has(k))scoped.put(k,spec.get(k));
                 apps.put(new JSONObject().put("id",spec.getString("id")).put("groups",new JSONArray().put(scoped)));
             }
@@ -50,7 +62,7 @@ final class CommunityRules {
             for(Object obj:list(app.opt("groups"))){
                 if(!(obj instanceof JSONObject))continue;JSONObject g=(JSONObject)obj;String title=g.optString("name","未命名规则组");
                 boolean enabled=g.optBoolean("enable",true);
-                for(JSONObject cat:categories){
+                if (a < localAppCount) for(JSONObject cat:categories){
                     String prefix=cat.optString("name");if((!prefix.isEmpty()&&title.startsWith(prefix))||
                             g.has("categoryKey")&&g.optInt("categoryKey")==cat.optInt("key",-1)){
                         if(!cat.isNull("enable"))enabled=cat.getBoolean("enable");break;
@@ -62,13 +74,23 @@ final class CommunityRules {
                 }
                 for(Object ro:list(g.opt("rules")))try{
                     JSONObject r=ro instanceof String?new JSONObject().put("matches",ro):(JSONObject)ro;
-                    if(!allows(r,"key|name|desc|matches|anyMatches|excludeMatches|excludeAllMatches|action|"+common)
-                            ||!r.optString("action","click").equals("click"))throw new IllegalArgumentException();
-                    if(Boolean.FALSE.equals(inherit(r,g,"matchRoot")))throw new IllegalArgumentException("仅限事件源的规则不能扩大为整页查询");
+                    for(Iterator<String> keys=r.keys();keys.hasNext();){
+                        String key=keys.next();
+                        if(!key.matches("key|name|desc|matches|anyMatches|excludeMatches|excludeAllMatches|action|"+common))
+                            throw new IllegalArgumentException("无法保留字段 "+key);
+                    }
+                    if(!r.optString("action","click").equals("click"))throw new IllegalArgumentException("仅支持点击控件");
+
+                    Object matchRoot=inherit(r,g,"matchRoot");
+                    if(matchRoot!=null && !(matchRoot instanceof Boolean))throw new IllegalArgumentException("matchRoot 须为开关");
                     JSONArray matches=texts(r.opt("matches")),any=texts(r.opt("anyMatches"));
-                    if(matches.length()==0)throw new IllegalArgumentException("需要一个明确的点击目标");
+                    if(matches.length()==0){
+                        if(any.length()!=1)throw new IllegalArgumentException("需要一个明确的点击目标");
+                        matches=any;
+                        any=new JSONArray();
+                    }
                     String target=matches.getString(matches.length()-1);JSONObject scope=new JSONObject();
-                    if(Boolean.TRUE.equals(inherit(r,g,"matchRoot")))scope.put("root",true);
+                    scope.put("root",Boolean.TRUE.equals(matchRoot));
                     JSONArray required=new JSONArray();for(int n=0;n<matches.length()-1;n++)required.put(matches.getString(n));
                     add(scope,"require",required);add(scope,"any",any);add(scope,"exclude",texts(r.opt("excludeMatches")));
                     add(scope,"excludeAll",texts(r.opt("excludeAllMatches")));
@@ -94,7 +116,7 @@ final class CommunityRules {
                             startup?"":"gkd:"+required.getString(0),false,wait==null?0:(Integer)wait,false,1,1,-1,null);
                     if(scope.length()>0)rule.scope=new RuleScope(scope);
                     if(seen.add(key(rule)))p.rules.add(rule);
-                }catch(JSONException|RuntimeException e){p.omitted.add(title+"：规则含不支持的选择条件或动作");}
+                }catch(JSONException|RuntimeException e){p.omitted.add(title+"："+(e.getMessage()==null?"不支持的条件或格式":e.getMessage()));}
             }
         }
         return p;
@@ -104,13 +126,16 @@ final class CommunityRules {
     }
     private static Object inherit(JSONObject r,JSONObject g,String k){return r.has(k)?r.opt(k):g.opt(k);}
     private static void add(JSONObject o,String k,JSONArray a)throws JSONException{if(a.length()>0)o.put(k,a);}
-    static String key(CustomSkipRule r){return CustomSkipRule.export(Collections.singletonList(r));}
+    static String key(CustomSkipRule r){return CustomSkipRule.export(Collections.singletonList(r.withPaused(false)));}
     static List<CustomSkipRule> active(JSONObject sources,List<CustomSkipRule> local){
         List<CustomSkipRule> out=new ArrayList<>(local);Set<String> seen=new HashSet<>();for(CustomSkipRule r:local)seen.add(key(r));
         List<String> addresses=new ArrayList<>();sources.keys().forEachRemaining(addresses::add);Collections.sort(addresses);
         for(String url:addresses){JSONObject src=sources.optJSONObject(url);if(src==null||!src.optBoolean("enabled"))continue;
             Set<String> disabled=disabled(src);
-            for(CustomSkipRule r:CustomSkipRule.subscriptionRules(src.optString("rules"))){r.fromSubscription=true;String id=key(r);if(!disabled.contains(id)&&seen.add(id))out.add(r);}}
+            List<CustomSkipRule> imported;
+            try{imported=CustomSkipRule.subscriptionRules(src.optString("rules"));}
+            catch(IllegalArgumentException unreadable){continue;}
+            for(CustomSkipRule r:imported){r.fromSubscription=true;String id=key(r);if(!disabled.contains(id)&&seen.add(id))out.add(r);}}
         return out;
     }
     static Set<String> disabled(JSONObject src){
@@ -118,11 +143,43 @@ final class CommunityRules {
     }
     static JSONObject update(JSONObject old,JSONObject next)throws JSONException{
         if(old==null)return next;
-        next.put("checkUpdates",old.optBoolean("checkUpdates",false));next.put("checked",old.optLong("checked",0));next.put("enabled",old.optBoolean("enabled",true));next.put("disabled",old.optJSONArray("disabled"));
+        next.put("checkUpdates",old.optBoolean("checkUpdates",false));next.put("checked",old.optLong("checked",0));next.put("enabled",old.optBoolean("enabled",true));next.put("disabled",continuingChoices(old,next));
         if(!next.getString("rules").equals(old.getString("rules"))){
             JSONObject backup=new JSONObject(old.toString());backup.remove("previous");next.put("previous",backup);
         }else next.put("previous",old.optJSONObject("previous"));
         return next;
+    }
+    // Prior releases omitted the default event scope from stored GKD rules.
+    private static String priorKey(CustomSkipRule rule)throws JSONException{
+        if(rule.scope==null || !rule.scope.eventScoped)return key(rule);
+        JSONObject doc=new JSONObject(key(rule));
+        JSONObject row=doc.getJSONArray("rules").getJSONObject(0);
+        JSONObject scope=row.getJSONObject("scope");
+        scope.remove("root");
+        if(scope.length()==0)row.remove("scope");
+        return doc.toString(2);
+    }
+
+    private static JSONArray continuingChoices(JSONObject from,JSONObject to)throws JSONException{
+        Set<String> off=disabled(from);
+        Map<String,Boolean> oldChoices=new HashMap<>();
+        for(CustomSkipRule old:CustomSkipRule.subscriptionRules(from.getString("rules")))
+            oldChoices.put(priorKey(old),off.contains(key(old)));
+        for(CustomSkipRule rule:CustomSkipRule.subscriptionRules(to.getString("rules"))){
+            Boolean disabled=oldChoices.get(priorKey(rule));
+            if(Boolean.TRUE.equals(disabled))off.add(key(rule));
+            if(Boolean.FALSE.equals(disabled))off.remove(key(rule));
+        }
+        return new JSONArray(off);
+    }
+    static JSONObject restore(JSONObject current)throws JSONException{
+        JSONObject backup=new JSONObject(current.getJSONObject("previous").toString());
+        backup.put("enabled",current.optBoolean("enabled",true));
+        backup.put("disabled",continuingChoices(current,backup));
+        backup.put("checkUpdates",current.optBoolean("checkUpdates",false));
+        backup.put("checked",current.optLong("checked",0));
+        backup.remove("available");
+        return backup;
     }
     static JSONObject stage(Preview p,boolean enable) throws JSONException {
         // Re-parse before persisting: invalid documents cannot replace the last good snapshot.

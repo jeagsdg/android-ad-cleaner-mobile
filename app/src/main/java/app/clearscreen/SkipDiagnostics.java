@@ -22,6 +22,8 @@ final class SkipDiagnostics {
     enum Phase {
         WAITING("等待打开应用"),
         WINDOW_UNAVAILABLE("暂未读到应用窗口"),
+        WINDOW_MISMATCH("活动窗口与待处理窗口不同"),
+        COUNTDOWN_LOCKED("广告仍在倒计时，等待独立可用的出口"),
         TREE_UNAVAILABLE("控件树无法完整读取或超出读取上限"),
         NO_READABLE_TARGET("未发现可读的跳过控件"),
         PAGE_MISMATCH("尚未确认规则要求的页面"),
@@ -42,6 +44,8 @@ final class SkipDiagnostics {
         REJECTED("系统未接受点击或手势"),
         CANCELLED("系统取消了手势"),
         UNCONFIRMED("已尝试点击，未确认关闭"),
+        NATURAL_END_POSSIBLE("已接近倒计时结束，无法区分自然结束与自动关闭"),
+        NEXT_STAGE("出现另一层已识别的独立开屏广告"),
         TARGET_STILL_VISIBLE("操作已发出，目标控件仍可见"),
         LEFT_WINDOW("操作已发出，离开目标页面前未能确认结果"),
         SERVICE_DISCONNECTED("操作已发出，无障碍连接中断，未能确认结果"),

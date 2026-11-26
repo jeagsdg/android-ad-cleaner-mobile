@@ -16,7 +16,7 @@ public class RuleUpgradeTest {
         AccessibilityNodeInfo n=PlayerAdTest.node(p,pkg,cls,text,click,b);if(id!=null)n.setViewIdResourceName(pkg+":id/"+id);return n;
     }
     @Test public void gkdWindowConditionsSurviveStorageAndActuallySuppressActions() throws Exception{
-        String source="{// 注释\n name:'示例', version:2, apps:[{id:'example.reader',groups:[{name:'开屏广告',activityIds:['.Home'],excludeActivityIds:['.Home.Settings'],matchDelay:300,matchTime:700,rules:[{matches:[\"[vid='mark']\",\"[vid='exit']\"],anyMatches:[\"[text='广告']\",\"[desc='广告']\"],excludeMatches:[\"[vid='editor']\"]},],},],},],}";
+        String source="{// 注释\n name:'示例', version:2, apps:[{id:'example.reader',groups:[{name:'开屏广告',matchRoot:true,activityIds:['.Home'],excludeActivityIds:['.Home.Settings'],matchDelay:300,matchTime:700,rules:[{matches:[\"[vid='mark']\",\"[vid='exit']\"],anyMatches:[\"[text='广告']\",\"[desc='广告']\"],excludeMatches:[\"[vid='editor']\"]},],},],},],}";
         CommunityRules.Preview p=CommunityRules.parse(source);assertEquals(1,p.rules.size());
         JSONObject stored=CommunityRules.stage(p,true);List<CustomSkipRule> rules=CommunityRules.active(new JSONObject().put("site",stored),Collections.emptyList());
         CustomSkipRule rule=rules.get(0);assertNotNull(rule.scope);
@@ -44,8 +44,21 @@ public class RuleUpgradeTest {
         CommunityRules.Preview a=new CommunityRules.Preview();a.name="订阅";a.version=1;
         a.rules.add(new CustomSkipRule(pkg,"","splash","","关闭广告",""));JSONObject old=CommunityRules.stage(a,true);
         old.put("disabled",new JSONArray().put(CommunityRules.key(a.rules.get(0))));a.version=2;a.rules.add(new CustomSkipRule(pkg,"","splash","","跳过广告",""));
+        old.put("checkUpdates",true);
         JSONObject current=CommunityRules.update(old,CommunityRules.stage(a,true));assertEquals(1,current.getJSONObject("previous").getInt("version"));
         assertEquals(1,CommunityRules.active(new JSONObject().put("x",current),Collections.emptyList()).size());
+        current.put("checkUpdates",false).put("enabled",false);
+        JSONObject restored=CommunityRules.restore(current);
+        assertEquals(1,restored.getInt("version"));
+        assertFalse(restored.getBoolean("enabled"));
+        assertFalse(restored.getBoolean("checkUpdates"));
+    }
+    @Test public void unreadableSavedSourceDoesNotDisableOtherSubscriptions() throws Exception {
+        CommunityRules.Preview good=new CommunityRules.Preview();good.name="working";
+        good.rules.add(new CustomSkipRule(pkg,"","splash","","跳过广告",""));
+        JSONObject saved=new JSONObject().put("z",CommunityRules.stage(good,true))
+                .put("a",new JSONObject().put("enabled",true).put("rules",""));
+        assertEquals(1,CommunityRules.active(saved,Collections.emptyList()).size());
     }
     @Test public void countingAnAppRequiresOptInAndClearingDetailsForgetsItsStatistics(){
         Store s=new Store(RuntimeEnvironment.getApplication());s.setKeepSkipDetails(false);s.recordSplash(pkg,true);assertEquals(0,s.confirmedFor(pkg,"splash"));

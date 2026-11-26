@@ -1,4 +1,5 @@
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,6 +8,7 @@ import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -21,6 +23,19 @@ class SignRulePack {
             System.exit(1);
         }
         try {
+            if ("--verify".equals(args[0])) {
+                String[] fields = new String(payload, StandardCharsets.US_ASCII).split("\\n", -1);
+                if (fields.length != 3) throw new IllegalArgumentException("invalid envelope");
+                byte[] der = Base64.getDecoder().decode(fields[0]);
+                if (!args[1].equals(HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(der))))
+                    throw new IllegalArgumentException("wrong certificate");
+                Certificate cert = CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(der));
+                Signature proof = Signature.getInstance("SHA256withRSA");
+                proof.initVerify(cert);
+                proof.update(Base64.getDecoder().decode(fields[1]));
+                if (!proof.verify(Base64.getDecoder().decode(fields[2]))) throw new IllegalArgumentException("invalid signature");
+                return;
+            }
             Path project = Path.of(args[0]);
             String certificatePin = args[1];
             Properties settings = new Properties();
@@ -57,7 +72,7 @@ class SignRulePack {
             }
         } catch (Exception e) {
             // Avoid leaking paths or private signing configuration in build output.
-            System.err.println("Unable to sign with the pinned release certificate. Check local signing configuration.");
+            System.err.println("Rule signature operation failed. Check the envelope or local signing configuration.");
             System.exit(1);
         }
     }

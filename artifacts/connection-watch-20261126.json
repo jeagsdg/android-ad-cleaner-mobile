@@ -1,0 +1,59 @@
+{
+  "date": "2026-11-26",
+  "testClass": "app.clearscreen.AccessibilityRecoveryTest",
+  "framework": "Robolectric 4.12.2",
+  "baseline": {
+    "regressionExecutions": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "candidate": {
+    "regressionExecutions": 37,
+    "measurementExecutions": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "androidApis": [
+      24,
+      26,
+      34
+    ]
+  },
+  "timedConnectionChecks": {
+    "sdk": 34,
+    "virtualMinutes": 30,
+    "scope": "Handler recoveryCheck callback only; no wall-clock waiting, screen wake, foreground visit or setting change within the simulated interval",
+    "before": {
+      "connected": 59,
+      "unbound": 59
+    },
+    "after": {
+      "connected": 0,
+      "unbound": 7
+    }
+  },
+  "physicalHyperOsDeviceTested": false,
+  "sourceFiles": [
+    {
+      "file": "app/src/main/java/app/clearscreen/AccessibilityRecovery.java",
+      "beforeSha256": "05C88A098CFD09337A0232A2CE52FD557DF5A287368D87D18CF6D51AED21762B",
+      "afterSha256": "901EB6ED1598FE46AB8843BDE9768BC8D0C7AF1F06849EFC5ED49B69A92B28D0"
+    },
+    {
+      "file": "app/src/main/java/app/clearscreen/AccessibilityReliability.java",
+      "beforeSha256": "37F5545FE98CCD5687D4A4DE5D056AD6405E5AF84AF9230DCCBD5424638DF0DF",
+      "afterSha256": "373E050A30109DF4CA22764ECEEF4DFF3E9EE19BE8B3BC940AB1F6F9F8AA84BD"
+    },
+    {
+      "file": "app/src/main/java/app/clearscreen/PermissionAccess.java",
+      "beforeSha256": "7A6FE9E5EE80161AADA240B637CA14B70FA539C0C0C6BD8A1C9280FD3F2242D4",
+      "afterSha256": "52F542396FDDCA3F7AB49AC03982D2030278B77E252B3AEFD7AB38C032E66467"
+    },
+    {
+      "file": "app/src/main/java/app/clearscreen/SkipKeepAliveService.java",
+      "beforeSha256": "28C67681141673B873B204EF88E6AA597FD164BB0F638505D69F073DD3DA3055",
+      "afterSha256": "1EE3F2924C942AD858082A07A370CAC7BB12EFB8AE70C9031D51D03F5011A387"
+    }
+  ]
+}

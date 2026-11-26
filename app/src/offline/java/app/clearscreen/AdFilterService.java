@@ -9,6 +9,10 @@ final class AdFilterService {
 
     private AdFilterService() { }
 
+    static void saveBypassedApps(Context context,java.util.Set<String> packages,java.util.function.Consumer<String> result){
+        new FilterStore(context).setBypassedApps(packages);
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(()->result.accept("已保存"));
+    }
     static boolean running() { return false; }
     static String health() { return "offline build"; }
     static long blocked(Context context) { return 0; }

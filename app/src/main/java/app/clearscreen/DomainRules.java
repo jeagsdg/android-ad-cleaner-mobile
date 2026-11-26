@@ -21,9 +21,16 @@ final class DomainRules {
     }
     DomainRules(String... values){hosts=values.clone();Arrays.sort(hosts);}
     boolean blocked(String domain,Set<String> allowed){return !allowed.contains(domain)&&contains(domain);}
-    boolean contains(String domain){return Arrays.binarySearch(hosts,domain)>=0;}
+    boolean contains(String domain){return canBlockHost(domain)&&Arrays.binarySearch(hosts,domain)>=0;}
     static boolean canBlockHost(String domain){
-        return domain != null && !PROTECTED_HOSTS.contains(domain) && !domain.matches("[0-9.]+");
+        return domain != null && !PROTECTED_HOSTS.contains(domain) && !numeric(domain);
+    }
+    private static boolean numeric(String host){
+        for(int i=0;i<host.length();i++){
+            char c=host.charAt(i);
+            if(c!='.'&&(c<'0'||c>'9'))return false;
+        }
+        return true;
     }
     int size(){return hosts.length;}
     static String normalize(String value){

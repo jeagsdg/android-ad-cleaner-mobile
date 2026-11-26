@@ -105,6 +105,14 @@ final class PopupAdRules {
     boolean hasRules(String pkg, String activity) {
         return hasRules(pkg, activity, 0);
     }
+    boolean hasExplicitScope(String pkg,String page) {
+        if(page.isEmpty()||protectedActivity(page))return false;
+        for(Rule rule:byPackage.getOrDefault(pkg,Collections.emptyList())){
+            JSONArray include=rule.entry.optJSONArray("activityIds");
+            if(include!=null&&include.length()>0&&rule.activityMatches(page))return true;
+        }
+        return false;
+    }
 
     boolean hasRules(String pkg, String activity, long elapsedMs) {
         return hasRules(pkg, activity, elapsedMs, rule -> true);
@@ -192,7 +200,8 @@ final class PopupAdRules {
             if (!node.isVisibleToUser()) continue;
             if (SplashSkipper.unsafeWindowNode(node, false)) return false;
             String text = label(node.getText()), desc = label(node.getContentDescription());
-            if (CustomSkipRule.sensitiveText(text) && !LiveRoomAd.passiveChatNotice(node,hit.target)) return false;
+            if (CustomSkipRule.sensitiveText(text) && !LiveRoomAd.passiveChatNotice(node,hit.target)
+                    && !separateAdDisclosure(node,text,hit.target)) return false;
             if (CustomSkipRule.sensitiveText(desc) && !isWeiboNewsDescription(node, desc, hit)) return false;
         }
         return true;
@@ -219,6 +228,32 @@ final class PopupAdRules {
         String remaining = desc.replace("支付宝也将全面启动鸿蒙原生应用开发了", "")
                 .replace("支付宝将基于HarmonyOS NEXT版本开发应用", "");
         return !remaining.equals(desc) && !CustomSkipRule.sensitiveText(remaining);
+    }
+
+    // Snapshot 13228423 has two distinct advertisements on the same download page.
+    // The upper creative's passive legal notice must never be treated as the lower banner's button.
+    static boolean separateAdDisclosure(AccessibilityNodeInfo notice,String text,AccessibilityNodeInfo target) {
+        String prefix="com.xunlei.downloadprovider:id/";
+        if(!"com.xunlei.downloadprovider".contentEquals(String.valueOf(target.getPackageName()))
+                ||!android.text.TextUtils.equals(target.getPackageName(),notice.getPackageName())
+                ||notice.getWindowId()!=target.getWindowId()
+                ||!(prefix+"close_iv").equals(target.getViewIdResourceName())
+                ||!(prefix+"stop_ad_app_infos").equals(notice.getViewIdResourceName())
+                ||notice.isEditable()||notice.isClickable()||notice.isCheckable()||notice.isFocused()
+                ||notice.isAccessibilityFocused()||notice.getChildCount()!=0
+                ||!android.text.TextUtils.equals("android.widget.TextView",notice.getClassName()))return false;
+        String legal=" | 权限详情 > | 隐私协议 > | 功能介绍 >";
+        if(!text.startsWith("应用名称：")||!text.contains(" | 应用版本：")||!text.contains(" | 开发者：")
+                ||!text.endsWith(legal)||CustomSkipRule.sensitiveText(text.substring(0,text.length()-legal.length())))return false;
+        AccessibilityNodeInfo creative=notice.getParent(),banner=target.getParent();
+        if(creative==null||banner==null||creative.getParent()==null||banner.getParent()==null
+                ||!(prefix+"ad_container").equals(creative.getParent().getViewIdResourceName())
+                ||!(prefix+"play_detail_ad_container").equals(banner.getParent().getViewIdResourceName()))return false;
+        Rect upper=new Rect(),lower=new Rect(),button=new Rect(),copy=new Rect();
+        creative.getBoundsInScreen(upper);banner.getBoundsInScreen(lower);
+        notice.getBoundsInScreen(copy);target.getBoundsInScreen(button);
+        return !copy.isEmpty()&&!button.isEmpty()&&upper.contains(copy)&&lower.contains(button)
+                &&!Rect.intersects(upper,lower);
     }
 
     private static String label(CharSequence value) {

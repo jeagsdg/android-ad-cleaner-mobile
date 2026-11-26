@@ -85,6 +85,8 @@ final class RuleDirectoryPage {
         screen.header("", "精选规则", packageScope.isEmpty() ? "按应用查找经过审核的开屏和弹窗规则。"
                 : coverage == null ? packageScope : coverage.name);
         showPack(state);
+        screen.linkAction(screen.body,"新增本地规则",()->screen.addRuleForApp(packageScope));
+        screen.linkAction(screen.body,"管理自定义规则",screen::openCustomRules);
         screen.linkAction(screen.body,"我的订阅 · 导入与更新",()->screen.showPage(MainActivity.COMMUNITY_RULES));
         LinearLayout controls = screen.card(screen.body);
         controls.setFocusableInTouchMode(true);
@@ -136,7 +138,16 @@ final class RuleDirectoryPage {
         }
         if (!packNotice.isEmpty()) screen.paragraph(card, packNotice);
         if (PACK_WORK.get()) screen.paragraph(card, "正在处理规则包…");
-        else screen.action(card, "检查规则更新", true, () -> refresh(true));
+        else {
+            RulePacks packs=RulePacks.get(screen);
+            RulePacks.Preview preview=packs.preview();
+            if(preview==null)screen.action(card,"检查规则更新",true,()->refresh(true));
+            else screen.action(card,"查看规则差异",true,()->new AlertDialog.Builder(screen)
+                    .setTitle("规则包 "+preview.candidate.version).setMessage(preview.description)
+                    .setNegativeButton("暂不应用",null)
+                    .setPositiveButton("应用此版本",(dialog,which)->packWork(()->packs.apply(preview)==RulePacks.Refresh.UPDATED
+                            ?"规则已更新，下次打开目标应用时生效。":"未应用这份预览，请重新检查。")).show());
+        }
         if (state.canRollback && !PACK_WORK.get()) {
             screen.linkAction(card, "返回" + packName(state.previousVersion), () -> rollback(state.previousVersion));
         }
@@ -236,8 +247,9 @@ final class RuleDirectoryPage {
             boolean failed = result == RulePacks.Refresh.FAILED || result == RulePacks.Refresh.UNAVAILABLE;
             settings(app).edit().putLong(NEXT_CHECK, System.currentTimeMillis() +
                     (failed ? FAILED_CHECK_INTERVAL : RULE_CHECK_INTERVAL)).apply();
-            if (!manual && result != RulePacks.Refresh.UPDATED) return "";
+            if (!manual && result != RulePacks.Refresh.AVAILABLE) return "";
             switch (result) {
+                case AVAILABLE: return "发现已验证签名的更新，查看差异后可应用。";
                 case UPDATED: return "规则已更新，下次打开目标应用时生效。";
                 case CURRENT: return "正在使用最新规则。";
                 case ROLLED_BACK: return "已退回旧规则。新版本发布后可再次更新。";

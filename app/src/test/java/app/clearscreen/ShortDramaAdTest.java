@@ -94,6 +94,17 @@ public class ShortDramaAdTest {
         Fixture f = new Fixture(false);
         assertEquals(f.pager, new PopupAdRules(f.service).find(f.root, ACTIVITY, f.screen).target);
     }
+    @Test public void delayedReturnToPlaybackIsVerifiedWithoutSendingAnotherScroll(){
+        Fixture f=new Fixture();
+        try{
+            shadowOf(f.pager).setOnPerformActionListener((action,args)->true);
+            f.open();f.idle(1300);
+            assertEquals(0,f.store.popupCount());
+            f.showPlayback();f.idle(1200);
+            assertEquals(1,f.store.popupCount());
+            assertEquals(List.of(ShortDramaAd.PAGE_DOWN),shadowOf(f.pager).getPerformedActions());
+        }finally{f.skipper.close();}
+    }
 
     @Test public void respectsScrollingBeforeDispatchAndDoesNotRetryAnActionTheAppRejected() {
         Fixture f = new Fixture();
@@ -145,6 +156,10 @@ public class ShortDramaAdTest {
         }
 
         Fixture(boolean includesList) {
+            this(includesList, 0);
+        }
+
+        Fixture(boolean includesList, int extraLayoutDepth) {
             Point size = new Point();
             service.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY).getRealSize(size);
             screen = new Rect(0, 0, size.x, size.y);
@@ -156,6 +171,8 @@ public class ShortDramaAdTest {
             list = includesList ? add(pager, "androidx.recyclerview.widget.RecyclerView", null, null) : pager;
             ad = add(list, "android.widget.FrameLayout", null, null);
             AccessibilityNodeInfo wrap = add(ad, "android.widget.FrameLayout", null, null);
+            for (int i = 0; i < extraLayoutDepth; i++)
+                wrap = add(wrap, "android.widget.FrameLayout", null, null);
             AccessibilityNodeInfo card = add(wrap, "android.view.ViewGroup", null, null);
             AccessibilityNodeInfo artwork = add(card, "android.widget.FrameLayout", "container", null);
             for (int i = 0; i < 6; i++) artwork = add(artwork, "android.view.ViewGroup", null, null);
@@ -227,5 +244,16 @@ public class ShortDramaAdTest {
         void idle(long millis) {
             shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(millis));
         }
+    }
+
+    @Test public void aLayoutWrapperDoesNotChangeTheReadyExitOrUnlockALockedOne() {
+        Fixture f = new Fixture(true, 2);
+        PopupAdRules rules = new PopupAdRules(f.service);
+        assertNotNull(rules.find(f.root, ACTIVITY, f.screen));
+        f.hint.setText("15秒后可继续上滑观看短剧");
+        assertNull(rules.find(f.root, ACTIVITY, f.screen));
+        f.hint.setText("上滑继续观看短剧");
+        f.badge.setVisibleToUser(false);
+        assertNull(rules.find(f.root, ACTIVITY, f.screen));
     }
 }

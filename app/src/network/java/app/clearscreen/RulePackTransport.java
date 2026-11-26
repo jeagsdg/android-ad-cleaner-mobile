@@ -13,6 +13,11 @@ final class RulePackTransport {
         String path = RulePack.OFFICIAL_PATH;
         IOException unavailable = new IOException("无法获取有效的官方规则包");
         try {
+            return decoder.verify(GithubReleaseFiles.readDirect(RulePack.DELTA_PATH,true,limit));
+        } catch(IOException e) {
+            unavailable.addSuppressed(e);
+        }
+        try {
             return decoder.verify(GithubReleaseFiles.readDirect(path, true, limit));
         } catch (IOException e) {
             unavailable.addSuppressed(e);

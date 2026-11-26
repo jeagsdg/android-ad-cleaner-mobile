@@ -27,13 +27,17 @@ final class AccessibilityRecovery {
     }
 
     static void takeOwnership(Context context) {
-        SharedPreferences.Editor editor = sessionPrefs(context).edit()
+        SharedPreferences prefs = sessionPrefs(context);
+        SharedPreferences.Editor editor = prefs.edit()
                 .putString("state", "WATCHING")
                 .remove("last-attempt")
                 .putInt("boot-count", bootCount(context))
                 .putInt("owner-pid", Process.myPid())
                 .putLong("owner-start", Process.getStartElapsedRealtime())
                 .putLong("owner-since", System.currentTimeMillis());
+        if (!watching(context)) {
+            editor.putBoolean("enabled-ordinary-keepalive", !new Store(context).skipKeepAliveEnabled());
+        }
         if (!editor.commit()) throw new IllegalStateException("Could not save accessibility recovery session");
     }
 
@@ -43,12 +47,17 @@ final class AccessibilityRecovery {
         int currentBoot = bootCount(context);
         if (previousBoot >= 0 && currentBoot >= 0 && previousBoot != currentBoot) return Resume.DISARM;
         int ownerPid = prefs.getInt("owner-pid", -1);
-        if (ownerPid == Process.myPid()
-                && prefs.getLong("owner-start", -1) == Process.getStartElapsedRealtime()) return Resume.ALLOWED;
+        if (ownedByCurrentProcess(context)) return Resume.ALLOWED;
         if (previousBoot < 0 || currentBoot < 0 || ownerPid <= 0) {
             return Resume.UNVERIFIED;
         }
         return resumeAfterProcessExit(context, ownerPid, prefs.getLong("owner-since", Long.MAX_VALUE));
+    }
+
+    static boolean ownedByCurrentProcess(Context context) {
+        SharedPreferences prefs = sessionPrefs(context);
+        return prefs.getInt("owner-pid", -1) == Process.myPid()
+                && prefs.getLong("owner-start", -1) == Process.getStartElapsedRealtime();
     }
 
     private static Resume resumeAfterProcessExit(Context context, int ownerPid, long ownedSince) {
@@ -92,7 +101,11 @@ final class AccessibilityRecovery {
     }
 
     static void clearSession(Context context) {
-        if (!sessionPrefs(context).edit().clear().commit()) {
+        SharedPreferences prefs = sessionPrefs(context);
+        if (prefs.getBoolean("enabled-ordinary-keepalive", false)) {
+            new Store(context).setSkipKeepAliveEnabled(false);
+        }
+        if (!prefs.edit().clear().commit()) {
             Log.w("AccessibilityRecovery", "Could not clear accessibility recovery session");
         }
     }

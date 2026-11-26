@@ -50,6 +50,8 @@ final class LegacySelector {
         return trimmed.replace(" ", "");
     }
 
+    boolean targetAtEnd(){return structured==null || structured.targetAtEnd();}
+
     boolean usesBounds() { return bounds != null; }
 
     boolean matches(AccessibilityNodeInfo node) {
@@ -61,9 +63,13 @@ final class LegacySelector {
         }
         String text = clean(node.getText());
         String desc = clean(node.getContentDescription());
-        if (!fullId.isEmpty()) return matchesResource(node);
-        if (matchesResource(node)) return true;
-        return matchesText(text) || matchesText(desc);
+        return matchesAttributes(clean(node.getViewIdResourceName()),text,desc);
+    }
+
+    // The sample verifier uses the same literal and resource-ID semantics as the live rule.
+    boolean matchesAttributes(String id,String text,String desc) {
+        if (!fullId.isEmpty()) return fullId.equals(id);
+        return (!idSuffix.isEmpty() && id.endsWith(idSuffix)) || matchesText(text) || matchesText(desc);
     }
 
     boolean matchesResource(AccessibilityNodeInfo node) {

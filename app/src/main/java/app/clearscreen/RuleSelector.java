@@ -8,7 +8,8 @@ import org.json.*;
 final class RuleSelector {
     private static final Pattern NODE=Pattern.compile("(@)?(\\*|[A-Za-z][A-Za-z0-9_.]*)?");
     private static final Pattern REL=Pattern.compile("(<<|[<>+\\-])(n|[1-9][0-9]*|\\([1-9][0-9]*(?:,[1-9][0-9]*)*\\))?\\s+");
-    private static final Pattern TEST=Pattern.compile("\\s*(text\\.length|desc\\.length|childCount|index|depth|name|clickable|visibleToUser|text|desc|id|vid)\\s*(\\^=|\\$=|\\*=|!=|<=|>=|=|<|>)\\s*(?:\"([^\"\\\\]*)\"|'([^'\\\\]*)'|(null|true|false|[0-9]+))\\s*");
+    private static final Pattern TEST=Pattern.compile("\\s*(text\\.length|desc\\.length|childCount|index|depth|name|clickable|visibleToUser|text|desc|id|vid)\\s*(\\^=|\\$=|\\*=|~=|!=|<=|>=|=|<|>)\\s*(?:\"([^\"\\\\]*)\"|'([^'\\\\]*)'|(null|true|false|[0-9]+))\\s*");
+    private static final Pattern LITERAL_REGEX=Pattern.compile("\\^?([\\p{L}\\p{N} _:/-]{1,120})\\$?");
     final JSONObject compiled;
     final String expression;
     static boolean structured(String s){return s.startsWith("gkd:");}
@@ -24,7 +25,15 @@ final class RuleSelector {
                     at++;JSONArray alternatives=new JSONArray(), conjunction=new JSONArray();
                     while(true){Matcher t=TEST.matcher(s).region(at,s.length());if(!t.lookingAt())throw syntax(at);
                         String f=t.group(1),op=t.group(2),v=t.group(5);Object operand;
-                        if(f.equals("clickable")||f.equals("visibleToUser")){
+                        if(op.equals("~=")){
+                            // GKD uses full-string regex matches. Compile the literal subset to equality.
+                            String regex=t.group(3)!=null?t.group(3):t.group(4);
+                            if(!f.matches("text|desc|vid|id|name")||regex==null)throw syntax(at);
+                            Matcher literal=LITERAL_REGEX.matcher(regex);
+                            if(!literal.matches())throw syntax(at);
+                            op="=";
+                            operand=literal.group(1);
+                        }else if(f.equals("clickable")||f.equals("visibleToUser")){
                             if(!(op.equals("=")||op.equals("!="))||!("true".equals(v)||"false".equals(v)))throw syntax(at);
                             operand=Boolean.valueOf(v);
                         }else if(f.endsWith(".length")||f.equals("childCount")||f.equals("index")||f.equals("depth")){
@@ -34,7 +43,8 @@ final class RuleSelector {
                             if(!op.matches("=|!=|\\^=|\\$=|\\*=")||(v!=null&&!(v.equals("null")&&(op.equals("=")||op.equals("!=")))))throw syntax(at);
                             operand=v!=null?JSONObject.NULL:t.group(3)!=null?t.group(3):t.group(4);
                         }
-                        conjunction.put(new JSONArray().put(f).put(op).put(operand));at=t.end();
+                        conjunction.put(new JSONArray().put(f).put(op).put(operand));
+                        at=t.end();
                         if(s.startsWith("&&",at)){at+=2;continue;}
                         alternatives.put(conjunction);
                         if(s.startsWith("||",at)){at+=2;conjunction=new JSONArray();continue;}
@@ -56,6 +66,7 @@ final class RuleSelector {
             compiled=new JSONObject().put("path",path).put("relations",relations).put("target",target<0?path.length()-1:target);
         }catch(JSONException|NumberFormatException e){throw syntax(at);}
     }
+    boolean targetAtEnd(){return compiled.optInt("target")==compiled.optJSONArray("path").length()-1;}
     boolean matches(AccessibilityNodeInfo node){return SplashRules.targetMatches(String.valueOf(node.getPackageName()),node,compiled,true);}
     private static IllegalArgumentException syntax(int i){return new IllegalArgumentException("选择器第 "+(i+1)+" 个字符附近的条件不支持");}
 }

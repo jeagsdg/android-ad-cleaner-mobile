@@ -58,6 +58,15 @@ final class SystemCleanPreviewPage {
         Button apply = screen.button("应用所选改动", true, () -> apply(service, preview, changes));
         if (!changes.isEmpty()) {
             screen.sectionTitle("可调整的开关");
+            if(changes.size()>1){
+                boolean none=changes.stream().allMatch(item->unselected.contains(item.key()));
+                screen.linkAction(summary,none?"选中所有可调整项":"取消全选",()->{
+                    for(SystemCleanPreview.Entry item:changes){
+                        if(none)unselected.remove(item.key());else unselected.add(item.key());
+                    }
+                    screen.render();
+                });
+            }
             for (SystemCleanPreview.Entry item : changes) {
                 LinearLayout row = itemCard(item);
                 screen.historyToggle(row, state(item.before) + " → " + state(item.desired),

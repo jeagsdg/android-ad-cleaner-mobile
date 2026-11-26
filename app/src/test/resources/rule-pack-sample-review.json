@@ -1,0 +1,227 @@
+{
+  "catalog": {
+    "package": "app.clearscreen",
+    "schema": 1,
+    "version": 7,
+    "minVersionCode": 27,
+    "maxVersionCode": 27,
+    "splash": [
+      {
+        "id": "official:fixture",
+        "package": "example.audit",
+        "name": "Test",
+        "group": "Fixture",
+        "evidence": "label",
+        "sourceUrl": "https://github.com/jeagsdg/android-ad-cleaner-mobile/blob/main/README.md",
+        "exactActivity": true,
+        "activityIds": [
+          "example.audit.Page"
+        ],
+        "targetSelector": {
+          "path": [
+            {
+              "class": "TextView",
+              "tests": [
+                [
+                  [
+                    [
+                      "id",
+                      "=",
+                      "example.audit:id/exit"
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "text",
+                      "=",
+                      "关闭广告"
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "clickable",
+                      "=",
+                      true
+                    ]
+                  ]
+                ],
+                [
+                  [
+                    [
+                      "childCount",
+                      "=",
+                      0
+                    ]
+                  ]
+                ]
+              ]
+            }
+          ],
+          "relations": [],
+          "target": 0
+        },
+        "required": [
+          {
+            "path": [
+              {
+                "class": "TextView",
+                "tests": [
+                  [
+                    [
+                      [
+                        "id",
+                        "=",
+                        "example.audit:id/badge"
+                      ]
+                    ]
+                  ],
+                  [
+                    [
+                      [
+                        "text",
+                        "=",
+                        "广告"
+                      ]
+                    ]
+                  ]
+                ]
+              }
+            ],
+            "relations": [],
+            "target": 0
+          }
+        ],
+        "requireClickable": true,
+        "matchTime": 3000
+      }
+    ],
+    "popup": []
+  },
+  "cases": [
+    {
+      "id": "official:fixture",
+      "positive": {
+        "schema": "clearscreen.sample.1",
+        "package": "example.audit",
+        "activity": "example.audit.Page",
+        "complete": true,
+        "nodes": [
+          {
+            "class": "FrameLayout",
+            "id": "example.audit:id/page",
+            "text": "",
+            "textKnown": true,
+            "descKnown": true,
+            "visible": true,
+            "clickable": false,
+            "bounds": [
+              10,
+              10,
+              110,
+              110
+            ],
+            "children": [
+              1,
+              2
+            ]
+          },
+          {
+            "class": "android.widget.TextView",
+            "id": "example.audit:id/exit",
+            "text": "关闭广告",
+            "textKnown": true,
+            "descKnown": true,
+            "visible": true,
+            "clickable": true,
+            "bounds": [
+              10,
+              10,
+              110,
+              110
+            ],
+            "children": []
+          },
+          {
+            "class": "android.widget.TextView",
+            "id": "example.audit:id/badge",
+            "text": "广告",
+            "textKnown": true,
+            "descKnown": true,
+            "visible": true,
+            "clickable": false,
+            "bounds": [
+              10,
+              10,
+              110,
+              110
+            ],
+            "children": []
+          }
+        ]
+      },
+      "negative": {
+        "schema": "clearscreen.sample.1",
+        "package": "example.audit",
+        "activity": "example.audit.Page",
+        "complete": true,
+        "nodes": [
+          {
+            "class": "FrameLayout",
+            "id": "example.audit:id/page",
+            "text": "",
+            "textKnown": true,
+            "descKnown": true,
+            "visible": true,
+            "clickable": false,
+            "bounds": [
+              10,
+              10,
+              110,
+              110
+            ],
+            "children": [
+              1,
+              2
+            ]
+          },
+          {
+            "class": "android.widget.TextView",
+            "id": "example.audit:id/exit",
+            "text": "关闭广告",
+            "textKnown": true,
+            "descKnown": true,
+            "visible": true,
+            "clickable": true,
+            "bounds": [
+              10,
+              10,
+              110,
+              110
+            ],
+            "children": []
+          },
+          {
+            "class": "android.widget.TextView",
+            "id": "example.audit:id/plain",
+            "text": "",
+            "textKnown": true,
+            "descKnown": true,
+            "visible": true,
+            "clickable": false,
+            "bounds": [
+              10,
+              10,
+              110,
+              110
+            ],
+            "children": []
+          }
+        ]
+      }
+    }
+  ]
+}

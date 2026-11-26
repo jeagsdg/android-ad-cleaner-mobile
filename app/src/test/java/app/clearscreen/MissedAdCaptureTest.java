@@ -127,11 +127,14 @@ public class MissedAdCaptureTest {
             assertFalse(clipboard.hasPrimaryClip());
             find(decor, "预览、复制或保存报告").performClick();
             AlertDialog preview = ShadowAlertDialog.getLatestAlertDialog();
-            String contents = ((TextView) preview.findViewById(android.R.id.message)).getText().toString();
+            android.widget.EditText editor=preview.findViewById(R.id.feedback_report_text);
+            String contents=editor.getText().toString();
             assertTrue(contents.contains("编号：JP-"));
             assertTrue(contents.contains("应用版本：3.3.3"));
             assertTrue(contents.contains("应用版本号：333"));
             assertFalse(contents.contains(OTHER));
+            assertTrue(contents.contains("查看报告时的规则"));
+            editor.setText("仅共享我核对过的部分");
             assertFalse(clipboard.hasPrimaryClip());
             preview.getButton(AlertDialog.BUTTON_NEUTRAL).performClick();
             shadowOf(Looper.getMainLooper()).idle();

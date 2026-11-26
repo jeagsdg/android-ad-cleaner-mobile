@@ -178,13 +178,25 @@ final class PermissionAccess {
             Boolean restricted = backgroundRestricted(context), exempt = batteryExempt(context);
             out.put("backgroundRestricted", restricted == null ? JSONObject.NULL : restricted);
             out.put("batteryOptimizationExempt", exempt == null ? JSONObject.NULL : exempt);
+            PowerManager power = context.getSystemService(PowerManager.class);
+            out.put("powerSaveMode", power == null ? JSONObject.NULL : power.isPowerSaveMode());
+            out.put("deviceIdleMode", power == null ? JSONObject.NULL : power.isDeviceIdleMode());
             out.put("lastAccessibilityEvent", reliabilityEvent(AccessibilityReliability.recentEvent(context)));
             long disconnectedAt = AccessibilityReliability.lastDisconnectionMillis(context);
             out.put("lastAccessibilityDisconnectionTimeMillis", disconnectedAt > 0 ? disconnectedAt : JSONObject.NULL);
+            out.put("observedAccessibilityDisconnections", AccessibilityReliability.observedDisconnects(context));
+            try { out.put("accessibilitySwitchEnabled", AccessibilityRecovery.configured(context)); }
+            catch (SecurityException ignored) { out.put("accessibilitySwitchEnabled", JSONObject.NULL); }
+            out.put("accessibilityServiceConnected", CleanerService.get() != null);
             if (AccessibilityRecovery.supported()) {
-                try { out.put("accessibilitySwitchEnabled", AccessibilityRecovery.configured(context)); }
-                catch (SecurityException ignored) { out.put("accessibilitySwitchEnabled", JSONObject.NULL); }
-                out.put("accessibilityServiceConnected", CleanerService.get() != null);
+                long wait = AccessibilityReliability.lastRecoveryWaitMillis(context);
+                out.put("lastObservedRecoveryWaitMillis", wait >= 0 ? wait : JSONObject.NULL);
+                String trigger = AccessibilityReliability.lastWatchResumeTrigger(context);
+                out.put("lastWatchResumeTrigger", trigger.isEmpty() ? JSONObject.NULL : trigger);
+                out.put("savedWatchResumeDisposition", AccessibilityRecovery.watching(context)
+                        && !SkipKeepAliveService.recoveryRunning()
+                        ? AccessibilityRecovery.resumeDisposition(context).name() : JSONObject.NULL);
+                out.put("recoveryTimedChecksThisSession", SkipKeepAliveService.timedRecoveryChecks());
                 out.put("recoveryNotificationAllowed", SkipKeepAliveService.notificationsAllowed(context));
                 out.put("keepAliveRunning", SkipKeepAliveService.running());
                 out.put("lastAccessibilityRecoveryEvent",

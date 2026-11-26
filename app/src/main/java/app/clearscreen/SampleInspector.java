@@ -34,13 +34,19 @@ final class SampleInspector {
                 AdvancedRuleEditor.fromSample(s,s.store.customSkipRules(),sample,mode,rule);dialog.dismiss();
             }catch(IllegalArgumentException e){result.setText(e.getMessage());}
         });
-        s.linkAction(form,"存入本机样本库",()->new AlertDialog.Builder(s).setTitle("保存这份脱敏样本？")
-                .setMessage("将保存到净屏本机目录，直到你在样本库删除。不会同步或上传。").setNegativeButton("取消",null)
-                .setPositiveButton("保存",(d,v)->{
-                    if(session!=null&&MissedAdCapture.LOCAL.session(sample.pkg)!=session){s.toast("样本已过期");return;}
-                    new Thread(()->{try{SampleLibrary.save(s,sample);s.runOnUiThread(()->s.toast("样本已保存"));}
-                        catch(Exception e){s.runOnUiThread(()->s.toast("保存失败"));}},"sample-save").start();
-                }).show());
+        s.linkAction(form,"存入本机样本库",()->{
+            int[] days={0};
+            new AlertDialog.Builder(s).setTitle("在本机保存这份脱敏样本")
+                    .setSingleChoiceItems(new String[]{"保留至手动删除","保存 7 天","保存 30 天"},0,
+                            (d,index)->days[0]=new int[]{0,7,30}[index])
+                    .setNegativeButton("取消",null).setPositiveButton("保存",(d,v)->{
+                        if(session!=null&&MissedAdCapture.LOCAL.session(sample.pkg)!=session){s.toast("样本已过期");return;}
+                        new Thread(()->{
+                            try{SampleLibrary.save(s,sample,days[0]);s.runOnUiThread(()->s.toast("样本已保存"));}
+                            catch(Exception e){s.runOnUiThread(()->s.toast(e.getMessage()==null?"保存失败":e.getMessage()));}
+                        },"sample-save").start();
+                    }).show();
+        });
         s.linkAction(form,"导出脱敏样本",()->{
             if(session!=null && MissedAdCapture.LOCAL.session(sample.pkg)!=session){dialog.dismiss();return;}
             try{s.saveSample(sample.export().toString());}catch(org.json.JSONException e){s.toast("无法导出样本");}

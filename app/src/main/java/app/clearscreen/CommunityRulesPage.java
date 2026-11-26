@@ -16,13 +16,24 @@ final class CommunityRulesPage {
             catch(android.content.ActivityNotFoundException e){a.toast("没有可用的文件选择器");}
         });
         a.linkAction(actions,"粘贴本地规则",()->input(a,false));
-        JSONObject sources=CommunityRules.all(a);
+        JSONObject sources;
+        try{sources=CommunityRules.all(a);}
+        catch(IllegalStateException failure){a.paragraph(actions,"本机订阅记录无法读取，已保留原记录。");return;}
         if(sources.length()==0)a.paragraph(actions,"还没有订阅。可以使用净屏规则备份，或兼容的 GKD 应用开屏规则。");
         List<String> keys=new ArrayList<>();sources.keys().forEachRemaining(keys::add);Collections.sort(keys);
         for(String key:keys){
             JSONObject row=sources.optJSONObject(key);LinearLayout c=a.card(a.body);
+            List<CustomSkipRule> imported;
+            try{
+                if(row==null)throw new IllegalArgumentException();
+                imported=CustomSkipRule.subscriptionRules(row.optString("rules"));
+            }catch(IllegalArgumentException unreadable){
+                a.paragraph(c,key+"\n这份订阅的本机副本无法读取，已跳过。");
+                a.linkAction(c,"移除这份订阅",()->new AlertDialog.Builder(a).setTitle("移除这个来源？")
+                        .setNegativeButton("取消",null).setPositiveButton("移除",(d,v)->change(a,key,"remove")).show());
+                continue;
+            }
             a.paragraph(c,row.optBoolean("enabled")?"已启用":"已暂停");c.addView(a.heading(row.optString("name"),20,MainActivity.INK));
-            List<CustomSkipRule> imported=CustomSkipRule.subscriptionRules(row.optString("rules"));
             Set<String> disabled=CommunityRules.disabled(row);int selected=0;
             for(CustomSkipRule rule:imported)if(!disabled.contains(CommunityRules.key(rule)))selected++;
             a.paragraph(c,key+"\n已选 "+selected+" / "+imported.size()+" 条规则 · 来源版本 "+row.optInt("version"));
@@ -65,9 +76,8 @@ final class CommunityRulesPage {
                 .setMessage("将使用来源版本 "+previous.optInt("version")+" 的规则，保留你现在的暂停和单条启停选择。")
                 .setNegativeButton("取消",null).setPositiveButton("恢复",(d,v)->{
                     try{JSONObject all=CommunityRules.all(a),current=all.getJSONObject(key);
-                        JSONObject backup=current.getJSONObject("previous");
-                        backup.put("enabled",current.optBoolean("enabled",true));backup.put("disabled",current.optJSONArray("disabled"));
-                        all.put(key,backup);CommunityRules.save(a,all);a.render();
+                        if(!current.getJSONObject("previous").toString().equals(previous.toString())){a.toast("订阅已变更，请重新查看");return;}
+                        all.put(key,CommunityRules.restore(current));CommunityRules.save(a,all);a.render();
                     }catch(Exception e){a.toast("没有可恢复的版本");}
                 }).show();
     }

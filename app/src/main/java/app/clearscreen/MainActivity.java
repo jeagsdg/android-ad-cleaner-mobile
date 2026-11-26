@@ -47,6 +47,7 @@ public final class MainActivity extends Activity {
     Button filterButton;
     TextView homeSplashStatus, homeSplashCount, homePopupStatus, homeCleanStatus;
     Button homeSplashButton, homeOpenApp, homeMissed;
+    LocalRuleForm ruleForm;
     Button homeRecovery;
     Button homePreviewStatus;
     FilterStore filterStore;
@@ -105,6 +106,7 @@ public final class MainActivity extends Activity {
             pendingFilterStart = state.getBoolean("pendingFilterStart");
         }
         render();
+        if(state!=null&&state.containsKey("localRuleDraft"))LocalRuleForm.restore(this,state.getBundle("localRuleDraft"));
     }
     private boolean setRecentVisibility(boolean hidden){
         ActivityManager manager=getSystemService(ActivityManager.class);
@@ -149,6 +151,7 @@ public final class MainActivity extends Activity {
         super.onDestroy();
     }
     @Override protected void onSaveInstanceState(Bundle state) {
+        if(ruleForm!=null)state.putBundle("localRuleDraft",ruleForm.state());
         state.putInt("tab", tab);
         state.putInt("permissionParent", permissionParent);
         state.putInt("rulesParent", rulesParent);
@@ -382,9 +385,10 @@ public final class MainActivity extends Activity {
         mark.setBackground(shape(GREEN, 11));
         mark.setClipToOutline(true);
         android.content.res.Configuration config = getResources().getConfiguration();
-        boolean compactHeader = config.screenWidthDp < 380 && config.fontScale > 1.15f;
+        boolean compactHeader = config.screenWidthDp < 355 || config.screenWidthDp < 400 && config.fontScale >= 1.10f;
         if (!compactHeader) top.addView(mark, new LinearLayout.LayoutParams(dp(32), dp(32)));
         TextView name = heading("净屏", 25, INK);
+        name.setSingleLine(true);
         LinearLayout.LayoutParams nameLayout = new LinearLayout.LayoutParams(0, -2, 1);
         nameLayout.setMarginStart(compactHeader ? 0 : dp(8));
         top.addView(name, nameLayout);
@@ -452,12 +456,17 @@ public final class MainActivity extends Activity {
         features.setPadding(dp(9), dp(4), dp(9), dp(4));
         homePopupStatus = featureRow(features, R.drawable.ic_popup, "使用中广告", () -> showPage(POPUP_MANAGEMENT));
         featureRow(features, R.drawable.ic_apps, "应用广告管理", this::openAppAds)
-                .setText("规则与排除项");
-        featureRow(features, R.drawable.ic_apps, "精选规则", this::openRuleDirectory)
+                .setText("选择哪些应用保持原样");
+        sectionTitle("规则与高级工具");
+        LinearLayout tools = card(body);
+        tools.setPadding(dp(9), dp(4), dp(9), dp(4));
+        featureRow(tools,R.drawable.ic_apps,"新增规则",()->addRuleForApp(""))
+                .setText("选择应用，按广告上的文字创建");
+        featureRow(tools, R.drawable.ic_apps, "精选规则", this::openRuleDirectory)
                 .setText("查找并启停单条规则");
         if (networkFilterAvailable())
-            filterStatus = featureRow(features, R.drawable.ic_network, "网络广告过滤", () -> showPage(6));
-        homeCleanStatus = featureRow(features, R.drawable.ic_settings, "系统广告设置", () -> {
+            filterStatus = featureRow(tools, R.drawable.ic_network, "网络广告过滤", () -> showPage(6));
+        homeCleanStatus = featureRow(tools, R.drawable.ic_settings, "系统广告设置", () -> {
             CleanerService service = CleanerService.get();
             if (service != null && service.busy) service.stop();
             else if (service != null && service.systemPreview() != null) showPage(SYSTEM_CLEAN_PREVIEW);
@@ -587,6 +596,8 @@ public final class MainActivity extends Activity {
         else {
             String modes=splash?(store.popupEnabled()?"开屏广告、使用中广告":"开屏广告"):"使用中广告";
             guidance="已开启："+modes+"。"+(splash&&count>0?" 已确认跳过 "+count+" 次。":"");
+            String last=service.latestConfirmed();
+            if(!last.isEmpty())guidance+=" 最近已确认关闭"+last+"。";
             String recovery=recentRecoveryNote();if(!recovery.isEmpty())guidance+=" "+recovery;
         }
         updateText(homeSplashCount, guidance);
@@ -1027,6 +1038,7 @@ public final class MainActivity extends Activity {
         capability.addView(bold("净屏能做什么", 18, INK));
         space(capability, 8);
         paragraph(capability, "跳过开屏、处理广告弹窗，按需关闭系统推荐。" + (network ? "也可开启网络广告过滤。" : ""));
+        linkAction(capability, "查看本机处理统计", this::showObservedSessions);
         linkAction(capability, "了解处理范围", () -> new AlertDialog.Builder(this).setTitle("处理范围")
                 .setMessage("开屏与弹窗\n识别明确的广告控件，按内置和本机规则处理。微信与 QQ 原图辅助可在开屏管理中单独开启。"
                         + "\n\n系统广告设置\n检查已匹配的推荐开关" + (channels ? "和营销通知渠道" : "")
@@ -1046,7 +1058,7 @@ public final class MainActivity extends Activity {
                 enabled -> AdFilterService.setKeepDomainDetails(this, enabled));
         linkAction(privacy, "查看数据与隐私说明", () -> new AlertDialog.Builder(this).setTitle("数据与隐私")
                 .setMessage("开屏、弹窗与自定义规则在这台设备上运行，没有账号、分析服务或自动上报。"
-                        + (network ? "\n\n启用网络过滤后，未拦截的 DNS 查询交给当前网络的 DNS。自动更新只查询公开的 GitHub 版本信息，可在下方关闭。只有你点击生成 AI 规则时，才会向你填写的服务发送目标包名和描述；密钥不会保存在净屏。" : "\n\n纯离线版没有 Android 联网权限。")
+                        + (network ? "\n\n网络过滤会把放行的查询交给当前网络的 DNS。应用更新及官方规则从 GitHub 检查。社区订阅默认手动检查；为某个来源开启每日检查后，净屏会从该地址获取规则。只有你点击生成 AI 规则时，才会向你填写的服务发送目标包名和描述；密钥不会保存在净屏。" : "\n\n纯离线版没有 Android 联网权限。")
                         + "\n\n处理明细由你选择是否保留。关闭保留开关时清除已有明细，仍可查看累计次数。系统设置的恢复记录保存在本机，供你还原改动。"
                         + "\n\n诊断由你手动开启，先预览，再决定是否复制或导出。")
                 .setPositiveButton("知道了", null).show());
@@ -1141,6 +1153,24 @@ public final class MainActivity extends Activity {
     private boolean isAccessibilityPermissionPage() {
         return tab == 4 || tab == 5;
     }
+    private void showObservedSessions() {
+        long safe=store.sessionValue("SAFE_EXIT"), attempted=store.sessionValue("ATTEMPTED"),
+                closed=store.sessionValue("CLOSED");
+        long seen=store.sessionValue("DETECTED"), noExit=store.sessionValue("NO_SAFE_EXIT"), unknown=store.sessionValue("UNCERTAIN");
+        String label="从 3.0.0 起按观察到的广告计数。同一次广告重复扫描只计一次。"
+                +"\n\n观察到广告："+store.sessionValue("DETECTED")
+                +"\n匹配到出口："+store.sessionValue("MATCHED")+"\n有可操作出口："+safe
+                +"\n发起操作："+attempted+"\n系统接受操作："+store.sessionValue("ACCEPTED")
+                +"\n操作后确认关闭："+closed+"\n有倒计时证据的提前关闭："+store.sessionValue("EARLY")
+                +"\n观察期间未发现安全出口："+store.sessionValue("NO_SAFE_EXIT")
+                +"\n离开时结果仍不确定："+unknown+"\n仍在观察或观察被中断："+Math.max(0,seen-closed-noExit-unknown)
+                +"\n动作被拒："+store.sessionValue("ACTION_FAILED")+" · 目标仍可见："+store.sessionValue("STILL_VISIBLE")
+                +"\n\n用户补充：自然结束 "+store.sessionValue("NATURAL_REPORTED")
+                +" · 手动关闭 "+store.sessionValue("MANUAL_REPORTED")+" · 误点 "+store.sessionValue("MISCLICK_REPORTED")
+                +(closed==0?"":"\n从发现出口到确认关闭，平均 "+store.sessionValue("LATENCY_TOTAL_MS")/closed+" 毫秒。")
+                +"\n\n完全漏检的广告不会进入这些数字。";
+        new AlertDialog.Builder(this).setTitle("本机处理统计").setMessage(label).setPositiveButton("完成",null).show();
+    }
     void accessibility() {
         if (!isAccessibilityPermissionPage()) permissionParent = tab;
         showPage(4);
@@ -1162,7 +1192,10 @@ public final class MainActivity extends Activity {
         action(status, primaryAction, true,
                 () -> { if (PermissionAccess.state(this) == PermissionAccess.State.READY) backToParentPage();
                         else openAccessibilitySettings(); });
-        if (state == PermissionAccess.State.READY) action(status, "管理系统授权", false, this::openAccessibilitySettings);
+        if (state == PermissionAccess.State.READY) {
+            action(status, "测试本机点击", false, () -> LocalConnectionCheck.show(this));
+            action(status, "管理系统授权", false, this::openAccessibilitySettings);
+        }
         action(status, "开启遇到问题", false, () -> { tab = 5; render(); });
 
         if (networkFilterAvailable()) paragraph(body, "只使用网络过滤时，无需此权限。");
@@ -1336,7 +1369,13 @@ public final class MainActivity extends Activity {
         catch (ActivityNotFoundException | SecurityException failure) { toast("此设备无法打开浏览器"); }
     }
     void refreshFilter(){
-        if(filterStatus!=null)updateText(filterStatus,AdFilterService.running()?"运行中 · 本地 DNS 过滤":AdFilterService.active==null&&filterStore.enabled()?"服务已停止，请重新开启":filterStore.message());
+        if(filterStatus!=null){
+            String message=filterStore.message();
+            String status=AdFilterService.running()?"运行中 · 本地 DNS 过滤"
+                    :AdFilterService.active==null&&filterStore.enabled()?"服务已停止，请重新开启":message;
+            if(AdFilterService.running()&&message.startsWith("未能应用绕过名单"))status+="\n"+message;
+            updateText(filterStatus,status);
+        }
         if(filterCounter!=null)updateText(filterCounter,getString(R.string.dns_counter,AdFilterService.blocked(this)));
         if(filterButton!=null)updateText(filterButton,AdFilterService.active!=null?"停止网络过滤":"开启网络过滤");
     }
@@ -1476,14 +1515,14 @@ public final class MainActivity extends Activity {
     }
     private void filterAppExceptions() {
         if (!networkFilterAvailable()) return;
-        chooseAppExclusions("绕过网络过滤的应用", filterStore.bypassedApps(), "列表在下次开启网络过滤时生效。",
+        chooseAppExclusions("绕过网络过滤的应用", filterStore.bypassedApps(), AdFilterService.running()
+                ?"保存后自动应用，已有连接可能需要重新连接。":"网络过滤未开启；下次开启时使用这份名单。",
                 this::saveFilterAppExceptions);
     }
     void saveFilterAppExceptions(Set<String> packages) {
-        filterStore.setBypassedApps(packages);
-        render();
-        toast(AdFilterService.active == null ? "已保存，下次开启网络过滤时生效"
-                : "已保存，请停止并重新开启网络过滤");
+        AdFilterService.saveBypassedApps(this,packages,message->{
+            if(!isDestroyed()){render();toast(message);}
+        });
     }
     void addAllowedDomain(){
         EditText field=new EditText(this);field.setSingleLine(true);field.setHint("例如 ads.example.com");field.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_URI);
@@ -1759,9 +1798,15 @@ public final class MainActivity extends Activity {
             if (rule.sequenceIndex > 0) continue;
             String name = apps.getOrDefault(rule.pkg, rule.pkg);
             LinearLayout entry = card(body);
+            entry.setTag("local-rule:"+CommunityRules.key(rule));
             entry.addView(bold(name, 17, INK));
             space(entry, 8);
             paragraph(entry, skipRuleDetails(rule));
+            historyToggle(entry,rule.sequenceIndex==0?"启用这组规则":"启用此规则",!rule.paused,enabled->{
+                try{store.setLocalRulePaused(rule,!enabled);}
+                catch(IllegalArgumentException|IllegalStateException invalid){toast(invalid.getMessage());}
+                render();
+            });
             linkAction(entry, "试运行", () -> beginRulePreview(rule.sequenceIndex < 0
                     ? Collections.singletonList(rule)
                     : rules.stream().filter(step -> step.sequenceIndex >= 0 && step.pkg.equals(rule.pkg))
@@ -1857,88 +1902,23 @@ public final class MainActivity extends Activity {
         return field;
     }
     void editSkipRule(List<CustomSkipRule> rules, int index) {
-        editSkipRule(rules, index, "");
+        CustomSkipRule original=index<0?null:rules.get(index);
+        showLocalRuleForm(original,original==null?"":original.pkg,original==null?CustomSkipRule.SPLASH:original.mode,null);
     }
     void addRuleForApp(String pkg) {
-        try { editSkipRule(store.customSkipRules(), -1, pkg); }
-        catch (IllegalArgumentException | IllegalStateException failure) { toast("本机规则暂时无法读取"); }
+        addRuleForApp(pkg,CustomSkipRule.SPLASH,null);
     }
-    private void editSkipRule(List<CustomSkipRule> rules, int index, String initialPackage) {
-        boolean editing = index >= 0;
-        if (!editing && rules.size() >= CustomSkipRule.MAX_RULES) {
-            toast("最多保存 " + CustomSkipRule.MAX_RULES + " 条规则");
-            return;
-        }
-        CustomSkipRule existing = editing ? rules.get(index) : null;
-        LinearLayout content = skipDialogContent();
-        RadioGroup mode = new RadioGroup(this);
-        boolean stackModes = getResources().getConfiguration().screenWidthDp < 360
-                || getResources().getConfiguration().fontScale > 1.15f;
-        mode.setOrientation(stackModes ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
-        RadioButton splash = new RadioButton(this), popup = new RadioButton(this);
-        splash.setId(View.generateViewId());
-        splash.setText("开屏跳过");
-        popup.setId(View.generateViewId());
-        popup.setText("弹窗处理");
-        splash.setMinHeight(dp(48));
-        popup.setMinHeight(dp(48));
-        mode.addView(splash, stackModes ? new RadioGroup.LayoutParams(-1, -2)
-                : new RadioGroup.LayoutParams(0, -2, 1));
-        mode.addView(popup, stackModes ? new RadioGroup.LayoutParams(-1, -2)
-                : new RadioGroup.LayoutParams(0, -2, 1));
-        content.addView(mode);
-        TextView guidance = text("", 14, MUTED);
-        content.addView(guidance);
-
-        EditText pkg = skipRuleField(content, "应用包名", "如 com.example.app", editing ? existing.pkg : initialPackage);
-        action(content, "从已安装应用选择", false, () -> chooseSkipRuleApp(pkg));
-        EditText label = skipRuleField(content, "按钮文字或无障碍描述", "如 跳过 或 关闭", editing ? existing.label : "");
-        LinearLayout popupFields = column();
-        content.addView(popupFields);
-        EditText context = skipRuleField(popupFields, "弹窗提示文字（必填）", "如 今日推荐活动", editing ? existing.context : "");
-        EditText viewId = skipRuleField(content, "完整控件 ID", "如 com.example.app:id/skip", editing ? existing.viewId : "");
-        EditText activity = skipRuleField(content, "页面类名（可选）", "如 com.example.app.MainActivity", editing ? existing.activity : "");
-        TextView error = text("", 14, 0xff9d302a);
-        error.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
-        error.setVisibility(View.GONE);
-        content.addView(error);
-        mode.setOnCheckedChangeListener((group, selected) -> {
-            boolean isPopup = selected == popup.getId();
-            popupFields.setVisibility(isPopup ? View.VISIBLE : View.GONE);
-            guidance.setText(isPopup ? "填写弹窗上完整的提示文字和关闭按钮文字或描述。控件 ID 可选。"
-                    : "填写完整的按钮文字或描述、控件 ID，至少填写一项。两项都填时会一起匹配。");
-        });
-        mode.check(editing && CustomSkipRule.POPUP.equals(existing.mode) ? popup.getId() : splash.getId());
-
-        ScrollView form = scrollDialogContent(content);
-        AlertDialog.Builder builder = new AlertDialog.Builder(this).setTitle(editing ? "编辑规则" : "添加规则")
-                .setView(form).setPositiveButton("保存", null).setNegativeButton("取消", null);
-        if (editing) builder.setNeutralButton("删除", null);
-        AlertDialog dialog = builder.create();
-        dialog.setOnShowListener(d -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
-                try {
-                    boolean isPopup = mode.getCheckedRadioButtonId() == popup.getId();
-                    CustomSkipRule rule = new CustomSkipRule(pkg.getText().toString(), activity.getText().toString(),
-                            isPopup ? CustomSkipRule.POPUP : CustomSkipRule.SPLASH, viewId.getText().toString(),
-                            label.getText().toString(), isPopup ? context.getText().toString() : "");
-                    List<CustomSkipRule> next = new ArrayList<>(rules);
-                    if (editing) next.set(index, rule); else next.add(rule);
-                    store.saveCustomSkipRules(next);
-                    dialog.dismiss();
-                    render();
-                    toast("规则已保存");
-                } catch (IllegalArgumentException | IllegalStateException failure) {
-                    error.setText(failure.getMessage());
-                    error.setVisibility(View.VISIBLE);
-                    form.post(() -> form.fullScroll(View.FOCUS_DOWN));
-                }
-            });
-            if (editing) dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> confirmSkipRuleDelete(rules, index, dialog));
-        });
-        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
-                | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        dialog.show();
+    void addRuleForApp(String pkg,String mode,Bundle preset) {
+        showLocalRuleForm(null,pkg,mode,preset);
+    }
+    private void showLocalRuleForm(CustomSkipRule original,String pkg,String mode,Bundle preset) {
+        try{
+            if(original==null&&store.customSkipRules().size()>=CustomSkipRule.MAX_RULES){
+                toast("本机规则已满，可先导出备份并整理规则");return;
+            }
+            ruleForm=new LocalRuleForm(this,original,pkg,mode,preset);
+            ruleForm.show();
+        }catch(IllegalArgumentException|IllegalStateException invalid){toast("无法打开规则："+invalid.getMessage());}
     }
     void confirmSkipRuleDelete(List<CustomSkipRule> rules, int index, AlertDialog editor) {
         CustomSkipRule rule = rules.get(index);
@@ -1968,7 +1948,7 @@ public final class MainActivity extends Activity {
     void chooseSkipRuleApp(EditText packageField) {
         chooseInstalledApp(packageField::setText, "请选择手动输入应用包名");
     }
-    private void chooseInstalledApp(java.util.function.Consumer<String> choice, String emptyMessage) {
+    void chooseInstalledApp(java.util.function.Consumer<String> choice, String emptyMessage) {
         Map<String, String> apps = launcherApps();
         List<String> packages = new ArrayList<>(apps.keySet());
         packages.removeIf(CustomSkipRule::protectedPackage);
@@ -1995,7 +1975,27 @@ public final class MainActivity extends Activity {
                     labels.add(name + "\n" + pkg);
                 }
             }
-            list.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels));
+            list.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,labels){
+                @Override public View getView(int position,View convert,ViewGroup parent){
+                    TextView row=(TextView)super.getView(position,convert,parent);
+                    String value=getItem(position);int split=value.indexOf('\n');
+                    android.text.SpannableString display=new android.text.SpannableString(value);
+                    if(split>0){
+                        display.setSpan(new android.text.style.StyleSpan(Typeface.BOLD),0,split,0);
+                        display.setSpan(new android.text.style.RelativeSizeSpan(.80f),split+1,value.length(),0);
+                        display.setSpan(new android.text.style.ForegroundColorSpan(MUTED),split+1,value.length(),0);
+                    }
+                    row.setSingleLine(false);row.setMaxLines(3);
+                    row.setTextSize(16);row.setTextColor(INK);row.setText(display);
+                    row.setPaddingRelative(dp(10),dp(8),dp(10),dp(8));row.setMinHeight(dp(56));
+                    row.setLayoutParams(new android.widget.AbsListView.LayoutParams(-1,-2));
+                    row.setOnClickListener(v->{
+                        int current=list.getPositionForView(v);
+                        if(current!=android.widget.AdapterView.INVALID_POSITION)list.performItemClick(v,current,list.getItemIdAtPosition(current));
+                    });
+                    return row;
+                }
+            });
         };
         watchSkipSearch(search, refresh);
         refresh.run();
@@ -2019,7 +2019,7 @@ public final class MainActivity extends Activity {
     }
     void importSkipRules() {
         LinearLayout content = skipDialogContent();
-        paragraph(content, "粘贴净屏导出的规则 JSON。确认后将替换本机全部自定义规则。");
+        paragraph(content, "粘贴净屏导出的规则。预览后可以只添加新规则，也可以从备份替换全部。");
         EditText input = new EditText(this);
         input.setHint("粘贴净屏规则 JSON");
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -2052,17 +2052,29 @@ public final class MainActivity extends Activity {
         String existing;
         try { existing = "现有 " + store.customSkipRules().size() + " 条自定义规则"; }
         catch (IllegalArgumentException | IllegalStateException failure) { existing = "当前无法读取的自定义规则"; }
-        paragraph(content, incoming.isEmpty() ? "备份内容为空。确认后会清空" + existing + "。"
-                : "以下 " + incoming.size() + " 条规则将替换" + existing + "。请核对应用和按钮。");
+        paragraph(content, incoming.isEmpty() ? "备份内容为空。替换全部会清空" + existing + "。"
+                : existing+"。本次读到 "+incoming.size()+" 条。只添加新规则会保留原有规则与启停状态。");
         for (int index = 0; index < incoming.size(); index++) {
             space(content, 12);
             content.addView(text((index + 1) + ". " + skipRuleDetails(incoming.get(index)), 14, INK));
         }
-        new AlertDialog.Builder(this).setTitle("预览导入规则").setView(scrollDialogContent(content))
+        AlertDialog.Builder choice=new AlertDialog.Builder(this).setTitle("预览导入规则").setView(scrollDialogContent(content))
                 .setNegativeButton("返回编辑", null)
-                .setPositiveButton("确认替换", (d, w) -> {
-                    if (saveSkipRules(incoming, "已导入 " + incoming.size() + " 条规则")) paste.dismiss();
-                }).show();
+                .setNeutralButton("替换全部", (d,w)->new AlertDialog.Builder(this).setTitle("从备份替换全部规则？")
+                        .setMessage("本机自定义规则将替换为这 "+incoming.size()+" 条。")
+                        .setPositiveButton("确认替换",(confirm,button)->{
+                            if(saveSkipRules(incoming,"已从备份恢复 "+incoming.size()+" 条规则"))paste.dismiss();
+                        }).setNegativeButton("取消",null).show());
+        if(!incoming.isEmpty())choice.setPositiveButton("只添加新规则",(d,w)->{
+            try{
+                List<CustomSkipRule> current=store.customSkipRules();
+                List<CustomSkipRule> merged=CustomSkipRule.appendNew(current,incoming);
+                int added=merged.size()-current.size();
+                if(added==0){toast("这些规则已经在本机了");return;}
+                if(saveSkipRules(merged,"已添加 "+added+" 条新规则"))paste.dismiss();
+            }catch(IllegalArgumentException|IllegalStateException invalid){toast(invalid.getMessage());}
+        });
+        choice.show();
     }
     void exportSkipRules(List<CustomSkipRule> rules) {
         String json = CustomSkipRule.export(rules);

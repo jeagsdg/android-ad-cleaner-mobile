@@ -1,0 +1,350 @@
+{
+  "version": "3.0.0",
+  "code": 27,
+  "apks": {
+    "ClearScreen-3.0.0-offline.apk": "f3fced44854b8657d9a95e97ddc9c970def7167f825d150a3ff9a38548e069dc",
+    "ClearScreen-3.0.0.apk": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+  },
+  "builds": {
+    "full": {
+      "tests": 509,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "lintErrors": 0,
+      "lintWarnings": 4
+    },
+    "offline": {
+      "tests": 464,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "lintErrors": 0,
+      "lintWarnings": 2
+    }
+  },
+  "emulators": {
+    "35": {
+      "full": {
+        "ad-latency": {
+          "assertions": 26,
+          "passed": true
+        },
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "countdown-ad": {
+          "assertions": 35,
+          "passed": true
+        },
+        "keepalive": {
+          "assertions": 8,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "offline": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "user_rule": {
+        "local-rule-flow": {
+          "assertions": 62,
+          "passed": true
+        }
+      },
+      "upgrade": true,
+      "vpn_prior_candidate": {
+        "dns-live-policy": {
+          "assertions": 12,
+          "passed": true
+        }
+      }
+    },
+    "24": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone_x86_64/generic_x86_64:7.0/NYC/4174735:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 3,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "26": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone_x86_64/generic_x86_64:8.0.0/OSR1.180418.004/4931640:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 3,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "27": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone_x86_64/generic_x86_64:8.1.0/OSM1.180201.023/4931629:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 3,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "29": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone_x86_64/generic_x86_64:10/QSR1.210820.001/7663313:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "30": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone_x86_64/generic_x86_64:11/RSR1.210722.013.A2/10067904:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997",
+      "qualification": "Independent fresh guest used per remaining suite after sequential am instrument force-stop marked service crashed on API 30. Initial consecutive-run binding failure retained.",
+      "consecutiveFirstPass": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        }
+      }
+    },
+    "31": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone64_x86_64/emulator64_x86_64:12/SE1A.220826.006.A1/10064458:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "33": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone64_x86_64/emulator64_x86_64:13/TE1A.220922.034/10940250:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "34": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone64_x86_64/emu64x:14/UE1A.230829.036.A1/11228894:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "36": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone64_x86_64/emu64x:16/BE2A.250530.026.D1/13818094:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    },
+    "37": {
+      "verified": true,
+      "fingerprint": "Android/sdk_phone64_x86_64/emu64x:17/CE2A.260420.051.A3/16571990:userdebug/test-keys",
+      "tests": {
+        "connection-check": {
+          "assertions": 7,
+          "passed": true
+        },
+        "popup-generic": {
+          "assertions": 24,
+          "passed": true
+        },
+        "splash": {
+          "assertions": 31,
+          "passed": true
+        }
+      },
+      "installationDigest": "f6f7af1246384adb04e8e3a005c50317cc19f2c0755ed383a11e3bbd94b83997"
+    }
+  },
+  "historical_replays": {
+    "cross-app-production-replay.tsv": {
+      "rows": 20,
+      "same_as_prior": true
+    },
+    "evidence-replay.tsv": {
+      "rows": 44,
+      "same_as_prior": true
+    },
+    "live-stream-replay.tsv": {
+      "rows": 64,
+      "same_as_prior": true
+    },
+    "production-replay.tsv": {
+      "rows": 75,
+      "same_as_prior": true
+    },
+    "replay-2.4.0.tsv": {
+      "rows": 155,
+      "same_as_prior": true
+    },
+    "weibo-menu-replay.tsv": {
+      "rows": 15,
+      "same_as_prior": true
+    }
+  },
+  "latency": {
+    "2.4.0": [
+      {
+        "scenario": "splash",
+        "confirmed": 8,
+        "trials": 8,
+        "p50ms": 1592,
+        "p95ms": 1904
+      },
+      {
+        "scenario": "splash-delayed",
+        "confirmed": 8,
+        "trials": 8,
+        "p50ms": 1089,
+        "p95ms": 1762
+      },
+      {
+        "scenario": "popup",
+        "confirmed": 8,
+        "trials": 8,
+        "p50ms": 1657,
+        "p95ms": 2542
+      }
+    ],
+    "3.0.0": [
+      {
+        "scenario": "splash",
+        "confirmed": 8,
+        "trials": 8,
+        "p50ms": 901,
+        "p95ms": 1533
+      },
+      {
+        "scenario": "splash-delayed",
+        "confirmed": 8,
+        "trials": 8,
+        "p50ms": 532,
+        "p95ms": 927
+      },
+      {
+        "scenario": "popup",
+        "confirmed": 8,
+        "trials": 8,
+        "p50ms": 697,
+        "p95ms": 824
+      }
+    ]
+  }
+}

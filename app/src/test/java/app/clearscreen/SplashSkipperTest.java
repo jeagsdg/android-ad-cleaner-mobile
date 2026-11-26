@@ -518,9 +518,19 @@ public class SplashSkipperTest {
     }
 
     private static void assertSourceLessPopupClick(String eventText, boolean ambiguous, boolean confirmed) {
+        assertSourceLessPopupClick(eventText,ambiguous,confirmed,false,0);
+    }
+    @Test public void savedRuleAcceptsOnlyAnAttributedUniqueSourceLessEcho(){
+        assertSourceLessPopupClick("关闭广告",false,true,true,AccessibilityNodeInfo.ACTION_CLICK);
+        assertSourceLessPopupClick("关闭广告",false,false,true,0);
+        assertSourceLessPopupClick("查看详情",false,false,true,AccessibilityNodeInfo.ACTION_CLICK);
+    }
+    private static void assertSourceLessPopupClick(String eventText, boolean ambiguous, boolean confirmed,
+                                                   boolean savedRule,int actionId) {
         CleanerService service = Robolectric.buildService(CleanerService.class).create().get();
         ActiveRootService shadowService = Shadow.extract(service);
         Store store = new Store(service);
+        if(savedRule)store.saveCustomSkipRules(List.of(new CustomSkipRule(PKG,"",CustomSkipRule.POPUP,"","关闭广告","广告")));
         store.setPopupEnabled(true);
         store.setSkipToastEnabled(false);
         long before = store.popupCount();
@@ -552,6 +562,7 @@ public class SplashSkipperTest {
             event.setClassName("android.widget.Button");
             event.setEventTime(SystemClock.uptimeMillis());
             event.getText().add(eventText);
+            event.setAction(actionId);
             shadowOf(event).setSourceNode(null);
             shadowOf(event).setWindowId(42);
             assertNull(event.getSource());
@@ -569,6 +580,29 @@ public class SplashSkipperTest {
     @Test public void partialReadbackCannotCountTheAdAsGone() throws Exception {
         assertDismissalAfterClick(true, true, true);
         assertDismissalAfterClick(false, true, true);
+    }
+
+    @Test public void naturalCountdownEndIsNotAttributedToAnAcceptedSplashClick() {
+        CleanerService service=Robolectric.buildService(CleanerService.class).create().get();
+        Store store=new Store(service);store.setSplashEnabled(true);store.setPopupEnabled(false);
+        ActiveRootService shadowService=Shadow.extract(service);
+        Rect screen=new Rect(0,0,1080,2400);
+        AccessibilityNodeInfo root=node("",screen),button=node("关闭广告",new Rect(856,82,1026,154));
+        shadowOf(root).addChild(node("广告",new Rect(32,71,117,122)));
+        shadowOf(root).addChild(node("1秒后可跳过",new Rect(30,153,250,220)));
+        button.setClickable(true);shadowOf(root).addChild(button);
+        shadowOf(button).setOnPerformActionListener((action,args)->true);
+        SplashSkipper skipper=new SplashSkipper(service);
+        try {
+            shadowService.activeRoot=()->root;
+            sendWindowEvent(skipper,AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(260));
+            assertEquals(List.of(AccessibilityNodeInfo.ACTION_CLICK),shadowOf(button).getPerformedActions());
+            shadowService.activeRoot=()->node("普通内容",screen);
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(2));
+            assertEquals(0,store.splashCount());
+            assertEquals(0,store.sessionValue("CLOSED"));
+        } finally {skipper.close();}
     }
 
     private static void assertDismissalAfterClick(boolean splash, boolean ownClick) throws Exception {

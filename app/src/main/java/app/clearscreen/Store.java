@@ -91,12 +91,28 @@ public final class Store {
     }
     private String lastSources;
     private List<CustomSkipRule> lastLocal, effective;
+    private List<CustomSkipRule> indexedRules;
+    private final java.util.Map<String,List<CustomSkipRule>> rulesByApp=new java.util.HashMap<>();
+    synchronized List<CustomSkipRule> activeRules(String pkg){
+        List<CustomSkipRule> all=activeRules();
+        if(indexedRules!=all){
+            rulesByApp.clear();
+            for(CustomSkipRule rule:all)rulesByApp.computeIfAbsent(rule.pkg,k->new java.util.ArrayList<>()).add(rule);
+            indexedRules=all;
+        }
+        return rulesByApp.getOrDefault(pkg,Collections.emptyList());
+    }
     synchronized List<CustomSkipRule> activeRules(){
         List<CustomSkipRule> local=customSkipRules();
         String sources=context.getSharedPreferences("community-rules",0).getString("sources","{}");
         if(lastLocal!=local||!sources.equals(lastSources)){
             try{effective=sources.equals("{}")?local:CommunityRules.active(new JSONObject(sources),local);}
             catch(JSONException|IllegalArgumentException e){effective=local;}
+            if(effective.stream().anyMatch(rule->rule.paused)){
+                List<CustomSkipRule> enabled=new ArrayList<>();
+                for(CustomSkipRule rule:effective)if(!rule.paused)enabled.add(rule);
+                effective=Collections.unmodifiableList(enabled);
+            }
             lastLocal=local;lastSources=sources;
         }
         return effective;
@@ -105,6 +121,16 @@ public final class Store {
         String json=CustomSkipRule.export(rules);
         CustomSkipRule.parse(json);
         if(!prefs().edit().putString("custom-skip-rules",json).commit())throw new IllegalStateException("规则保存失败");
+    }
+    synchronized void setLocalRulePaused(CustomSkipRule selected,boolean paused){
+        List<CustomSkipRule> next=new ArrayList<>(customSkipRules());
+        if(!next.contains(selected))throw new IllegalStateException("规则已变更，请重新打开列表");
+        for(int i=0;i<next.size();i++){
+            CustomSkipRule row=next.get(i);
+            if(row==selected||selected.sequenceIndex>=0&&row.sequenceIndex>=0&&row.pkg.equals(selected.pkg))
+                next.set(i,row.withPaused(paused));
+        }
+        saveCustomSkipRules(next);
     }
     public Set<String> splashExcluded(){return new HashSet<>(prefs().getStringSet("splash-excluded",Collections.emptySet()));}
     public void setSplashExcluded(Set<String> packages){prefs().edit().putStringSet("splash-excluded",new HashSet<>(packages)).apply();}
@@ -141,6 +167,19 @@ public final class Store {
         }
     }
     public long splashCount(){return prefs().getLong("splash-confirmed",0);}
+    AdSessions.Sink adSessionSink() {
+        return new AdSessions.Sink() {
+            public void record(AdSessions.Metric metric){incrementSessionValue(metric.name(),1);}
+            public void latency(long millis){incrementSessionValue("LATENCY_TOTAL_MS",millis);}
+        };
+    }
+    private void incrementSessionValue(String name,long increment){
+        synchronized(SKIP_HISTORY_LOCK){
+            SharedPreferences p=prefs();String key="observed-session:"+name;
+            p.edit().putLong(key,p.getLong(key,0)+increment).apply();
+        }
+    }
+    long sessionValue(String name){return prefs().getLong("observed-session:"+name,0);}
     public long popupCount(){return prefs().getLong("popup-confirmed",0);}
     public String lastRun(){return prefs().getString("last-run","");}
     public void setLastRun(String value){if(!prefs().edit().putString("last-run",value).commit())throw new IllegalStateException("记录保存失败");}

@@ -51,12 +51,27 @@ public class DeviceChecks extends Instrumentation {
         operation.run();
     }
     @Override public void onStart(){Bundle result=new Bundle();try{
+        if(suite.equals("dns-live-policy")){NetworkChecks.livePolicy(this);result.putString("stream","PASS: "+assertions+" live DNS policy assertions on Android "+Build.VERSION.RELEASE+"\n");finish(RESULT_OK,result);return;}
         if(suite.equals("network")){NetworkChecks.run(this);result.putString("stream","PASS: "+assertions+" network assertions on Android "+Build.VERSION.RELEASE+"\n");finish(RESULT_OK,result);return;}
         android.app.UiAutomation automation=getUiAutomation(android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
         // Instrumentation restarts the target process: reconnect its service only in this disposable emulator.
         shell(automation,"settings put secure enabled_accessibility_services null");
         shell(automation,"settings put secure enabled_accessibility_services app.clearscreen/.CleanerService");
         shell(automation,"settings put secure accessibility_enabled 1");
+        if (suite.equals("connection-check")) {
+            LocalConnectionDeviceChecks.run(this, connectService());
+            result.putString("stream", "PASS: " + assertions + " local connection assertions on Android "
+                    + Build.VERSION.RELEASE + "; own test dialog only\n");
+            finish(RESULT_OK, result);
+            return;
+        }
+        if (suite.equals("local-rule-flow")) {
+            localRuleFlow(connectService(), automation);
+            result.putString("stream", "PASS: " + assertions + " local rule UI and fixture assertions on Android "
+                    + Build.VERSION.RELEASE + "\n");
+            finish(RESULT_OK, result);
+            return;
+        }
         if (suite.equals("ad-latency")) {
             String benchmark=adLatency(new Store(getTargetContext()),connectService());
             result.putString("stream",benchmark+"PASS: "+assertions+" ad-latency assertions on Android "
@@ -1035,6 +1050,113 @@ public class DeviceChecks extends Instrumentation {
         tapAppNode(appNode(service, "启用此规则"), "enable selected rule");
         require(waitUntil(() -> RulePacks.get(app).state().rules.stream().noneMatch(entry ->
                 entry.packageName.equals("com.okcam.ookcam") && !entry.enabled)), "saved re-enable selection");
+    }
+
+    private void localRuleFlow(CleanerService service, UiAutomation automation) throws Exception {
+        Store store = new Store(getTargetContext());
+        List<CustomSkipRule> original = store.customSkipRules();
+        boolean popup = store.popupEnabled();
+        try {
+            require(original.isEmpty(), "test guest starts with an empty local-rule list");
+            store.setPopupEnabled(true);
+            showTab(0);
+            waitForIdleSync();
+            require(waitUntil(() -> appNode(service, "广告跳过") != null), "home content visible");
+            waitForIdleSync();
+            Thread.sleep(140);
+            saveScreenshot(automation, "local-rule-home.png");
+            clickRuleControl(service, "新增规则");
+            saveScreenshot(automation, "local-rule-form.png");
+            clickRuleControl(service, "选择应用");
+            putRuleField(service, "搜索应用名称或包名", FIXTURE_PACKAGE);
+            clickRuleControl(service, "净屏测试夹具\n" + FIXTURE_PACKAGE);
+            clickRuleControl(service, "使用中弹窗");
+            putRuleField(service, "照着广告填写，如 跳过", "以后再说");
+            putRuleField(service, "如 广告 或 限时推广", POPUP_PROMPT);
+            clickRuleControl(service, "预览规则");
+            require(store.customSkipRules().isEmpty(), "only previewed; no rule saved");
+            saveScreenshot(automation, "local-rule-preview.png");
+            clickRuleControl(service, "保存");
+            require(waitUntil(() -> store.customSkipRules().size() == 1), "rule saved via confirmation");
+            CustomSkipRule saved = store.customSkipRules().get(0);
+            require(FIXTURE_PACKAGE.equals(saved.pkg) && CustomSkipRule.POPUP.equals(saved.mode)
+                    && "以后再说".equals(saved.label) && POPUP_PROMPT.equals(saved.context) && !saved.paused,
+                    "persisted rule has the selected app, scenario, label, context and enabled state");
+
+            clickRuleControl(service, "启用此规则");
+            require(waitUntil(() -> store.customSkipRules().get(0).paused), "rule paused from management");
+            long before = store.popupCount();
+            verifyPopupUnchanged(store, service, "popup", POPUP_PROMPT, before, "paused authored rule");
+            showTab(MainActivity.CUSTOM_RULES);
+            clickRuleControl(service, "启用此规则");
+            require(waitUntil(() -> !store.customSkipRules().get(0).paused), "saved rule re-enabled");
+            verifyPopupUnchanged(store, service, "popup-sensitive", POPUP_PROMPT, before,
+                    "sensitive fixture remains when rule is enabled");
+            showTab(MainActivity.CUSTOM_RULES);
+            require(waitUntil(() -> appNode(service, "自定义规则") != null), "back in rule management");
+            launchPopup("popup");
+            require(waitForFixtureText(service, POPUP_DISMISSED, 12_000), "authored rule dismissed fixture popup");
+            require(waitUntil(() -> store.popupCount() == before + 1), "one dismissal confirmed");
+            showTab(MainActivity.CUSTOM_RULES);
+            clickRuleControl(service, "编辑规则");
+            clickRuleControl(service, "删除");
+            require(store.customSkipRules().size() == 1, "deletion requires final confirmation");
+            clickRuleControl(service, "删除");
+            require(waitUntil(() -> store.customSkipRules().isEmpty()), "rule removed after confirmation");
+        } finally {
+            store.saveCustomSkipRules(original);
+            store.setPopupEnabled(popup);
+        }
+    }
+
+    private void clickRuleControl(CleanerService service, String label) throws Exception {
+        require(waitUntil(() -> {
+            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            return root != null && getTargetContext().getPackageName().equals(String.valueOf(root.getPackageName()));
+        }), "rule screen visible before " + label);
+        AccessibilityNodeInfo node = findAfterScroll(service, label);
+        require(node != null && node.isVisibleToUser()
+                && getTargetContext().getPackageName().equals(String.valueOf(node.getPackageName())),
+                "visible own-app control " + label + " (visible: " + visibleLabels(service) + ")");
+        android.graphics.Rect bounds = new android.graphics.Rect();
+        node.getBoundsInScreen(bounds);
+        require(!bounds.isEmpty(), "control has touchable bounds: " + label);
+        if(label.contains("\n") && node.isClickable()){
+            // Filtering and IME animation may move a ListView row between two frames.
+            // Invoke the same row listener by identity rather than stale coordinates.
+            require(node.performAction(AccessibilityNodeInfo.ACTION_CLICK),"select the matching application");
+            waitForIdleSync();
+            return;
+        }
+        // Exercise the user's normal touch route, including ListView.onItemClick.
+        long down = SystemClock.uptimeMillis();
+        for (int action : new int[]{android.view.MotionEvent.ACTION_DOWN, android.view.MotionEvent.ACTION_UP}) {
+            android.view.MotionEvent touch = android.view.MotionEvent.obtain(down, SystemClock.uptimeMillis(),
+                    action, bounds.exactCenterX(), bounds.exactCenterY(), 0);
+            touch.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            try { sendPointerSync(touch); } finally { touch.recycle(); }
+        }
+        waitForIdleSync();
+        Thread.sleep(220);
+    }
+
+    private void putRuleField(CleanerService service, String hint, String value) throws Exception {
+        boolean changed = waitUntil(() -> {
+            AccessibilityNodeInfo root = service.getRootInActiveWindow();
+            if (root == null || !getTargetContext().getPackageName().equals(String.valueOf(root.getPackageName()))) return false;
+            for (AccessibilityNodeInfo node : UiDriver.walk(root)) {
+                if (!node.isEditable() || !node.isVisibleToUser()) continue;
+                boolean matches = hint.contentEquals(String.valueOf(node.getText()))
+                        || (Build.VERSION.SDK_INT >= 26 && hint.contentEquals(String.valueOf(node.getHintText())));
+                if (!matches) continue;
+                Bundle args = new Bundle();
+                args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value);
+                return node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args);
+            }
+            return false;
+        });
+        require(changed, "entered " + hint);
+        waitForIdleSync();
     }
 
     private void showTab(int tab) {

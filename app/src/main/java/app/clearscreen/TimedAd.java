@@ -63,6 +63,23 @@ final class TimedAd {
         Evidence(AccessibilityNodeInfo r,AccessibilityNodeInfo b,int s){root=r;badge=b;seconds=s;}
         boolean samePage(Evidence other){return other!=null&&root.equals(other.root)&&badge.equals(other.badge);}
     }
+    /** Evidence at the time a native exit was attempted. Disappearance near expiry is ambiguous. */
+    static final class ExitTiming {
+        final Evidence frame;
+        final long earliestEnd;
+        ExitTiming(Evidence frame,AccessibilityNodeInfo target,long now){
+            this.frame=frame;
+            int seconds=target==null?-1:Math.max(seconds(target.getText()),seconds(target.getContentDescription()));
+            if(frame!=null&&frame.seconds>=0)seconds=seconds<0?frame.seconds:Math.min(seconds,frame.seconds);
+            earliestEnd=seconds<0?Long.MAX_VALUE:now+Math.max(0,seconds-1)*1000L;
+        }
+        boolean expired(long now){return now>=earliestEnd;}
+        boolean stillPresent(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){
+            if(frame==null||frame.seconds<0||root==null||root.getWindowId()!=frame.root.getWindowId())return false;
+            for(AccessibilityNodeInfo n:nodes)if(n.isVisibleToUser()&&n.equals(frame.badge)&&tagged(n))return true;
+            return false;
+        }
+    }
     static Evidence inspect(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes,Rect viewport){
         AccessibilityNodeInfo badge=null;int seconds=-1;
         for(AccessibilityNodeInfo n:nodes){
@@ -101,6 +118,11 @@ final class TimedAd {
         void clear(){page=null;until=0;}
         boolean matches(Evidence e,long now){return e!=null && e.samePage(page) && now<=until;}
         boolean sameWindow(int id){return page!=null&&page.root.getWindowId()==id;}
+        long nextProbe(long now){
+            // The watch already includes three seconds of grace. Sample more
+            // closely around unlock without extending a static countdown.
+            return Math.min(until, now+(until-now<=4000 ? 240 : 650));
+        }
         long observe(Evidence e,long now){
             if(e==null||!e.samePage(page)){clear();if(e!=null&&e.seconds>=0){page=e;until=now+(e.seconds+3L)*1000;}}
             return matches(e,now)?until:0;

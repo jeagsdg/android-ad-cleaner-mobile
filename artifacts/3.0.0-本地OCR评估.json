@@ -1,0 +1,43 @@
+{
+  "system": "Windows local zh-CN OCR",
+  "crop": "top right x=0.50..1.00 y=0.025..0.20",
+  "device_actions": 0,
+  "rows": [
+    {
+      "id": "14732062",
+      "recognized_exit": false,
+      "elapsed_ms": 90,
+      "visually_labeled_exit": false
+    },
+    {
+      "id": "15048354",
+      "recognized_exit": true,
+      "elapsed_ms": 9,
+      "visually_labeled_exit": true
+    },
+    {
+      "id": "15048376",
+      "recognized_exit": false,
+      "elapsed_ms": 3,
+      "visually_labeled_exit": false
+    },
+    {
+      "id": "15048416",
+      "recognized_exit": true,
+      "elapsed_ms": 17,
+      "visually_labeled_exit": true
+    },
+    {
+      "id": "15048443",
+      "recognized_exit": true,
+      "elapsed_ms": 24,
+      "visually_labeled_exit": true
+    },
+    {
+      "id": "24539634",
+      "recognized_exit": true,
+      "elapsed_ms": 33,
+      "visually_labeled_exit": true
+    }
+  ]
+}

@@ -25,7 +25,7 @@ import org.json.JSONObject;
 
 /** Process-wide snapshot shared by the rule directory and the accessibility service. */
 final class RulePacks {
-    enum Refresh { UPDATED, CURRENT, ROLLED_BACK, UNAVAILABLE, FAILED }
+    enum Refresh { AVAILABLE, UPDATED, CURRENT, ROLLED_BACK, UNAVAILABLE, FAILED }
 
     interface Feed {
         RulePack fetch(Decoder decoder) throws IOException;
@@ -103,6 +103,64 @@ final class RulePacks {
         }
     }
 
+    static final class Preview {
+        final RulePack candidate;
+        final String description;
+
+        Preview(RulePack current,RulePack candidate) throws JSONException {
+            this.candidate=candidate;
+            Map<String,RulePack.Entry> before=new HashMap<>();
+            for(RulePack.Entry row:current.entries)before.put(row.id,row);
+            StringBuilder details=new StringBuilder();
+            int added=0, changed=0, removed=0;
+            boolean reordered=false;
+            List<String> sharedBefore=new ArrayList<>(), sharedAfter=new ArrayList<>();
+            Set<String> afterIds=new HashSet<>();
+            for(RulePack.Entry row:candidate.entries){
+                afterIds.add(row.id);
+                RulePack.Entry old=before.get(row.id);
+                if(old==null){added++;append(details,"新增",row);}
+                else{
+                    sharedAfter.add(row.id);
+                    if(!RulePack.sameJson(old.rule,row.rule)){
+                        changed++;
+                        append(details,"修改",row);
+                        appendChanges(details,old.rule,row.rule);
+                    }
+                }
+            }
+            for(RulePack.Entry row:current.entries){
+                if(!afterIds.contains(row.id)){removed++;append(details,"移除",row);}
+                else sharedBefore.add(row.id);
+            }
+            reordered=!sharedBefore.equals(sharedAfter);
+            description="版本 "+current.version+" → "+candidate.version+"\n新增 "+added+" · 修改 "+changed+" · 移除 "+removed
+                    +(reordered?"\n原有规则的匹配顺序有变更。":"")+details;
+        }
+
+        private static void appendChanges(StringBuilder out,JSONObject before,JSONObject after)throws JSONException{
+            Set<String> fields=new java.util.TreeSet<>();
+            before.keys().forEachRemaining(fields::add);
+            after.keys().forEachRemaining(fields::add);
+            for(String field:fields){
+                Object old=before.opt(field), next=after.opt(field);
+                if(old!=null && next!=null && RulePack.sameJson(old,next))continue;
+                out.append("\n  ").append(field).append(" · ").append(displayValue(old))
+                        .append(" → ").append(displayValue(next));
+            }
+        }
+
+        private static String displayValue(Object value){
+            if(value==null)return "（未设置）";
+            return value.toString();
+        }
+
+        private static void append(StringBuilder out,String action,RulePack.Entry row){
+            out.append('\n').append(action).append(" · ").append(row.rule.optString("package"))
+                    .append(" · ").append(row.rule.optString("group",row.splash?"开屏广告":"应用内广告"));
+        }
+    }
+
     private static final int FILE_FORMAT = 0x43525031; // CRP1
     private static final int MAX_DISABLED = 4096;
     private static Context appContext;
@@ -115,6 +173,7 @@ final class RulePacks {
     private Snapshot saved;
     private RulePack active, previous;
     private boolean refreshing;
+    private volatile Preview pending;
     private long rollbackGeneration;
 
     static synchronized RulePacks get(Context context) {
@@ -168,6 +227,8 @@ final class RulePacks {
         return state;
     }
 
+    Preview preview(){return pending;}
+
     Refresh refresh() {
         if (feed == null) return Refresh.UNAVAILABLE;
         long generation;
@@ -183,10 +244,10 @@ final class RulePacks {
                 if (generation != rollbackGeneration || candidate.version <= saved.newest) {
                     return state.version < saved.newest ? Refresh.ROLLED_BACK : Refresh.CURRENT;
                 }
-                Snapshot next = new Snapshot(candidate.version, candidate.envelope, envelope(active), saved.disabled);
-                return install(candidate, active, next) ? Refresh.UPDATED : Refresh.FAILED;
+                pending=new Preview(active==null?bundled:active,candidate);
+                return Refresh.AVAILABLE;
             }
-        } catch (IOException e) {
+        } catch (IOException|JSONException e) {
             return Refresh.FAILED;
         } finally {
             synchronized (this) {
@@ -195,9 +256,18 @@ final class RulePacks {
         }
     }
 
+    synchronized Refresh apply(Preview preview){
+        if(preview==null || preview!=pending || preview.candidate.version<=saved.newest)return Refresh.UNAVAILABLE;
+        RulePack next=preview.candidate;
+        if(!install(next,active,new Snapshot(next.version,next.envelope,envelope(active),saved.disabled)))return Refresh.FAILED;
+        pending=null;
+        return Refresh.UPDATED;
+    }
+
     synchronized boolean rollback() {
         if (!state.canRollback) return false;
         if (!install(previous, null, new Snapshot(saved.newest, envelope(previous), null, saved.disabled))) return false;
+        pending=null;
         rollbackGeneration++;
         return true;
     }

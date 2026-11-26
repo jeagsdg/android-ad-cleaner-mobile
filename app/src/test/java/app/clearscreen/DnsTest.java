@@ -5,6 +5,12 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class DnsTest {
+    @Test public void bundledAndCustomDenyListsCannotOverrideProtectedHosts() {
+        DomainRules rules=new DomainRules("qq.com","login.live.com","ads.example.com");
+        assertFalse(rules.contains("qq.com"));
+        assertFalse(rules.contains("login.live.com"));
+        assertTrue(rules.contains("ads.example.com"));
+    }
     @Test public void namesAreExactAndAllowOverrides(){DomainRules rules=new DomainRules("ads.example.com","tracker.example.com");assertTrue(rules.blocked("ads.example.com",Collections.emptySet()));assertFalse(rules.blocked("notads.example.com",Collections.emptySet()));assertFalse(rules.blocked("a.ads.example.com",Collections.emptySet()));assertFalse(rules.blocked("ads.example.com",Collections.singleton("ads.example.com")));assertEquals("ads.example.com",DomainRules.normalize(" ADS.example.com. "));assertNull(DomainRules.normalize("https://ads.example.com"));assertNull(DomainRules.normalize("a..example.com"));}
     @Test public void questionsAndNegativeAnswersPreserveIdAndQuestion(){byte[] q=DnsWire.query("Ads.Example.com",1234);DnsWire.Question parsed=DnsWire.question(q);assertEquals("ads.example.com",parsed.name);assertEquals(512,parsed.udpSize);byte[] answer=DnsWire.error(q,3,false);assertTrue(DnsWire.answerMatches(q,answer));assertEquals(3,answer[3]&15);assertEquals(0,DnsWire.u16(answer,6));assertEquals(0,answer[3]&0x20);assertEquals(1,answer[2]&1);}
     @Test public void ednsSizeAndTruncationAreBounded(){byte[] q=DnsWire.query("example.com",1);byte[] edns=Arrays.copyOf(q,q.length+11);DnsWire.p16(edns,10,1);DnsWire.p16(edns,q.length+1,41);DnsWire.p16(edns,q.length+3,4096);assertEquals(1232,DnsWire.question(edns).udpSize);byte[] truncated=DnsWire.error(edns,0,true);assertEquals(q.length,truncated.length);assertEquals(2,truncated[2]&2);assertEquals(0,DnsWire.u16(truncated,10));assertTrue(DnsWire.answerMatches(edns,truncated));}

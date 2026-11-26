@@ -1,6 +1,9 @@
 package app.clearscreen;
 
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityEvent;
+import android.os.Handler;
+import android.os.Looper;
 import org.json.*;
 import java.util.*;
 
@@ -10,12 +13,20 @@ final class RuleScope {
     private final List<RuleSelector> require,any,exclude,excludeAll;
     private final List<String> excludedPages, pages;
     private final int delay,until;
+    private static List<CustomSkipRule> trackedRules;
+    private static final Set<String> eventPackages=new HashSet<>();
+    private static final Handler main=new Handler(Looper.getMainLooper());
+    private static final Runnable expire=RuleScope::clearEvent;
+    private static final long SOURCE_LIFETIME_MS=250;
+    private static AccessibilityNodeInfo eventSource;
+    final boolean eventScoped;
     final int cooldown,maximum,order,priorityTime;final boolean resetByApp;
     RuleScope(JSONObject fields) throws JSONException {
         source=new JSONObject(fields.toString());
         for(Iterator<String> i=source.keys();i.hasNext();)if(!i.next().matches("require|any|exclude|excludeAll|pages|excludePages|delay|duration|cooldown|maximum|reset|order|priorityTime|root"))
             throw new IllegalArgumentException("未知的范围条件");
-        if(source.has("root")&&!Boolean.TRUE.equals(source.get("root")))throw new IllegalArgumentException("仅支持整窗查询");
+        if(source.has("root")&&!(source.get("root") instanceof Boolean))throw new IllegalArgumentException("查询范围无效");
+        eventScoped=Boolean.FALSE.equals(source.opt("root"));
         require=compile("require");any=compile("any");exclude=compile("exclude");excludeAll=compile("excludeAll");
         excludedPages=strings("excludePages");pages=strings("pages");delay=millis("delay",0);until=millis("duration",Integer.MAX_VALUE);
         cooldown=millis("cooldown",1000);maximum=millis("maximum",Integer.MAX_VALUE);
@@ -23,6 +34,60 @@ final class RuleScope {
         order=rawOrder==null?0:(Integer)rawOrder;priorityTime=millis("priorityTime",0);
         String reset=source.optString("reset","activity");if(!reset.equals("activity")&&!reset.equals("app"))throw new IllegalArgumentException("不支持的重置条件");resetByApp=reset.equals("app");
     }
+    // Keep one short-lived identity for comparison with freshly read nodes. Its text is never inspected or stored.
+    static boolean needsEventSource(String pkg,Store store){
+        List<CustomSkipRule> rules=store.activeRules();
+        if(rules!=trackedRules){
+            eventPackages.clear();
+            for(CustomSkipRule rule:rules)if(rule.scope!=null&&rule.scope.eventScoped)eventPackages.add(rule.pkg);
+            trackedRules=rules;
+        }
+        return eventPackages.contains(pkg);
+    }
+    static void observeEvent(AccessibilityEvent event){
+        AccessibilityNodeInfo source;
+        try{source=event.getSource();}catch(IllegalStateException unavailable){return;}
+        if(source==null)return;
+        setEventSource(source);
+    }
+
+    static void setEventSource(AccessibilityNodeInfo source){
+        eventSource=source;
+        main.postDelayed(expire,SOURCE_LIFETIME_MS);
+    }
+
+    @SuppressWarnings("deprecation")
+    static void clearEvent(){
+        if(eventSource==null)return;
+        main.removeCallbacks(expire);
+        eventSource.recycle();
+        eventSource=null;
+    }
+
+    boolean permits(AccessibilityNodeInfo target,boolean targetAtEnd){
+        return !eventScoped || inside(target,targetAtEnd,eventSource);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static boolean inside(AccessibilityNodeInfo target,boolean targetAtEnd,AccessibilityNodeInfo source){
+        if(source==null)return true;
+        if(source.getWindowId()!=target.getWindowId()
+                ||!android.text.TextUtils.equals(source.getPackageName(),target.getPackageName()))return false;
+        if(!targetAtEnd)return false;
+        AccessibilityNodeInfo cursor=target;
+        try{
+            for(int depth=0;cursor!=null && depth<64;depth++){
+                if(source.equals(cursor))return true;
+                AccessibilityNodeInfo parent=cursor.getParent();
+                if(cursor!=target && cursor!=source)cursor.recycle();
+                cursor=parent;
+            }
+            return false;
+        }finally{
+            if(cursor!=null && cursor!=target && cursor!=source)cursor.recycle();
+        }
+    }
+
     private int millis(String k,int fallback) throws JSONException{
         if(!source.has(k))return fallback;
         Object n=source.get(k);if(!(n instanceof Integer)||(Integer)n<0)throw new IllegalArgumentException("匹配时长必须是非负整数");return (Integer)n;
@@ -47,6 +112,7 @@ final class RuleScope {
     String describe(){
         List<String> parts=new ArrayList<>();
         if(source.optBoolean("root"))parts.add("从完整窗口查询");
+        if(eventScoped)parts.add("从事件控件查询；无来源时查当前窗口");
         if(!pages.isEmpty())parts.add("页面 "+android.text.TextUtils.join("、",pages));
         if(!excludedPages.isEmpty())parts.add("排除页面 "+android.text.TextUtils.join("、",excludedPages));
         if(!require.isEmpty())parts.add("同时满足 "+require.size()+" 个条件");
@@ -63,20 +129,22 @@ final class RuleScope {
         if(maximum==0||elapsed<delay || elapsed-delay>=until||(!excludedPages.isEmpty()&&(activity==null||activity.isEmpty())))return false;
         if(!pages.isEmpty()&&(activity==null||pages.stream().noneMatch(activity::startsWith)))return false;
         for(String p:excludedPages)if(activity.startsWith(p))return false;
-        for(RuleSelector s:require)if(!w.has(s))return false;
-        if(!any.isEmpty()&&any.stream().noneMatch(w::has))return false;
-        for(RuleSelector s:exclude)if(w.has(s))return false;
+        for(RuleSelector s:require)if(!w.has(s,eventScoped,false))return false;
+        if(!any.isEmpty()&&any.stream().noneMatch(s->w.has(s,eventScoped,false)))return false;
+        for(RuleSelector s:exclude)if(w.has(s,eventScoped,true))return false;
         // v1.13.2 source and public documentation differ on this operator. The
         // intersection accepts a page only when neither interpretation vetoes it.
-        return excludeAll.stream().noneMatch(w::has);
+        return excludeAll.stream().noneMatch(s->w.has(s,eventScoped,true));
     }
     static final class Window{
         final AccessibilityNodeInfo root;final List<AccessibilityNodeInfo> nodes;
         final Map<String,Boolean> results=new HashMap<>();
         Window(AccessibilityNodeInfo root,List<AccessibilityNodeInfo> nodes){this.root=root;this.nodes=nodes;}
-        boolean has(RuleSelector s){return results.computeIfAbsent(s.expression,k->{
+        final AccessibilityNodeInfo source=eventSource;
+        boolean has(RuleSelector s,boolean scoped,boolean veto){return results.computeIfAbsent(scoped+":"+veto+":"+s.expression,k->{
             for(AccessibilityNodeInfo n:nodes)if(n.getWindowId()==root.getWindowId()
-                    &&android.text.TextUtils.equals(root.getPackageName(),n.getPackageName())&&s.matches(n))return true;return false;
+                    &&android.text.TextUtils.equals(root.getPackageName(),n.getPackageName())&&s.matches(n)
+                    &&(!scoped || veto&&!s.targetAtEnd() || inside(n,s.targetAtEnd(),source)))return true;return false;
         });}
     }
 }

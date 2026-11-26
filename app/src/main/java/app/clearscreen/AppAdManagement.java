@@ -231,7 +231,7 @@ final class AppAdManagement {
             screen.space(controls, 4);
             screen.paragraph(controls, AdFilterService.active == null
                     ? "网络过滤未开启。此设置将在下次开启时生效。"
-                    : "此设置在下次开启时生效。修改后，请停止并重新开启网络过滤。");
+                    : "运行中保存后自动应用。已有的连接可能需要重新连接。");
         }
 
         showBuiltInRules(entry, false, true);

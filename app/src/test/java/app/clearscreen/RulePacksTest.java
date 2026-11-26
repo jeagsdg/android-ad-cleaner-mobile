@@ -60,7 +60,7 @@ public class RulePacksTest {
     @Test public void acceptedFeedSurvivesRestartFailureAndRollbackBlocksReplay() throws Exception {
         File storage = new File(directory.getRoot(), "rules.bin");
         RulePacks store = new RulePacks(storage, bundled, decoder -> decoder.verify(official), this::verify);
-        assertEquals(RulePacks.Refresh.UPDATED, store.refresh());
+        applyOffered(store);
         assertEquals(RulePacks.Refresh.CURRENT, store.refresh());
         long accepted = store.state().version;
         assertTrue(accepted > 0);
@@ -87,9 +87,10 @@ public class RulePacksTest {
         List<String> bundledIds = bundled.entries.stream().map(row -> row.id).collect(Collectors.toList());
         assertEquals(bundledIds, release.entries.stream().map(row -> row.id).collect(Collectors.toList()));
         Set<String> previousIds = prior.entries.stream().map(row -> row.id).collect(Collectors.toSet());
+        RulePack version26=RulePacks.verify(official,bundled,26,RulePack.CERTIFICATE_SHA256);
         assertEquals(Set.of("https://i.gkd.li/i/26328668", "https://i.gkd.li/i/23097140",
                         "https://i.gkd.li/i/19526000", "https://i.gkd.li/i/14322017"),
-                release.entries.stream().filter(row -> !previousIds.contains(row.id))
+                version26.entries.stream().filter(row -> !previousIds.contains(row.id))
                         .map(row -> row.sourceUrl).collect(Collectors.toSet()));
         assertThrows(IOException.class, () -> verify(legacy));
         assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 21, RulePack.CERTIFICATE_SHA256));
@@ -97,7 +98,7 @@ public class RulePacksTest {
         File storage = new File(directory.getRoot(), "history.bin");
         RulePacks older = new RulePacks(storage, bundled, decoder -> decoder.verify(legacy),
                 bytes -> RulePacks.verify(bytes, bundled, 21, RulePack.CERTIFICATE_SHA256));
-        assertEquals(RulePacks.Refresh.UPDATED, older.refresh());
+        applyOffered(older);
         String disabled = popupEntry(older).id;
         assertTrue(older.setRuleEnabled(disabled, false));
 
@@ -105,7 +106,7 @@ public class RulePacksTest {
         assertEquals(0, upgraded.state().version);
         assertEquals(bundledIds.size(), upgraded.state().rules.size());
         assertFalse(popupEntry(upgraded).enabled);
-        assertEquals(RulePacks.Refresh.UPDATED, upgraded.refresh());
+        applyOffered(upgraded);
         assertEquals(release.version, upgraded.state().version);
         assertEquals(bundledIds.size(), upgraded.state().rules.size());
         assertFalse(popupEntry(upgraded).enabled);
@@ -119,7 +120,7 @@ public class RulePacksTest {
         assertTrue(online.setRuleEnabled(rule.id, false));
         assertFalse(popupEntry(online).enabled);
         assertFalse(online.state().popupRules.hasRules(APP, ACTIVITY));
-        assertEquals(RulePacks.Refresh.UPDATED, online.refresh());
+        applyOffered(online);
         long accepted = online.state().version;
 
         RulePacks offline = new RulePacks(storage, bundled, null, this::verify);
@@ -135,14 +136,14 @@ public class RulePacksTest {
         assertTrue(again.state().popupRules.hasRules(APP, ACTIVITY));
     }
 
-    @Test public void upgradingFromVersions22Through25KeepsThePublishedFeedAndDisabledRules() throws IOException {
-        assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 27, RulePack.CERTIFICATE_SHA256));
-        for (int previousVersion : new int[]{22, 23, 24, 25}) {
+    @Test public void upgradingFromVersions22Through26KeepsThePublishedFeedAndDisabledRules() throws IOException {
+        assertThrows(IOException.class, () -> RulePacks.verify(official, bundled, 28, RulePack.CERTIFICATE_SHA256));
+        for (int previousVersion : new int[]{22, 23, 24, 25, 26}) {
             File storage = new File(directory.getRoot(), "version-" + previousVersion + ".bin");
             RulePacks.Feed feed = decoder -> decoder.verify(official);
             RulePacks installed = new RulePacks(storage, bundled, feed,
                     bytes -> RulePacks.verify(bytes, bundled, previousVersion, RulePack.CERTIFICATE_SHA256));
-            assertEquals(RulePacks.Refresh.UPDATED, installed.refresh());
+            applyOffered(installed);
             assertEquals(5, installed.state().version);
             assertTrue(installed.setRuleEnabled(popupEntry(installed).id, false));
 
@@ -156,6 +157,61 @@ public class RulePacksTest {
             assertEquals(RulePacks.Refresh.ROLLED_BACK, restarted.refresh());
             assertFalse(popupEntry(restarted).enabled);
         }
+    }
+
+    @Test public void signedDeltaRetainsOrderChecksBaseAndRejectsUnsafeReferences() throws Exception {
+        JSONObject fixtures;
+        try(java.io.InputStream in=getClass().getResourceAsStream("/delta-test-envelopes.json")){
+            fixtures=new JSONObject(new String(in.readAllBytes(),StandardCharsets.UTF_8));
+        }
+        String testPin=fixtures.getString("testPin");
+        byte[] bytes=fixtures.getJSONObject("ok").toString().getBytes(StandardCharsets.UTF_8);
+        assertThrows(IOException.class,()->verify(bytes)); // The release pin never accepts the fixture.
+        RulePack fixtureBase=RulePack.bundled(fixtures.getString("splashCatalog"),fixtures.getString("popupCatalog"));
+        RulePack delta=RulePacks.verify(bytes,fixtureBase,26,testPin);
+        assertEquals(fixtureBase.entries,delta.entries);
+        for(String name:List.of("wrongBase","wrongKind","duplicate")){
+            byte[] invalid=fixtures.getJSONObject(name).toString().getBytes(StandardCharsets.UTF_8);
+            assertThrows(IOException.class,()->RulePacks.verify(invalid,fixtureBase,26,testPin));
+        }
+    }
+
+    @Test public void previewExposesTheOldAndNewConditionValues() throws Exception {
+        String splash="{sdkRules:[],rules:[{package:'example.app',group:'fixture',matchTime:1000}]}";
+        RulePack before=RulePack.bundled(splash,"{rules:[]}");
+        RulePack after=RulePack.bundled(splash.replace("1000","2000"),"{rules:[]}");
+        RulePacks.Preview preview=new RulePacks.Preview(before,after);
+        assertTrue(preview.description.contains("修改 1"));
+        assertTrue(preview.description.contains("matchTime · 1000 → 2000"));
+    }
+
+    @Test public void releaseDeltaCanUpgradeAndRollbackWithPerRuleChoiceIntact() throws Exception {
+        File project=new File(System.getProperty("clearscreen.artifacts")).getParentFile();
+        byte[] next=Files.readAllBytes(new File(project,RulePack.DELTA_PATH).toPath());
+        RulePack delta=verify(next);
+        assertEquals(bundled.entries,delta.entries);
+        File storage=new File(directory.getRoot(),"delta-restore.bin");
+        RulePacks started=new RulePacks(storage,bundled,d->d.verify(official),this::verify);
+        applyOffered(started);
+        String id=popupEntry(started).id;
+        assertTrue(started.setRuleEnabled(id,false));
+        RulePacks upgraded=new RulePacks(storage,bundled,d->d.verify(next),this::verify);
+        applyOffered(upgraded);
+        assertEquals(delta.version,upgraded.state().version);
+        assertFalse(popupEntry(upgraded).enabled);
+        assertTrue(upgraded.rollback());
+        assertEquals(5,upgraded.state().version);
+        assertFalse(popupEntry(upgraded).enabled);
+    }
+
+    private static void applyOffered(RulePacks packs){
+        long previous=packs.state().version;
+        assertEquals(RulePacks.Refresh.AVAILABLE,packs.refresh());
+        RulePacks.Preview offered=packs.preview();
+        assertNotNull(offered);
+        assertEquals(previous,packs.state().version);
+        assertEquals(RulePacks.Refresh.UPDATED,packs.apply(offered));
+        assertEquals(RulePacks.Refresh.UNAVAILABLE,packs.apply(offered));
     }
 
     private RulePack verify(byte[] bytes) throws IOException {

@@ -23,16 +23,21 @@ final class ShortDramaAd {
                                         Rect display, List<AccessibilityNodeInfo> nodes) {
         if (root.getWindowId() < 0 || display.width() >= display.height()
                 || !sameWindow(root, hint) || nodes.stream().anyMatch(ShortDramaAd::protectsPlayback)) return null;
+        // Layout-only wrappers come and go as the app redraws; identify the current page
+        // by its relationship to the reviewed pager, rather than the hint's depth.
         AccessibilityNodeInfo page = hint;
-        for (int i = 0; i < 7; i++) {
-            page = page.getParent();
-            if (page == null || !page.isVisibleToUser() || !sameWindow(root, page)) return null;
+        for (int i = 0; i < 48 && sameWindow(root, page) && page.isVisibleToUser(); i++) {
+            AccessibilityNodeInfo parent = page.getParent();
+            if (!sameWindow(root, parent) || !parent.isVisibleToUser()) break;
+            AccessibilityNodeInfo pager = isPlaybackList(parent) ? parent.getParent() : parent;
+            if (pager != null && PAGER_ID.equals(pager.getViewIdResourceName())) {
+                if (sameWindow(root, pager) && pager.isScrollable() && page.equals(visiblePage(pager, display))
+                        && pager.getActionList().stream().anyMatch(action -> action.getId() == PAGE_DOWN)) return pager;
+                return null;
+            }
+            page = parent;
         }
-        AccessibilityNodeInfo parent = page.getParent();
-        AccessibilityNodeInfo pager = isPlaybackList(parent) ? parent.getParent() : parent;
-        if (!page.equals(visiblePage(pager, display)) || !sameWindow(root, pager) || !pager.isScrollable()
-                || pager.getActionList().stream().noneMatch(action -> action.getId() == PAGE_DOWN)) return null;
-        return pager;
+        return null;
     }
 
     static boolean resumed(AccessibilityNodeInfo previousPager, Rect display, List<AccessibilityNodeInfo> nodes) {

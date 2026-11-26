@@ -1,0 +1,47 @@
+name: Android verification
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - edition: full
+            offline: 'false'
+          - edition: offline
+            offline: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Check source attribution and coverage
+        run: |
+          python3 tools/verify_sources.py
+          python3 tools/build_coverage_matrix.py
+          git diff --exit-code -- docs/适配质量矩阵.json
+      - name: Test, lint and assemble
+        run: bash gradlew --console=plain -PofflineOnly=${{ matrix.offline }} :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - name: Verify packaged assets, permissions and debug signature
+        run: python3 tools/verify_apk.py app/build/outputs/apk/debug/app-debug.apk --variant ${{ matrix.edition }} --build-type debug
+      - name: Save test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ matrix.edition }}
+          if-no-files-found: ignore
+          path: |
+            app/build/test-results/testDebugUnitTest/*.xml
+            app/build/reports/lint-results-debug.xml

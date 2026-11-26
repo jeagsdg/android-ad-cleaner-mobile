@@ -43,6 +43,25 @@ public class TimedAdTest {
         assertFalse(TimedAd.locked("15s | 跳过"));assertEquals(15,TimedAd.seconds("Skip in 15s"));
         assertEquals(-1,TimedAd.seconds("00:15"));assertEquals(-1,TimedAd.seconds("看15秒领金币"));
     }
+    @Test public void disappearingButtonDoesNotProveEarlyDismissalAtExpiryOrInsideTheSameAd(){
+        AccessibilityNodeInfo root=add(null,"",false,VIEW),badge=add(root,"广告",false,EXIT);
+        AccessibilityNodeInfo exit=add(root,"关闭广告",true,EXIT);
+        TimedAd.ExitTiming almostOver=new TimedAd.ExitTiming(new TimedAd.Evidence(root,badge,1),exit,1000);
+        assertTrue(almostOver.expired(1350));
+        TimedAd.ExitTiming playing=new TimedAd.ExitTiming(new TimedAd.Evidence(root,badge,9),exit,1000);
+        assertTrue(playing.stillPresent(root,List.of(root,badge)));
+        assertFalse(playing.expired(1350));
+        badge.setVisibleToUser(false);
+        assertFalse(playing.stillPresent(root,List.of(root,badge)));
+    }
+
+    @Test public void fileOperationsNeverBecomeCustomAdExits() {
+        for (String label : List.of("取消上传","取消下载","删除文件","确认分享","Cancel download","Share file")) {
+            assertTrue(label, CustomSkipRule.unsafeButton(label));
+        }
+        assertFalse(CustomSkipRule.unsafeButton("关闭广告"));
+    }
+
     @Test public void countdownInsideCompositeButtonBlocksThatButtonOnly(){
         AccessibilityNodeInfo root=add(null,"",false,VIEW);
         AccessibilityNodeInfo button=add(root,"跳过广告",true,EXIT),img=add(button,"",false,EXIT);

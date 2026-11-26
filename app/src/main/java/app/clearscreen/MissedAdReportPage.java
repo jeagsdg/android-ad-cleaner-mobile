@@ -86,6 +86,7 @@ final class MissedAdReportPage {
         card.addView(screen.bold(mode.label, 18, MainActivity.INK));
         screen.space(card, 6);
         screen.paragraph(card, subtitle + "\n" + status(mode));
+        screen.linkAction(card,"为此场景新增规则",()->screen.addRuleForApp(pkg,mode.key,null));
         if (service != null && !service.busy && allowed(mode))
             screen.linkAction(card, mode == MissedAdCapture.Mode.SPLASH ? "重现开屏广告" : "重现应用内广告", () -> consent(mode));
         else if (mode==MissedAdCapture.Mode.POPUP&&!screen.store.popupEnabled()
@@ -154,6 +155,9 @@ final class MissedAdReportPage {
                     CleanerService service = CleanerService.get();
                     if (service == null || service.busy || !allowed(mode)) { screen.render(); return; }
                     MissedAdCapture.startLocal(pkg, screen.store.packageVersion(pkg), versionName(), mode, controls.isChecked());
+                    MissedAdCapture.Session active=capture.session(pkg);
+                    if(active!=null)active.captureSettings("服务已连接 · "+mode.label+"已开启 · 目标应用未排除 · "
+                            +"规则版本 "+RulePacks.get(screen).state().version);
                     if (target != null) {
                         try { screen.startActivity(target); return; }
                         catch (ActivityNotFoundException | SecurityException ignored) { }
@@ -189,8 +193,21 @@ final class MissedAdReportPage {
         card.addView(screen.text(session.reference, 14, MainActivity.MUTED));
         screen.space(card, 6);
         screen.action(card, "预览、复制或保存报告", true, () -> preview(session));
+        screen.linkAction(card, "补充我看到的结果", () -> new AlertDialog.Builder(screen)
+                .setTitle("这次实际发生了什么？")
+                .setItems(new String[]{"广告自己结束了","我手动关闭了广告","净屏误点了普通页面"}, (d,i) -> {
+                    AdSessions.Metric value=new AdSessions.Metric[]{AdSessions.Metric.NATURAL_REPORTED,
+                            AdSessions.Metric.MANUAL_REPORTED,AdSessions.Metric.MISCLICK_REPORTED}[i];
+                    if(valid(session)&&session.userOutcome(value)) {
+                        screen.store.adSessionSink().record(value);
+                        screen.toast("已添加到本机报告");
+                    } else screen.toast("本次报告已记录结果或已失效");
+                }).setNegativeButton("取消",null).show());
         if(session.sample!=null) screen.action(card,"打开样本实验室",false,() -> {
             if(valid(session)) SampleInspector.open(screen,session);
+        });
+        if(session.sample!=null) screen.linkAction(card,"从本次采集新增规则",()->{
+            if(valid(session))LocalRuleForm.fromSample(screen,session.sample,session.mode.key);
         });
         screen.linkAction(card, "打开官方反馈与进度", () -> officialFeedback(session));
         screen.linkAction(card, "清除本机报告", () -> { capture.clear(pkg); screen.render(); });
@@ -198,17 +215,32 @@ final class MissedAdReportPage {
 
     private void preview(MissedAdCapture.Session session) {
         if (!valid(session)) return;
-        String report = session.report(screen.store.appVersion(), Build.VERSION.SDK_INT);
+        long rulesVersion=RulePacks.get(screen).state().version;
+        String report = session.report(screen.store.appVersion(), Build.VERSION.SDK_INT)
+                + "\n设备："+Build.MANUFACTURER+" "+Build.MODEL
+                + "\n查看报告时的服务："+PermissionAccess.title(PermissionAccess.state(screen))
+                + "\n查看报告时的规则："+(rulesVersion==0?"随包规则":"v"+rulesVersion)
+                + "\n查看报告时的处理设置："+(allowed(session.mode)?"已开启":settingIssue(session.mode));
+        android.widget.EditText edited=new android.widget.EditText(screen);
+        edited.setId(R.id.feedback_report_text);
+        edited.setText(report);
+        edited.setTextSize(15);
+        edited.setGravity(android.view.Gravity.TOP);
+        edited.setMaxLines(12);
+        edited.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                |android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        edited.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(16000)});
         AlertDialog dialog = new AlertDialog.Builder(screen).setTitle("反馈报告预览")
-                .setMessage(report)
+                .setView(edited)
                 .setPositiveButton("复制", (d, w) -> {
-                    if (valid(session)) screen.copyDiagnosticText("净屏广告反馈", report);
+                    if (valid(session)) screen.copyDiagnosticText("净屏广告反馈", edited.getText().toString());
                 }).setNeutralButton("保存文件", (d, w) -> {
-                    if (valid(session)) screen.saveDiagnosticFile(report);
+                    if (valid(session)) screen.saveDiagnosticFile(edited.getText().toString());
                 }).setNegativeButton("关闭", null).create();
         Handler expiry = new Handler(Looper.getMainLooper());
         Runnable dismiss = () -> { dialog.dismiss(); valid(session); };
         dialog.setOnDismissListener(ignored -> expiry.removeCallbacks(dismiss));
+        if(dialog.getWindow()!=null)dialog.getWindow().setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
         dialog.show();
         expiry.postDelayed(dismiss, Math.max(0, session.started + MissedAdCapture.RETAIN_MS - SystemClock.elapsedRealtime()));
     }

@@ -84,6 +84,12 @@ final class AccessibilityRecoveryPage {
                 break;
         }
         if (showedFailure) activity.paragraph(panel, "上次守护已中断，请检查通知和系统设置。");
+        long disconnects=AccessibilityReliability.observedDisconnects(activity);
+        if(disconnects>0){
+            long wait=AccessibilityReliability.lastRecoveryWaitMillis(activity);
+            activity.paragraph(panel,"本机已观察到 "+disconnects+" 次断连。"
+                    +(wait<0?"":"最近一次重新连接用时 "+(wait<1000?"不足 1 秒":(wait/1000)+" 秒")+"。"));
+        }
         troubleshooting();
     }
 
@@ -132,7 +138,7 @@ final class AccessibilityRecoveryPage {
             return;
         }
         new AlertDialog.Builder(activity).setTitle("开启无障碍连接守护？")
-                .setMessage("净屏将显示常驻通知，在服务断开后持续检查系统重连。系统开关关闭后，需要你在系统设置中重新开启。")
+                .setMessage("净屏会显示守护通知。断连后先逐步延长复查间隔，之后每 15 分钟再看一次；亮屏或解锁时也会检查。系统开关关闭后，点提醒可前往设置重新开启。")
                 .setPositiveButton("开启", (dialog, which) -> {
                     if (!SkipKeepAliveService.startRecovery(activity)) activity.toast("暂时无法开启，请检查系统开关和通知");
                     activity.render();

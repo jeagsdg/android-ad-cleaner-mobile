@@ -36,14 +36,40 @@ final class AccessibilityReliability {
         return prefs(context).getLong("disconnected-time", 0);
     }
 
+    static long observedDisconnects(Context context) {
+        return prefs(context).getLong("disconnects-observed", 0);
+    }
+
+    static long lastRecoveryWaitMillis(Context context) {
+        return prefs(context).getLong("last-recovery-wait", -1);
+    }
+
+    static String lastWatchResumeTrigger(Context context) {
+        return prefs(context).getString("last-watch-resume-trigger", "");
+    }
+
+    static void resumed(Context context, SkipKeepAliveService.WatchStart trigger) {
+        prefs(context).edit().putString("last-watch-resume-trigger", trigger.name()).apply();
+        record(context, Kind.RECOVERY_RESUMED);
+    }
+
+    static void recovered(Context context, long observedWaitMillis) {
+        record(context, Kind.RECOVERED, observedWaitMillis);
+    }
+
     static void record(Context context, Kind kind) {
+        record(context, kind, -1);
+    }
+
+    private static void record(Context context, Kind kind, long observedWaitMillis) {
         if (kind == Kind.UNKNOWN) return;
         long now = System.currentTimeMillis();
         SharedPreferences.Editor editor = prefs(context).edit()
                 .putString("last-kind", kind.name()).putLong("last-time", now);
         switch (kind) {
             case DISCONNECTED:
-                editor.putLong("disconnected-time", now);
+                editor.putLong("disconnected-time", now)
+                        .putLong("disconnects-observed", observedDisconnects(context) + 1);
                 break;
             case RECOVERY_WAITING:
             case RECOVERED:
@@ -51,6 +77,7 @@ final class AccessibilityReliability {
             case RECOVERY_STOPPED:
             case RECOVERY_FAILED:
                 editor.putString("recovery-kind", kind.name()).putLong("recovery-time", now);
+                if (kind == Kind.RECOVERED) editor.putLong("last-recovery-wait", observedWaitMillis);
                 break;
         }
         editor.apply();

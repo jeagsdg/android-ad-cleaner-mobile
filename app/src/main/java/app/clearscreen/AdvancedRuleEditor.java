@@ -24,6 +24,7 @@ final class AdvancedRuleEditor {
     private final int existingIndex;
     private final String mode;
     private final boolean sequence;
+    private boolean generatedDraft;
     private final int stepLimit;
     private final LinearLayout content, stepList;
     private final EditText packageField;
@@ -53,6 +54,7 @@ final class AdvancedRuleEditor {
     }
     static void reviewDraft(MainActivity screen, List<CustomSkipRule> rules, CustomSkipRule draft) {
         AdvancedRuleEditor editor = new AdvancedRuleEditor(screen, rules, -1, draft.mode, false);
+        editor.generatedDraft=true;
         editor.packageField.setText(draft.pkg);
         Step step = editor.steps.get(0);
         step.target.setText(draft.label);
@@ -149,16 +151,25 @@ final class AdvancedRuleEditor {
         dialog.setOnShowListener(ignored -> {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
                 try {
-                    List<CustomSkipRule> next = new ArrayList<>(rules);
-                    next.removeAll(original);
-                    int position = existingIndex < 0 ? next.size() : Math.min(existingIndex, next.size());
-                    List<CustomSkipRule> draft = drafts();
-                    next.addAll(position, draft);
-                    screen.store.saveCustomSkipRules(next);
-                    if (RulePreview.LOCAL.packageName().equals(draft.get(0).pkg)) RulePreview.LOCAL.clear();
-                    dialog.dismiss();
-                    screen.render();
-                    screen.toast(sequence ? "连续弹窗规则已保存" : "规则已保存");
+                    List<CustomSkipRule> draft=drafts();
+                    if(generatedDraft){
+                        CustomSkipRule candidate=draft.get(0);
+                        SampleLibrary.open(screen,ad -> {
+                            if(!dialog.isShowing())return;
+                            SampleLibrary.open(screen,ordinary -> {
+                                if(!dialog.isShowing())return;
+                                try {
+                                    DraftEvidence.validate(candidate,ad,ordinary);
+                                    new AlertDialog.Builder(screen).setTitle("保存并启用这条草稿？")
+                                            .setMessage(candidate.pkg+"\n"+candidate.label+"\n广告页唯一命中，普通页未命中。")
+                                            .setNegativeButton("取消",null)
+                                            .setPositiveButton("保存并启用",(d,w)->{
+                                                if(dialog.isShowing())save(draft,dialog,form);
+                                            }).show();
+                                } catch(IllegalArgumentException failure){showError(failure);}
+                            },candidate.pkg,"选择普通页面反例");
+                        },candidate.pkg,"选择出现广告的页面样本");
+                    }else save(draft,dialog,form);
                 } catch (IllegalArgumentException | IllegalStateException failure) {
                     showError(failure);
                     form.post(() -> form.fullScroll(View.FOCUS_DOWN));
@@ -172,6 +183,25 @@ final class AdvancedRuleEditor {
         dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN
                 | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         dialog.show();
+    }
+
+    private void save(List<CustomSkipRule> draft,AlertDialog dialog,ScrollView form){
+        try{
+            List<CustomSkipRule> next=new ArrayList<>(generatedDraft?screen.store.customSkipRules():rules);
+            next.removeAll(original);
+            int index=existingIndex<0?next.size():Math.min(existingIndex,next.size());
+            if(!original.isEmpty()&&original.get(0).paused){
+                List<CustomSkipRule> held=new ArrayList<>();
+                for(CustomSkipRule rule:draft)held.add(rule.withPaused(true));
+                next.addAll(index,held);
+            }else next.addAll(index,draft);
+            screen.store.saveCustomSkipRules(next);
+            if(RulePreview.LOCAL.packageName().equals(draft.get(0).pkg))RulePreview.LOCAL.clear();
+            dialog.dismiss();screen.render();
+            screen.toast(sequence?"连续弹窗规则已保存":"规则已保存");
+        }catch(IllegalArgumentException|IllegalStateException failure){
+            showError(failure);form.post(()->form.fullScroll(View.FOCUS_DOWN));
+        }
     }
 
     private List<CustomSkipRule> drafts() {

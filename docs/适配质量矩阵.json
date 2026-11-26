@@ -1,0 +1,7951 @@
+{
+  "format": 1,
+  "sources": {
+    "splash": {
+      "asset": "app/src/main/assets/splash-rules.json",
+      "sha256": "39c881a62e6e30b0102365cea17620d42b2e4d01d4c010e1985c3fe7454660b1",
+      "upstream": "https://github.com/ganlinte/GKD-subscription",
+      "upstreamCommit": "4746d192b4c57a4b62ed92a7f5deaf79e64fa811"
+    },
+    "popup": {
+      "asset": "app/src/main/assets/popup-ad-rules.json",
+      "sha256": "9e5e7dd88f9c82f260061591ed9d0aec0f53844fc556f11d5c6247588783e250",
+      "upstream": "https://github.com/ganlinte/GKD-subscription",
+      "upstreamCommit": "4746d192b4c57a4b62ed92a7f5deaf79e64fa811"
+    }
+  },
+  "ledger": "适配样本索引.jsonl",
+  "ruleCount": 409,
+  "packageCount": 261,
+  "packages": [
+    {
+      "package": "bubei.tingshu",
+      "name": "懒人听书",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          91
+        ]
+      },
+      "scenes": [
+        "局部广告-悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "13348489"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.TuHu.android",
+      "name": "途虎养车",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          134
+        ]
+      },
+      "scenes": [
+        "全屏广告-广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13228818"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.com.langeasy.LangEasyLexis",
+      "name": "不背单词",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          35
+        ]
+      },
+      "scenes": [
+        "局部广告-右下角弹窗"
+      ],
+      "referencedSnapshots": [
+        "13759025"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.damai",
+      "name": "大麦",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          19
+        ],
+        "popup": [
+          44
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12472623",
+        "13627900"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.mil.junhao",
+      "name": "中国军号",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          63
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13806892"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.samsclub.app",
+      "name": "山姆会员商店",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          41
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13609106"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.soulapp.android",
+      "name": "Soul",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          7
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12833280",
+        "12850094"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.speedtest.lite",
+      "name": "网速管家极速版",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          136
+        ]
+      },
+      "scenes": [
+        "全屏广告-新人专享优惠弹窗"
+      ],
+      "referencedSnapshots": [
+        "12715511"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.wenyu.bodian",
+      "name": "波点音乐",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          88
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "22845785"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "cn.wps.moffice_eng",
+      "name": "WPS",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          15
+        ]
+      },
+      "scenes": [
+        "局部广告-首页-底部广告"
+      ],
+      "referencedSnapshots": [
+        "13804525"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.wsds.gamemaster",
+      "name": "迅游手游加速器",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          58
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13930391"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "cn.yonghui.hyd",
+      "name": "永辉生活",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          177
+        ]
+      },
+      "scenes": [
+        "全屏广告-优惠卷弹窗"
+      ],
+      "referencedSnapshots": [
+        "13414401",
+        "13414444"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.MobileTicket",
+      "name": "铁路12306",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          92,
+          136
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "17580273",
+        "17656103"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.Qunar",
+      "name": "去哪儿旅行",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          91,
+          120
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "23180019"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.UCMobile",
+      "name": "UC浏览器",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          65
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13188653"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.achievo.vipshop",
+      "name": "唯品会",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          226
+        ]
+      },
+      "scenes": [
+        "优惠券推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "33897647"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.aiwu.market",
+      "name": "爱吾游戏宝盒",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          149,
+          150
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13387463"
+      ],
+      "samplesInspected": 4,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.autonavi.minimap",
+      "name": "高德地图",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          117
+        ],
+        "popup": [
+          62
+        ]
+      },
+      "scenes": [
+        "全屏广告-加油页面-优惠券弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12642857",
+        "16490985"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.babycloud.hanju",
+      "name": "韩小圈",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          68
+        ]
+      },
+      "scenes": [
+        "局部广告"
+      ],
+      "referencedSnapshots": [
+        "13628282",
+        "13670721",
+        "13849929"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.badmintoncn.bbs",
+      "name": "中羽在线",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          199
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13635224"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidu.BaiduMap",
+      "name": "百度地图",
+      "splash": 2,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          118,
+          119
+        ],
+        "popup": [
+          27,
+          28
+        ]
+      },
+      "scenes": [
+        "全屏广告-打车界面-弹窗广告",
+        "局部广告-地图上方黄页横幅",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12642301",
+        "12801465",
+        "12909281",
+        "12909300",
+        "12930699",
+        "16556555",
+        "23742641"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidu.netdisk",
+      "name": "百度网盘",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          30,
+          31,
+          32
+        ]
+      },
+      "scenes": [
+        "全屏广告-活动弹窗",
+        "全屏广告-首页banner广告",
+        "全屏广告-首页热门广告"
+      ],
+      "referencedSnapshots": [
+        "12642505",
+        "12706544"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidu.netdisk.samsung",
+      "name": "百度网盘-三星版本",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          33
+        ]
+      },
+      "scenes": [
+        "局部广告-关闭购买套餐卡片广告"
+      ],
+      "referencedSnapshots": [
+        "12738388"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidu.searchcraft",
+      "name": "简单搜索",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          82
+        ]
+      },
+      "scenes": [
+        "局部广告-信息流广告"
+      ],
+      "referencedSnapshots": [
+        "13520385"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidu.tieba",
+      "name": "百度贴吧",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          13
+        ],
+        "popup": [
+          29
+        ]
+      },
+      "scenes": [
+        "全屏广告-广告弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12566191",
+        "12775906",
+        "12870916",
+        "13168383",
+        "13168386",
+        "13233500",
+        "13322120",
+        "13322227",
+        "13328246",
+        "18730575"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidu.youavideo",
+      "name": "一刻相册",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          174,
+          175
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "局部广告-悬浮窗"
+      ],
+      "referencedSnapshots": [
+        "12970088",
+        "13048700"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.baidutieba.davy",
+      "name": "贴吧一键签到大师",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          132
+        ]
+      },
+      "scenes": [
+        "全屏广告-内部弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "12504291"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.byfen.market",
+      "name": "百分网游戏盒子",
+      "splash": 2,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          14,
+          15
+        ],
+        "popup": [
+          248
+        ]
+      },
+      "scenes": [
+        "开屏",
+        "首页游戏推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "13298944",
+        "13800021",
+        "13801613"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.cainiao.wireless",
+      "name": "菜鸟",
+      "splash": 1,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          80
+        ],
+        "popup": [
+          39,
+          40
+        ]
+      },
+      "scenes": [
+        "全屏广告-今日手气红包",
+        "全屏广告-弹窗广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12914371",
+        "13692758",
+        "13842492",
+        "19222366"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.cctv.cctv5ultimate",
+      "name": "央视体育",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          173
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13405159"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.cctv.yangshipin.app.androidp",
+      "name": "央视频",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          94
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "19859692"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.chaozh.iReaderFree",
+      "name": "掌阅",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          107
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "23046697"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.chinamobile.mcloud",
+      "name": "中国移动云盘",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          198,
+          212
+        ]
+      },
+      "scenes": [
+        "局部广告-悬浮广告",
+        "首页营销轮播弹窗"
+      ],
+      "referencedSnapshots": [
+        "13627826",
+        "13627834"
+      ],
+      "samplesInspected": 8,
+      "samplesAssertedOffline": 5,
+      "verifiedSampleVersions": [
+        "mCloud10.3.2",
+        "mCloud10.4.3",
+        "mCloud10.5.0"
+      ],
+      "lastOfflineVerification": "2026-11-26",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.chinatower.tthd",
+      "name": "铁塔换电",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          133
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13694901"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.chunqiu.ah",
+      "name": "AH视频",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          106,
+          137
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13264381",
+        "13264387"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.cmcc.cmvideo",
+      "name": "咪咕视频",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          101,
+          102
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "局部广告-右下角小广告"
+      ],
+      "referencedSnapshots": [
+        "12498315",
+        "13276111",
+        "13276122"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.cmi.jegotrip",
+      "name": "无忧行",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          149
+        ]
+      },
+      "scenes": [
+        "全屏广告-应用内广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13631904"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.cmstop.shaoxing",
+      "name": "越牛新闻",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          60
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13611775"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.coolapk.market",
+      "name": "酷安",
+      "splash": 3,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          33,
+          155,
+          156
+        ]
+      },
+      "scenes": [
+        "专用开屏页 · 跳过和倒计时并排",
+        "开屏",
+        "首页开屏 · 广告层中的跳过按钮"
+      ],
+      "referencedSnapshots": [
+        "13826359",
+        "13827095",
+        "23097140",
+        "26328668"
+      ],
+      "samplesInspected": 24,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.copymanga.app",
+      "name": "拷貝漫畫",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          87
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "12504525"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.crirp.zhipu",
+      "name": "智谱",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          77
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13725305"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.ct.client",
+      "name": "中国电信",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          62
+        ],
+        "popup": [
+          194
+        ]
+      },
+      "scenes": [
+        "局部广告-浮窗广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13043345",
+        "17584648"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.cyl.musiccy.ou",
+      "name": "OMOFUN",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          4
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12775919"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.daysko.safp",
+      "name": "7天澳門統考",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          22,
+          23
+        ]
+      },
+      "scenes": [
+        "全屏广告-谷歌广告"
+      ],
+      "referencedSnapshots": [
+        "12642909",
+        "12643032",
+        "12643316"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ddsy.songyao",
+      "name": "叮当快药",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          53
+        ]
+      },
+      "scenes": [
+        "全屏广告-优惠卷提示"
+      ],
+      "referencedSnapshots": [
+        "13048720"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.delicloud.app.smartoffice",
+      "name": "得力e+",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          20
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13840775",
+        "13944086"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.dianping.v1",
+      "name": "大众点评",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          49,
+          50
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "局部广告-关闭[签到开红包]"
+      ],
+      "referencedSnapshots": [
+        "12727366",
+        "13538340"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.didapinche.booking",
+      "name": "嘀嗒出行",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          21
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13988957",
+        "13989178"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.diershoubing.erbing",
+      "name": "二柄",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          22
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13378853",
+        "13546165"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.dmzj.manhua",
+      "name": "动漫之家",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          54,
+          55
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "局部广告-主页-浮窗"
+      ],
+      "referencedSnapshots": [
+        "13542503",
+        "13542506"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.dongqiudi.news",
+      "name": "懂球帝",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          74
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12620583"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.douban.frodo",
+      "name": "豆瓣",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          144
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "_SplashActivity-1775545409137.zip"
+      ],
+      "samplesInspected": 8,
+      "samplesAssertedOffline": 3,
+      "verifiedSampleVersions": [
+        "7.114.0",
+        "7.122.1",
+        "7.127.0"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.dragon.read",
+      "name": "番茄免费小说",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          227
+        ]
+      },
+      "scenes": [
+        "书城电商券推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "12910159"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.dubox.drive",
+      "name": "TeraBox",
+      "splash": 2,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          8,
+          9
+        ],
+        "popup": [
+          13
+        ]
+      },
+      "scenes": [
+        "全屏广告-广告弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13200574",
+        "13200577",
+        "13688384"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.duokan.reader",
+      "name": "多看",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          58
+        ]
+      },
+      "scenes": [
+        "局部广告-小说页广告"
+      ],
+      "referencedSnapshots": [
+        "13497902"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.duowan.kiwi",
+      "name": "虎牙直播",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          71,
+          233
+        ]
+      },
+      "scenes": [
+        "局部广告-直播间悬浮广告",
+        "首页游戏预约推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "12901044",
+        "12901045",
+        "13625453"
+      ],
+      "samplesInspected": 21,
+      "samplesAssertedOffline": 16,
+      "verifiedSampleVersions": [
+        "11.2.23",
+        "11.3.22",
+        "11.5.23",
+        "11.6.2",
+        "11.8.23",
+        "11.8.44",
+        "11.9.23",
+        "13.4.2",
+        "13.5.26"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.ecellsz.watch.guard",
+      "name": "乐康守护",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          127
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "14039510"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.eco.global.app",
+      "name": "ECOVACS HOME",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          3
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13538616"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.estrongs.android.pop",
+      "name": "ES文件浏览器",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          202
+        ]
+      },
+      "scenes": [
+        "局部广告"
+      ],
+      "referencedSnapshots": [
+        "12818281"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.example.maintenancemaster",
+      "name": "维护大师",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          50
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12903877"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.example.pptv",
+      "name": "人人视频",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          39
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13761160"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.excean.na",
+      "name": "99手游加速器",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          24
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片广告"
+      ],
+      "referencedSnapshots": [
+        "13931051"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.fcbox.hivebox",
+      "name": "丰巢管家",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          61
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13459000"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.feeyo.vz.pro.cdm",
+      "name": "飞常准业内版",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          23
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13926823"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.feicui.vdhelper",
+      "name": "翡翠视频",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          60
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12700837",
+        "12700848"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.firebear.androil",
+      "name": "小熊油耗",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          57
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12855707",
+        "13088169",
+        "13927561"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.flyersoft.seekbooks",
+      "name": "搜书大师",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          42
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12857275"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.gamersky",
+      "name": "游民星空",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          181
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "13451220",
+        "13635580"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.gkid.crazyrope",
+      "name": "天天跳绳",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          131
+        ]
+      },
+      "scenes": [
+        "局部广告-浮窗广告"
+      ],
+      "referencedSnapshots": [
+        "13262844",
+        "13262845"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.google.android.apps.youtube.music",
+      "name": "YouTube Music",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          19
+        ]
+      },
+      "scenes": [
+        "局部广告-播放界面广告"
+      ],
+      "referencedSnapshots": [
+        "13196056"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.google.android.youtube",
+      "name": "youtube",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          16,
+          17,
+          18
+        ]
+      },
+      "scenes": [
+        "全屏广告-视频播放-赞助商广告",
+        "全屏广告-视频播放-跳过广告"
+      ],
+      "referencedSnapshots": [
+        "12565261",
+        "12877346",
+        "13705106",
+        "13797491"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.gotokeep.keep",
+      "name": "Keep",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          4,
+          5
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗",
+        "局部广告-首页信息流广告"
+      ],
+      "referencedSnapshots": [
+        "12706102",
+        "12706115",
+        "13761641"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.greenpoint.android.mc10086.activity",
+      "name": "中国移动",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          196
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12662361"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.gspace.android",
+      "name": "Gspace",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          1,
+          2
+        ]
+      },
+      "scenes": [
+        "全屏广告-Youtube播放视频跳过广告",
+        "局部广告-主页面上方广告"
+      ],
+      "referencedSnapshots": [
+        "12705339",
+        "12709006"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.handsgo.jiakao.android",
+      "name": "驾考宝典",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          31
+        ],
+        "popup": [
+          80
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13523033"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.hanweb.android.sdzwfw.activity",
+      "name": "爱山东",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          76
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13407227"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.heytap.market",
+      "name": "OPPO软件商店",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          133
+        ],
+        "popup": [
+          221
+        ]
+      },
+      "scenes": [
+        "开屏",
+        "首页浮窗广告"
+      ],
+      "referencedSnapshots": [
+        "14469932",
+        "14668997"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.hihonor.android.thememanager",
+      "name": "主题",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          98
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "16573695"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.hihonor.appmarket",
+      "name": "荣耀应用市场",
+      "splash": 2,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          40,
+          152
+        ],
+        "popup": [
+          118,
+          119
+        ]
+      },
+      "scenes": [
+        "全屏广告-广告提示",
+        "局部广告-悬浮窗小广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13063815",
+        "13063928",
+        "13168440",
+        "15087199"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.hihonor.phoneservice",
+      "name": "我的荣耀",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          51
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "14896804"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.hihonor.vmall",
+      "name": "荣耀商城",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          117
+        ]
+      },
+      "scenes": [
+        "全屏广告-应用内广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13060881"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huatu.handheld_huatu",
+      "name": "华图在线",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          73
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12715702",
+        "12744973"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.android.thememanager",
+      "name": "主题",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          108
+        ],
+        "popup": [
+          79
+        ]
+      },
+      "scenes": [
+        "全屏广告-分类页“免费领取”",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12647393",
+        "13069736"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.huawei.android.totemweather",
+      "name": "华为天气",
+      "splash": 1,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          27
+        ],
+        "popup": [
+          74,
+          75
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12928975",
+        "13226636",
+        "13521221",
+        "13787501"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.appmarket",
+      "name": "华为应用市场",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          29
+        ],
+        "popup": [
+          223
+        ]
+      },
+      "scenes": [
+        "开屏",
+        "横幅广告"
+      ],
+      "referencedSnapshots": [
+        "15523964",
+        "16611800"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.browser",
+      "name": "华为浏览器",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          25
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12681995",
+        "13403785"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.health",
+      "name": "华为运动健康",
+      "splash": 1,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          30
+        ],
+        "popup": [
+          77,
+          78
+        ]
+      },
+      "scenes": [
+        "全屏广告-“我的”页会员广告",
+        "局部广告-底部横幅广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12667766",
+        "12667814",
+        "13215012",
+        "13228290",
+        "13587206"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.himovie",
+      "name": "华为视频",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          26
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12814007",
+        "12819351"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.hwid",
+      "name": "HMS Core",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          3
+        ]
+      },
+      "scenes": [
+        "全屏广告-页面中间跳出广告"
+      ],
+      "referencedSnapshots": [
+        "12709068"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.music",
+      "name": "华为音乐",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          28
+        ],
+        "popup": [
+          76
+        ]
+      },
+      "scenes": [
+        "局部广告-播放界面直播浮窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12745222",
+        "13067649"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.huawei.search",
+      "name": "智慧搜索",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          192
+        ]
+      },
+      "scenes": [
+        "全屏广告-下拉搜索横幅广告"
+      ],
+      "referencedSnapshots": [
+        "12667938",
+        "12745008",
+        "12841076",
+        "13266095"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.hunantv.imgo.activity",
+      "name": "芒果TV",
+      "splash": 0,
+      "popup": 5,
+      "catalogRows": {
+        "popup": [
+          94,
+          95,
+          96,
+          97,
+          250
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "局部广告-右侧悬浮广告",
+        "视频横屏 · 广告举报旁的关闭按钮"
+      ],
+      "referencedSnapshots": [
+        "12818430",
+        "12818464",
+        "12818481",
+        "13761169",
+        "14322017"
+      ],
+      "samplesInspected": 9,
+      "samplesAssertedOffline": 2,
+      "verifiedSampleVersions": [
+        "7.5.0",
+        "8.0.1"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.hxak.liangongbao",
+      "name": "链工宝",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          36
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.infothinker.gzmetro",
+      "name": "广州地铁",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          148
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.intsig.camscanner",
+      "name": "扫描全能王",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          120
+        ]
+      },
+      "scenes": [
+        "局部广告-主页面上方广告"
+      ],
+      "referencedSnapshots": [
+        "12668813"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.jd.app.reader",
+      "name": "京东读书",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          85,
+          86
+        ]
+      },
+      "scenes": [
+        "全屏广告-阅读页面广告弹窗",
+        "全屏广告-首页弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "12686577",
+        "12686664",
+        "12881810",
+        "12893631"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.jingdong.app.mall",
+      "name": "京东",
+      "splash": 2,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          113,
+          114
+        ],
+        "popup": [
+          83
+        ]
+      },
+      "scenes": [
+        "全屏广告-购物车界面-砸金蛋",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12642266",
+        "16323111",
+        "17602356"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.jingdong.pdj",
+      "name": "京东到家",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          84
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13223282"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.jingyao.easybike",
+      "name": "哈啰",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          64,
+          65,
+          66
+        ]
+      },
+      "scenes": [
+        "全屏广告-哈啰智能电动车-广告弹窗",
+        "全屏广告-应用内活动、广告弹窗（大部分）",
+        "局部广告-右侧悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "12650028",
+        "12650071",
+        "12650090",
+        "12650163",
+        "13331231"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.jisu.manhua",
+      "name": "漫画人极速版",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          93
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13688186"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.jxedt",
+      "name": "驾校一点通",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          81
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13476741"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.kkeji.news.client",
+      "name": "快科技",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          35
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13197536"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.klcxkj.zqxy",
+      "name": "趣智校园",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          115
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "12781415",
+        "13195649"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.kmb.app1933",
+      "name": "KMB . LWB",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          110
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "16620586"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.kmxs.reader",
+      "name": "七猫免费小说",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          107
+        ]
+      },
+      "scenes": [
+        "局部广告-阅读页面底部广告"
+      ],
+      "referencedSnapshots": [
+        "12640296"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ksf.yyx",
+      "name": "OMOFUN",
+      "splash": 2,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          5,
+          6
+        ],
+        "popup": [
+          7,
+          8
+        ]
+      },
+      "scenes": [
+        "全屏广告-插屏广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12775918",
+        "12775919",
+        "12775922",
+        "12775924",
+        "12775925"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.kuaiduizuoye.scan",
+      "name": "快对",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          88
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12716285"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.kuaikan.comic",
+      "name": "快看漫画",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          89
+        ]
+      },
+      "scenes": [
+        "局部广告-漫画界面-底部广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12910268"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.kuangxiangciweimao.novel",
+      "name": "刺猬猫阅读",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          83
+        ],
+        "popup": [
+          43
+        ]
+      },
+      "scenes": [
+        "全屏广告-阅读-活动弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13056248",
+        "16347338"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.kugou.android",
+      "name": "酷狗音乐",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          34
+        ],
+        "popup": [
+          243
+        ]
+      },
+      "scenes": [
+        "个人页会员推广横幅",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12775410",
+        "13426030",
+        "13468987",
+        "13558426"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.kugou.android.lite",
+      "name": "酷狗概念版",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          96,
+          97
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "21451911",
+        "21750055"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.ky.medical.reference",
+      "name": "用药参考",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          59
+        ],
+        "popup": [
+          178
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12840924",
+        "12918049"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.le123.ysdq",
+      "name": "影视大全",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          176
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "13635244"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.leixun.taofen8",
+      "name": "淘粉吧",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          128
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13937324"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.lptiyu.tanke",
+      "name": "步道乐跑",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          36,
+          37
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "12829816",
+        "12869344",
+        "13378925",
+        "13476172"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.luna.music",
+      "name": "汽水音乐",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          126
+        ],
+        "popup": [
+          111
+        ]
+      },
+      "scenes": [
+        "全屏广告-VIP弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13674376",
+        "15087528"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 1,
+      "verifiedSampleVersions": [
+        "7.8.0"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.lxkj.dmhw",
+      "name": "呆萌价",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          101
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "15454142"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.lxt.cfmoto",
+      "name": "CFMOTO",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          0
+        ]
+      },
+      "scenes": [
+        "局部广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13401967"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.m4399.gamecenter",
+      "name": "4399游戏盒",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          21
+        ]
+      },
+      "scenes": [
+        "局部广告-悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "13297466"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.maidu.gkld",
+      "name": "公考雷达",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          63
+        ]
+      },
+      "scenes": [
+        "局部广告-首页右侧悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "12715291"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.manmanbuy.bijia",
+      "name": "慢慢买",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          135
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13214974"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.maxhom.weibu",
+      "name": "暮瑟",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          104
+        ]
+      },
+      "scenes": [
+        "局部广告-交友-底部广告"
+      ],
+      "referencedSnapshots": [
+        "13702305",
+        "13702339",
+        "13702345"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.mcdonalds.gma.cn",
+      "name": "麦当劳",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          92
+        ]
+      },
+      "scenes": [
+        "全屏广告-优惠券弹窗"
+      ],
+      "referencedSnapshots": [
+        "13465873"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.mfcloudcalculate.networkdisk",
+      "name": "123云盘",
+      "splash": 2,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          10,
+          11
+        ],
+        "popup": [
+          20
+        ]
+      },
+      "scenes": [
+        "全屏广告-应用内广告弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12846434",
+        "13059834",
+        "14018247",
+        "15087252",
+        "16611758"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.midea.vm.washer",
+      "name": "U净",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          78
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13407199"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.miui.player",
+      "name": "小米音乐",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          162,
+          163,
+          164
+        ]
+      },
+      "scenes": [
+        "局部广告-我的页面-顶部 banner 广告",
+        "局部广告-横幅广告",
+        "局部广告-飘窗广告_首页右侧"
+      ],
+      "referencedSnapshots": [
+        "12700984",
+        "13304344",
+        "13304347",
+        "13562649"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.miui.video",
+      "name": "小米视频",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          161
+        ]
+      },
+      "scenes": [
+        "局部广告-视频列表广告"
+      ],
+      "referencedSnapshots": [
+        "25323739"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.modian.app",
+      "name": "摩点",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          103
+        ]
+      },
+      "scenes": [
+        "局部广告-「我的」界面广告条"
+      ],
+      "referencedSnapshots": [
+        "13610188"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.motoband",
+      "name": "摩托邦",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          37
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13849831"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.moutai.mall",
+      "name": "i茅台",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          203
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12745130",
+        "12745153"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.mxchip.petmarvel",
+      "name": "滴宠生活",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          104,
+          146
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "15102179",
+        "23600688"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.mygolbs.mybus",
+      "name": "掌上公交",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          186,
+          187,
+          188
+        ]
+      },
+      "scenes": [
+        "局部广告-广告卡片",
+        "局部广告-顶栏小广告"
+      ],
+      "referencedSnapshots": [
+        "12790841",
+        "12791122",
+        "12791579"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.netease.cloudmusic",
+      "name": "网易云音乐",
+      "splash": 2,
+      "popup": 4,
+      "catalogRows": {
+        "splash": [
+          66,
+          67
+        ],
+        "popup": [
+          140,
+          141,
+          142,
+          143
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "局部广告-发现-顶部视频广告",
+        "局部广告-我的页面-中间滚动广告",
+        "局部广告-播放界面广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12745666",
+        "13229016",
+        "13527105",
+        "13768367",
+        "15092772",
+        "17892200"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.netease.gl",
+      "name": "网易大神",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          137
+        ]
+      },
+      "scenes": [
+        "全屏广告-应用内广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12883277"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.netease.mail",
+      "name": "网易邮箱大师",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          48,
+          49
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12818335",
+        "12893573",
+        "12923776",
+        "13195662",
+        "14046124"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.netease.mobimail",
+      "name": "网易邮箱",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          46,
+          47
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12667519",
+        "12686093",
+        "13328425"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.nowcasting.activity",
+      "name": "彩云天气",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          38
+        ]
+      },
+      "scenes": [
+        "局部广告-插页广告"
+      ],
+      "referencedSnapshots": [
+        "13690826"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.nowcoder.app.florida",
+      "name": "牛客",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          38
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13855443"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.okcam.ookcam",
+      "name": "小鹰看看",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          151
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.oppo.store",
+      "name": "OPPO商城",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          207
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13295201"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.pcncn.jj",
+      "name": "作业精灵",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          201
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13695874"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.phoenix.read",
+      "name": "红果免费短剧",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          247
+        ]
+      },
+      "scenes": [
+        "竖屏短剧广告倒计时结束"
+      ],
+      "referencedSnapshots": [
+        "32430183"
+      ],
+      "samplesInspected": 6,
+      "samplesAssertedOffline": 1,
+      "verifiedSampleVersions": [
+        "7.1.9.32"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.picacomic.fregata",
+      "name": "PicACG",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          85
+        ],
+        "popup": [
+          9
+        ]
+      },
+      "scenes": [
+        "局部广告-漫画页广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13422624",
+        "13423009"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.pmph.irenwei",
+      "name": "人卫",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          116
+        ]
+      },
+      "scenes": [
+        "全屏广告-抽奖弹窗"
+      ],
+      "referencedSnapshots": [
+        "13897421"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ponyemu.main",
+      "name": "小马模拟器",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          55
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "14892481"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qc.mycomic",
+      "name": "MyComic",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          100
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "15443225"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.qcymall.earphonesetup",
+      "name": "QCY",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          10
+        ]
+      },
+      "scenes": [
+        "局部广告-我的-广告卡片"
+      ],
+      "referencedSnapshots": [
+        "13874219"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qidian.QDReader",
+      "name": "起点读书",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          108,
+          109,
+          110
+        ]
+      },
+      "scenes": [
+        "全屏广告-红包弹窗",
+        "局部广告-悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "12717032",
+        "13459031",
+        "13918466"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qiekj.user",
+      "name": "胖乖生活",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          105
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗"
+      ],
+      "referencedSnapshots": [
+        "17789291",
+        "17789294"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qinlin.edoor",
+      "name": "亲邻开门",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          112
+        ]
+      },
+      "scenes": [
+        "局部广告-首页顶部广告"
+      ],
+      "referencedSnapshots": [
+        "12707733"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qiyi.video",
+      "name": "爱奇艺",
+      "splash": 2,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          68,
+          69
+        ],
+        "popup": [
+          25,
+          26
+        ]
+      },
+      "scenes": [
+        "局部广告-我的-顶部广告",
+        "局部广告-播放页-插入广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12495050",
+        "13160866",
+        "13379565",
+        "13536669",
+        "13536703"
+      ],
+      "samplesInspected": 6,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.qiyi.video.lite",
+      "name": "爱奇艺极速版",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          70
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13797162"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.qiyi.video.pad",
+      "name": "爱奇艺PAD",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          86
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "23381997"
+      ],
+      "samplesInspected": 3,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.qjy.youqulife.io",
+      "name": "MINO 4K",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          6
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13378653"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qq.ac.android",
+      "name": "腾讯动漫",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          126
+        ]
+      },
+      "scenes": [
+        "局部广告-漫画阅读页面-左侧悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "12707756"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.qq.qcloud",
+      "name": "腾讯微云",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          43
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12755789"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.quark.browser",
+      "name": "夸克浏览器",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          220
+        ]
+      },
+      "scenes": [
+        "运营广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13292571"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.realtech.xiaocan",
+      "name": "小蚕霸王餐",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          52,
+          53
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12854728",
+        "13694858",
+        "13794403"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.redfinger.app",
+      "name": "红手指云手机",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          70
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13761825"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sankuai.meituan",
+      "name": "美团",
+      "splash": 1,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          116
+        ],
+        "popup": [
+          98,
+          99
+        ]
+      },
+      "scenes": [
+        "全屏广告-广告弹窗",
+        "局部广告-首页右侧抽奖小广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12639734",
+        "12639815",
+        "12892626",
+        "28997249"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sankuai.meituan.dispatch.crowdsource",
+      "name": "美团众包",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          100
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13694935"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sankuai.meituan.takeoutnew",
+      "name": "美团外卖",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          217
+        ]
+      },
+      "scenes": [
+        "首页外卖神券推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "25865139"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sdu.didi.psnger",
+      "name": "滴滴",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          52,
+          215
+        ]
+      },
+      "scenes": [
+        "局部广告-打车页面广告",
+        "首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13760846",
+        "18173921"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sec.android.app.samsungapps",
+      "name": "Galaxy Store",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          102
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "18329468"
+      ],
+      "samplesInspected": 5,
+      "samplesAssertedOffline": 3,
+      "verifiedSampleVersions": [
+        "4.6.11.4",
+        "4.6.12.11"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.sf.activity",
+      "name": "顺丰速运",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          244
+        ]
+      },
+      "scenes": [
+        "首页会员推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "17869485"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.sfacg",
+      "name": "菠萝包轻小说",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          89,
+          90
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "19888054",
+        "19888120"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.shanghaionstar",
+      "name": "安吉星",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          12
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13071523"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.shinyv.cnr",
+      "name": "云听",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          184
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12817933"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.showstartfans.activity",
+      "name": "秀动",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          167
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13670432"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.shuqi.controller",
+      "name": "书旗小说",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          122,
+          123,
+          124
+        ]
+      },
+      "scenes": [
+        "局部广告-内部右侧浮动广告",
+        "局部广告-听书页面底部广告",
+        "局部广告-阅读页面底部广告"
+      ],
+      "referencedSnapshots": [
+        "12513811",
+        "12513893",
+        "12513944"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sina.weibo",
+      "name": "微博",
+      "splash": 0,
+      "popup": 8,
+      "catalogRows": {
+        "popup": [
+          144,
+          145,
+          146,
+          147,
+          148,
+          245,
+          246,
+          251
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "博文与评论间的图片广告卡片",
+        "博文与评论间的视频广告卡片",
+        "局部广告-博文内容区与评论区中间卡片式广告",
+        "局部广告-悬浮广告",
+        "详情页 · 广告标记旁的关闭入口"
+      ],
+      "referencedSnapshots": [
+        "12673043",
+        "12705974",
+        "12750090",
+        "12750118",
+        "13206775",
+        "13635551",
+        "13787207",
+        "19526000",
+        "21828244"
+      ],
+      "samplesInspected": 24,
+      "samplesAssertedOffline": 8,
+      "verifiedSampleVersions": [
+        "14.0.0",
+        "15.3.0",
+        "15.3.1",
+        "15.8.1",
+        "16.3.1"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.sinovatech.unicom.ui",
+      "name": "中国联通",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          195
+        ]
+      },
+      "scenes": [
+        "局部广告-首页右下角卡片悬浮窗"
+      ],
+      "referencedSnapshots": [
+        "13930543"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.smile.gifmaker",
+      "name": "快手",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          90,
+          240
+        ]
+      },
+      "scenes": [
+        "局部广告-首页-左侧红包悬浮控件",
+        "搜索页生活服务新人红包推广"
+      ],
+      "referencedSnapshots": [
+        "12708671",
+        "12708676",
+        "32433383"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.smzdm.client.android",
+      "name": "什么值得买",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          121
+        ]
+      },
+      "scenes": [
+        "全屏广告-APP内弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "12695751"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.sohu.inputmethod.sogou",
+      "name": "搜狗输入法",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          95
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "20138053"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.ss.android.article.lite",
+      "name": "头条搜索极速版",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          234
+        ]
+      },
+      "scenes": [
+        "首页现金红包推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "12705414"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ss.android.article.news",
+      "name": "今日头条",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          228,
+          242
+        ]
+      },
+      "scenes": [
+        "视频页促销浮窗",
+        "首页推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "13761236",
+        "15314921"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ss.android.article.video",
+      "name": "西瓜视频",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          235
+        ]
+      },
+      "scenes": [
+        "首页周末红包推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "13620299"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ss.android.ugc.aweme",
+      "name": "抖音",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          132
+        ],
+        "popup": [
+          239
+        ]
+      },
+      "scenes": [
+        "开屏",
+        "首页活动推广浮窗"
+      ],
+      "referencedSnapshots": [
+        "12749276",
+        "13216121"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ssports.mobile.video",
+      "name": "爱奇艺体育",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          87
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "17901123"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.superrhino.rarering",
+      "name": "Nico",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          81
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13853858"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.taobao.idlefish",
+      "name": "闲鱼",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          213,
+          214
+        ]
+      },
+      "scenes": [
+        "夜市推广弹窗",
+        "搜索页红包推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "23125419",
+        "23183586"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.taobao.litetao",
+      "name": "淘特",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          139
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12774851"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.taobao.taobao",
+      "name": "淘宝",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          79
+        ],
+        "popup": [
+          125
+        ]
+      },
+      "scenes": [
+        "全屏广告-限时福利弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12642792",
+        "12648734",
+        "12648746",
+        "13180826",
+        "13198239",
+        "21708258"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.androidqqmail",
+      "name": "QQ邮箱",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          93
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12775855"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.djcity",
+      "name": "掌上道聚城",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          109
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "15137209"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.docs",
+      "name": "腾讯文档",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          44
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13198082"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.tencent.karaoke",
+      "name": "全民K歌",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          238
+        ]
+      },
+      "scenes": [
+        "活动推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "13363281"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.tencent.mm",
+      "name": "微信",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          143,
+          147
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12701979",
+        "32969391"
+      ],
+      "samplesInspected": 15,
+      "samplesAssertedOffline": 12,
+      "verifiedSampleVersions": [
+        "8.0.37",
+        "8.0.38",
+        "8.0.40",
+        "8.0.49",
+        "8.0.66",
+        "8.0.69",
+        "8.0.77",
+        "8.0.79"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.mobileqq",
+      "name": "QQ",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          72
+        ],
+        "popup": [
+          11
+        ]
+      },
+      "scenes": [
+        "全屏广告-QQ小程序开屏广告",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12877215",
+        "12919195",
+        "13062244"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.mtt",
+      "name": "QQ浏览器",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          71
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12472630"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.news",
+      "name": "腾讯新闻",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          130
+        ]
+      },
+      "scenes": [
+        "全屏广告-广告、活动弹窗"
+      ],
+      "referencedSnapshots": [
+        "12755872"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.tencent.qqlive",
+      "name": "腾讯视频",
+      "splash": 3,
+      "popup": 4,
+      "catalogRows": {
+        "splash": [
+          123,
+          153,
+          154
+        ],
+        "popup": [
+          127,
+          128,
+          129,
+          241
+        ]
+      },
+      "scenes": [
+        "全屏广告-视频播放时的广告",
+        "局部广告-卡片式广告",
+        "开屏",
+        "首页游戏福利推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "12700407",
+        "12700433",
+        "12700518",
+        "13526547",
+        "13842643",
+        "14049316"
+      ],
+      "samplesInspected": 15,
+      "samplesAssertedOffline": 12,
+      "verifiedSampleVersions": [
+        "8.10.00.28018",
+        "8.9.20.27635",
+        "8.9.30.27684",
+        "9.01.00.29862",
+        "9.01.60.30228",
+        "9.03.20.31310",
+        "9.03.25.31337"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tencent.qqmusic",
+      "name": "QQ音乐",
+      "splash": 2,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          124,
+          125
+        ],
+        "popup": [
+          209,
+          210
+        ]
+      },
+      "scenes": [
+        "局部广告-广告卡片",
+        "局部广告-首页-底部广告弹窗",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13115121",
+        "13206534",
+        "13797001",
+        "17056504",
+        "17068758"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.tencent.qqsports",
+      "name": "腾讯体育",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          84
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "14032883"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.tmall.wireless",
+      "name": "手机天猫",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          230,
+          231
+        ]
+      },
+      "scenes": [
+        "电商推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "13222500",
+        "13222510"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.tongcheng.android",
+      "name": "同程旅行",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          218
+        ]
+      },
+      "scenes": [
+        "首页推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "20921290"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.umetrip.android.msky.app",
+      "name": "航旅纵横",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          69
+        ]
+      },
+      "scenes": [
+        "局部广告-首页右侧悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "12783264"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.upupoo.apu.mobile",
+      "name": "UPUPOO动态壁纸",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          141,
+          145
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13830230",
+        "14052232"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.waimaiii.waimaiii",
+      "name": "歪麦霸王餐",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          45
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13346451"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.wallstreetcn.news",
+      "name": "华尔街见闻",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          72
+        ]
+      },
+      "scenes": [
+        "全屏广告-卡片广告"
+      ],
+      "referencedSnapshots": [
+        "13262717"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.weilaishanhai.oopz",
+      "name": "Oopz",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          99,
+          140
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "21202363",
+        "21202366"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.whpe.qrcode.hunan_xiangtan",
+      "name": "湘潭出行",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          159
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13476265"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.wm.dmall",
+      "name": "多点",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          56,
+          57
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页-弹窗广告",
+        "局部广告-首页-浮窗广告"
+      ],
+      "referencedSnapshots": [
+        "13197627",
+        "13197634",
+        "13246242"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.wondertek.paper",
+      "name": "澎湃新闻",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          232
+        ]
+      },
+      "scenes": [
+        "首页论坛推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "12899226"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.wuba.zhuanzhuan",
+      "name": "转转",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          224,
+          225
+        ]
+      },
+      "scenes": [
+        "广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "14927441",
+        "15140820"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.wwwscn.yuexingbao",
+      "name": "悦通行",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          130
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13239194"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiachufang",
+      "name": "下厨房",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          157,
+          158
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "13348710",
+        "13363079"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiangzi.dislikecn",
+      "name": "Dislike",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          2
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "15196702"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiaoenai.app",
+      "name": "小恩爱",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          54
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13867880"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiaohu.olevodmobile",
+      "name": "欧乐影院",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          82
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12826256"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.xiaomi.gamecenter",
+      "name": "小米游戏中心",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          165
+        ]
+      },
+      "scenes": [
+        "局部广告-首页右侧悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "12715800"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiaomi.market",
+      "name": "小米应用商店",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          222,
+          229
+        ]
+      },
+      "scenes": [
+        "首页广告弹窗",
+        "首页悬浮推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "23249365",
+        "28141509"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiaomi.mico",
+      "name": "小爱音箱",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          160
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12745621"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xiaote",
+      "name": "小特",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          56
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "14035706"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ximalaya.ting.android",
+      "name": "喜马拉雅",
+      "splash": 0,
+      "popup": 7,
+      "catalogRows": {
+        "popup": [
+          150,
+          151,
+          152,
+          153,
+          154,
+          155,
+          156
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告",
+        "全屏广告-播放页面-播放前广告",
+        "局部广告-卡片式广告",
+        "局部广告-播放页面-底部推荐列表-夹杂广告",
+        "局部广告-播放页面-播放控制区域的广告",
+        "局部广告-评论区广告",
+        "局部广告-首页右侧浮动广告"
+      ],
+      "referencedSnapshots": [
+        "12472620",
+        "12506218",
+        "12506225",
+        "12506250",
+        "12520626",
+        "12701414",
+        "12869426",
+        "13263421",
+        "13314183",
+        "13334685"
+      ],
+      "samplesInspected": 3,
+      "samplesAssertedOffline": 2,
+      "verifiedSampleVersions": [
+        "9.3.15.3",
+        "9.4.6.3"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.xingin.xhs",
+      "name": "小红书",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          121,
+          122
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "17452158",
+        "22951606"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xinhang.mobileclient",
+      "name": "中国移动河南",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          197
+        ]
+      },
+      "scenes": [
+        "局部广告-右侧悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "13024863",
+        "13024872"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xmcy.hykb",
+      "name": "好游快爆",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          249
+        ]
+      },
+      "scenes": [
+        "首页活动推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "13259427"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.xpx365.projphoto",
+      "name": "工程相机",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          24
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13827755"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xtuone.android.syllabus",
+      "name": "超级课程表",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          41
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13166501"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xueqiu.android",
+      "name": "雪球",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          168,
+          169
+        ]
+      },
+      "scenes": [
+        "全屏广告-首页广告",
+        "局部广告-评论区广告"
+      ],
+      "referencedSnapshots": [
+        "13388227",
+        "13388361"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xunlei.downloadprovider",
+      "name": "迅雷",
+      "splash": 0,
+      "popup": 3,
+      "catalogRows": {
+        "popup": [
+          170,
+          171,
+          172
+        ]
+      },
+      "scenes": [
+        "局部广告-搜索页面-顶部banner广告",
+        "局部广告-视频详情页广告"
+      ],
+      "referencedSnapshots": [
+        "12882892",
+        "12882988",
+        "13228423"
+      ],
+      "samplesInspected": 14,
+      "samplesAssertedOffline": 10,
+      "verifiedSampleVersions": [
+        "8.07.0.9140",
+        "8.07.0.9146",
+        "8.07.0.9151",
+        "8.15.0.9305",
+        "8.16.0.9323",
+        "8.48.0.1057",
+        "8.48.0.1060"
+      ],
+      "lastOfflineVerification": "2026-11-26",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [
+        "NO_SAFE_EXIT"
+      ],
+      "sceneLimitations": [
+        {
+          "treeId": "1713620002470",
+          "scene": "开屏自绘候选",
+          "status": "no_safe_exit",
+          "reason": "NO_SAFE_EXIT"
+        }
+      ],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.xunmeng.pinduoduo",
+      "name": "拼多多",
+      "splash": 1,
+      "popup": 1,
+      "catalogRows": {
+        "splash": [
+          115
+        ],
+        "popup": [
+          106
+        ]
+      },
+      "scenes": [
+        "全屏广告-红包",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12642023",
+        "25691473"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.xyhui",
+      "name": "PU口袋校园",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          208
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13458692"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ydtx.camera",
+      "name": "元道经纬相机",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          103,
+          138
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "20882921",
+        "20896758"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.yek.android.kfc.activitys",
+      "name": "肯德基",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          32
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.yek.android.uniqlo",
+      "name": "优衣库",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          180
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13212320"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.ygkj.chelaile.standard",
+      "name": "车来了",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          42
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "13625374"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.yipiao",
+      "name": "智行火车票",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          112
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "20903066"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.youdao.dict",
+      "name": "网易有道词典",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          138,
+          139
+        ]
+      },
+      "scenes": [
+        "局部广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "12668574",
+        "12668583",
+        "13800055",
+        "13800056"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.youdao.note",
+      "name": "有道云笔记",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          183
+        ]
+      },
+      "scenes": [
+        "全屏广告-卡片式广告"
+      ],
+      "referencedSnapshots": [
+        "13379524"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.youdao.translator",
+      "name": "有道翻译官",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          182
+        ]
+      },
+      "scenes": [
+        "局部广告-翻译界面-结果下方广告"
+      ],
+      "referencedSnapshots": [
+        "13259910"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.youku.phone",
+      "name": "优酷视频",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          179
+        ]
+      },
+      "scenes": [
+        "全屏广告-视频推荐弹窗"
+      ],
+      "referencedSnapshots": [
+        "12701029"
+      ],
+      "samplesInspected": 4,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.youloft.calendar",
+      "name": "万年历",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          135
+        ]
+      },
+      "scenes": [
+        "全屏广告-悬浮广告"
+      ],
+      "referencedSnapshots": [
+        "13348416"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zgnet.eClass",
+      "name": "掌医课堂",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          75
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12644260"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "com.zhaopin.social",
+      "name": "智联招聘",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          193
+        ]
+      },
+      "scenes": [
+        "全屏广告-我的页面-banner广告"
+      ],
+      "referencedSnapshots": [
+        "12706181"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zhihu.android",
+      "name": "知乎",
+      "splash": 1,
+      "popup": 2,
+      "catalogRows": {
+        "splash": [
+          61
+        ],
+        "popup": [
+          189,
+          190
+        ]
+      },
+      "scenes": [
+        "全屏广告-会员页面-广告弹窗",
+        "全屏广告-会员页面-月卡红包",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12647421",
+        "12707641",
+        "12707676",
+        "12841423",
+        "12883329",
+        "12899263",
+        "12981146",
+        "13070251"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zhiyin.qingdan.dashixiong",
+      "name": "大师兄影视",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          45,
+          46
+        ]
+      },
+      "scenes": [
+        "全屏广告",
+        "全屏广告-首页广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "13521140",
+        "13887500"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zhizhou.days",
+      "name": "倒计日",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          51
+        ]
+      },
+      "scenes": [
+        "全屏广告-第三方 SDK 广告弹窗"
+      ],
+      "referencedSnapshots": [
+        "12727499"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zjwh.android_wh_physicalfitness",
+      "name": "运动世界校园",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          185
+        ]
+      },
+      "scenes": [
+        "全屏广告-第三方SDK广告"
+      ],
+      "referencedSnapshots": [
+        "12673476"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zmsoft.forwatch",
+      "name": "子腾园",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          200
+        ]
+      },
+      "scenes": [
+        "全屏广告-弹窗广告"
+      ],
+      "referencedSnapshots": [
+        "13545995"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zmzx.college.search",
+      "name": "大学搜题酱",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          47,
+          48
+        ]
+      },
+      "scenes": [
+        "全屏广告",
+        "局部广告"
+      ],
+      "referencedSnapshots": [
+        "13063381",
+        "13522998"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "com.zzw.october",
+      "name": "志愿汇",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          191
+        ]
+      },
+      "scenes": [
+        "全屏广告-主页广告"
+      ],
+      "referencedSnapshots": [
+        "12842675",
+        "12869369"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "ctrip.android.view",
+      "name": "携程旅行",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          211,
+          219
+        ]
+      },
+      "scenes": [
+        "首页广告弹窗",
+        "首页预订推广弹窗"
+      ],
+      "referencedSnapshots": [
+        "16357287",
+        "20921664"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "dxwt.questionnaire.ui",
+      "name": "10000社区",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          134
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13255491"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "fm.qingting.qtradio",
+      "name": "蜻蜓FM",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          113,
+          114
+        ]
+      },
+      "scenes": [
+        "局部广告-播放界面的广告"
+      ],
+      "referencedSnapshots": [
+        "12640438",
+        "12640981"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "gov.pianzong.androidnga",
+      "name": "NGA玩家社区",
+      "splash": 1,
+      "popup": 3,
+      "catalogRows": {
+        "splash": [
+          64
+        ],
+        "popup": [
+          204,
+          205,
+          206
+        ]
+      },
+      "scenes": [
+        "局部广告-社区-顶部广告",
+        "局部广告-话题-帖子列表广告",
+        "局部广告-首页-推荐-广告卡片",
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12476484",
+        "12482727",
+        "12706127",
+        "12706132",
+        "12864707",
+        "12911882",
+        "13303236",
+        "13798686"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "info.muge.appshare",
+      "name": "AppShare",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          0
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13842826"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "io.iftech.android.box",
+      "name": "小组件盒子",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          166
+        ]
+      },
+      "scenes": [
+        "全屏广告-第三方 SDK 广告"
+      ],
+      "referencedSnapshots": [
+        "12706228"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "make.more.r2d2.cellular_z",
+      "name": "Cellular-Z",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          105,
+          142
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13978978",
+        "13987038"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "me.ele",
+      "name": "饿了么",
+      "splash": 0,
+      "popup": 2,
+      "catalogRows": {
+        "popup": [
+          59,
+          216
+        ]
+      },
+      "scenes": [
+        "全屏广告-红包弹窗",
+        "首页免单推广浮窗"
+      ],
+      "referencedSnapshots": [
+        "12650713",
+        "17321305"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "me.zhouzhuo810.zznote",
+      "name": "小周便签",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          131
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12798528"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "moc.nauxuoyoaixoaix.www",
+      "name": "晓晓优选",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          129
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13476862"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "net.csdn.csdnplus",
+      "name": "CSDN",
+      "splash": 2,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          1,
+          73
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "12673680",
+        "13224627",
+        "13826577",
+        "17405187"
+      ],
+      "samplesInspected": 2,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "org.zwanoo.android.speedtest",
+      "name": "SpeedTest",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          12
+        ]
+      },
+      "scenes": [
+        "全屏广告-测速后广告"
+      ],
+      "referencedSnapshots": [
+        "12893175"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "tool.seagull.v",
+      "name": "海鸥加速器",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          67
+        ]
+      },
+      "scenes": [
+        "全屏广告-谷歌广告"
+      ],
+      "referencedSnapshots": [
+        "13476579"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "tv.danmaku.bili",
+      "name": "哔哩哔哩",
+      "splash": 2,
+      "popup": 3,
+      "catalogRows": {
+        "splash": [
+          16,
+          17
+        ],
+        "popup": [
+          34,
+          236,
+          237
+        ]
+      },
+      "scenes": [
+        "局部广告-评论区顶部公告横幅",
+        "开屏",
+        "播放器免流星卡推广",
+        "直播间购物推广卡片"
+      ],
+      "referencedSnapshots": [
+        "12705270",
+        "12775156",
+        "12785461",
+        "12892611",
+        "13200549",
+        "19142386"
+      ],
+      "samplesInspected": 74,
+      "samplesAssertedOffline": 1,
+      "verifiedSampleVersions": [
+        "8.88.0"
+      ],
+      "lastOfflineVerification": "2026-11-25",
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "offline_sample_verified",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "tv.danmaku.bilibilihd",
+      "name": "哔哩哔哩HD",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          18
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "13031261"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    },
+    {
+      "package": "tw.com.gamer.android.activecenter",
+      "name": "巴哈姆特",
+      "splash": 1,
+      "popup": 0,
+      "catalogRows": {
+        "splash": [
+          111
+        ]
+      },
+      "scenes": [
+        "开屏"
+      ],
+      "referencedSnapshots": [
+        "14292691"
+      ],
+      "samplesInspected": 1,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_physical_ad_session"
+    },
+    {
+      "package": "youqu.android.todesk",
+      "name": "ToDesk",
+      "splash": 0,
+      "popup": 1,
+      "catalogRows": {
+        "popup": [
+          14
+        ]
+      },
+      "scenes": [
+        "局部广告-广告卡片"
+      ],
+      "referencedSnapshots": [
+        "13228546",
+        "13256552",
+        "13296380"
+      ],
+      "samplesInspected": 0,
+      "samplesAssertedOffline": 0,
+      "verifiedSampleVersions": [],
+      "lastOfflineVerification": null,
+      "physicalDeliverySessions": 0,
+      "emulatorRealAppSessions": 0,
+      "realResult": null,
+      "status": "candidate_only",
+      "failureReasons": [],
+      "sceneLimitations": [],
+      "sampleGap": "no_local_tree"
+    }
+  ]
+}

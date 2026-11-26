@@ -52,24 +52,28 @@ final class RuleSample {
         return SplashSkipper.skipLabel(s)||s.matches("广告|廣告|推广|推廣|关闭|關閉|[xX×]|(?i:ad|advertisement|dismiss ad)")?s:null;
     }
     static RuleSample read(String json) throws JSONException {
-        JSONObject doc=new JSONObject(json);if(!"clearscreen.sample.1".equals(doc.getString("schema")))throw new JSONException("不是净屏的页面样本");
+        return read(SubscriptionJson.read(json));
+    }
+    static RuleSample read(JSONObject doc)throws JSONException {
+        if(!"clearscreen.sample.1".equals(doc.getString("schema")))throw new JSONException("不是净屏的页面样本");
         String pkg=doc.getString("package"),page=doc.optString("activity");
         if(!pkg.matches("[A-Za-z][A-Za-z0-9_.]+")||CustomSkipRule.protectedPackage(pkg))throw new JSONException("应用包名不支持");
         RuleSample r=new RuleSample(pkg,page);r.complete=doc.optBoolean("complete");JSONArray ns=doc.getJSONArray("nodes");
         if(ns.length()>4096)throw new JSONException("样本节点过多");
         for(int n=0;n<ns.length();n++){JSONObject a=ns.getJSONObject(n);Item v=new Item();v.pkg=pkg;v.cls=a.getString("class");
             String id=a.optString("id");if(id.matches("[a-zA-Z0-9_.]+:id/[a-zA-Z0-9_]+"))v.id=id;
-            v.text=adText(a.optString("text"));v.desc=adText(a.optString("desc"));v.knownText=a.optBoolean("textKnown");v.knownDesc=a.optBoolean("descKnown");
+            v.text=adText(a.optString("text"));v.desc=adText(a.optString("desc"));v.knownText=a.optBoolean("textKnown")&&(a.isNull("text")||v.text!=null);v.knownDesc=a.optBoolean("descKnown")&&(a.isNull("desc")||v.desc!=null);
             v.visible=a.optBoolean("visible");v.click=a.optBoolean("clickable");JSONArray b=a.getJSONArray("bounds");v.bounds.set(b.getInt(0),b.getInt(1),b.getInt(2),b.getInt(3));
             int count=a.getJSONArray("children").length();if(count>1024)throw new JSONException("子节点过多");v.children=new Item[count];r.items.add(v);
             if(v.visible&&(v.text!=null||v.desc!=null||v.id!=null&&v.id.toLowerCase(Locale.ROOT).matches(".*(skip|dismiss|close).*")))r.candidates.add(v);
         }
         for(int n=0;n<ns.length();n++){Item parent=r.items.get(n);JSONArray children=ns.getJSONObject(n).getJSONArray("children");
-            for(int k=0;k<children.length();k++){int idx=children.getInt(k);if(idx==-1)continue;
+            for(int k=0;k<children.length();k++){int idx=children.getInt(k);if(idx==-1){r.complete=false;continue;}
                 if(idx<0||idx>=ns.length()||r.items.get(idx).parent!=null)throw new JSONException("样本层级不完整");
                 Item child=r.items.get(idx);parent.children[k]=child;child.parent=parent;
             }
         }
+        if(r.items.stream().filter(item->item.parent==null).count()!=1)r.complete=false;
         for(Item v:r.items){Item slow=v,fast=v;while(fast!=null&&fast.parent!=null){slow=slow.parent;fast=fast.parent.parent;if(slow==fast)throw new JSONException("样本层级包含循环");}}
         return r;
     }

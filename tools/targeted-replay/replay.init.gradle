@@ -1,0 +1,16 @@
+// Isolate the opt-in public snapshot replay from ordinary tests and both APKs.
+allprojects {
+    plugins.withId('com.android.application') {
+        if (project.name != 'app') return
+        android.sourceSets.test.java.srcDir(rootProject.file('tools/targeted-replay'))
+        tasks.withType(Test).configureEach {
+            def trees = providers.gradleProperty('focusTrees').orNull
+            def output = providers.gradleProperty('focusOutput').orNull
+            if (!trees || !output) throw new GradleException('Set -PfocusTrees and -PfocusOutput to local paths')
+            systemProperty 'clearscreen.focus.trees', rootProject.file(trees).absolutePath
+            systemProperty 'clearscreen.focus.out', rootProject.file(output).absolutePath
+            inputs.dir(rootProject.file(trees))
+            outputs.file(rootProject.file(output))
+        }
+    }
+}

@@ -43,7 +43,13 @@ final class AiRuleDraft {
     }
     private static final class ServiceFailure extends IOException { ServiceFailure(int code){super("服务返回 HTTP "+code+"。请检查密钥、模型权限或额度。");}}
     static CustomSkipRule parse(String pkg,String raw,String description) throws Exception {
-        JSONObject j=new JSONObject(raw);String mode=j.getString("mode"), target=j.getString("target"), context=j.optString("context","");
+        if(raw.length()>2048)throw new JSONException("草稿过长");
+        JSONObject j=SubscriptionJson.read(raw);
+        for(java.util.Iterator<String> keys=j.keys();keys.hasNext();)if(!keys.next().matches("mode|target|context"))
+            throw new JSONException("草稿字段不受支持");
+        if(!(j.opt("mode") instanceof String)||!(j.opt("target") instanceof String)
+                ||j.has("context")&&!(j.opt("context") instanceof String))throw new JSONException("草稿字段类型无效");
+        String mode=j.getString("mode"), target=j.getString("target"), context=j.optString("context","");
         if (!(mode.equals("splash")||mode.equals("popup")) || !literal(target,description) || (mode.equals("popup")&&!literal(context,description))) throw new JSONException("unsupported draft");
         return CustomSkipRule.advanced(pkg,"",mode,"="+target,mode.equals("popup")?"="+context:"",false,0,false,1,1,-1,null);
     }
@@ -54,7 +60,7 @@ final class AiRuleDraft {
             JSONArray messages=new JSONArray().put(new JSONObject().put("role","system").put("content","只输出 JSON 对象，mode 为 splash 或 popup，target 为用户描述中逐字出现的广告跳过或关闭按钮文字。popup 必须另有 context 为逐字出现的广告提示。不能判断则返回 {}。不要生成代码、坐标或编造文字。")).put(new JSONObject().put("role","user").put("content",pkg+"\n"+description));
             byte[] data=new JSONObject().put("model",model).put("messages",messages).toString().getBytes(StandardCharsets.UTF_8);
             try(OutputStream out=c.getOutputStream()){out.write(data);} int code=c.getResponseCode();if(code!=200)throw new ServiceFailure(code);
-            try(InputStream in=c.getInputStream();ByteArrayOutputStream bytes=new ByteArrayOutputStream()){byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){if(bytes.size()+n>131072)throw new IOException();bytes.write(buf,0,n);}String reply=new JSONObject(bytes.toString("UTF-8")).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim();return parse(pkg,reply.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", ""),description);}
+            try(InputStream in=c.getInputStream();ByteArrayOutputStream bytes=new ByteArrayOutputStream()){byte[] buf=new byte[4096];int n;while((n=in.read(buf))!=-1){if(bytes.size()+n>131072)throw new IOException();bytes.write(buf,0,n);}String reply=SubscriptionJson.read(bytes.toString("UTF-8")).getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content").trim();return parse(pkg,reply.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", ""),description);}
         }finally{c.disconnect();}
     }
 }

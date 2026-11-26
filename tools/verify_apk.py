@@ -64,7 +64,7 @@ def elements(manifest, tag):
         yield '\n'.join(lines[index:end])
 
 
-def verify_package(apk, project, variant, build_type):
+def verify_package(apk, project, variant, build_type, expected_signer=None):
     gradle = (project / 'app/build.gradle').read_text(encoding='utf-8')
     expected = {}
     for attribute, field, value in (
@@ -127,6 +127,8 @@ def verify_package(apk, project, variant, build_type):
     digests = re.findall(r'^Signer #\d+ certificate SHA-256 digest: ([\da-fA-F]{64})$', certificates, re.M)
     if not digests:
         raise ValueError('No verified APK signing certificate was found')
+    if expected_signer and [value.lower() for value in digests] != [expected_signer.lower()]:
+        raise ValueError('APK signer differs from the expected release certificate')
     if build_type == 'release' and re.search(r'^Signer #\d+ certificate DN: .*\bCN=Android Debug(?:,|$)', certificates, re.M):
         raise ValueError('Release APK is signed with an Android debug certificate')
     print(f'PASS: {variant} {build_type}, {expected["name"]} {expected["versionName"]} '
@@ -138,13 +140,16 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('apk', type=Path)
 parser.add_argument('--variant', choices=('full', 'offline'))
 parser.add_argument('--build-type', choices=('debug', 'release'))
+parser.add_argument('--expected-signer', help='Require exactly this certificate SHA-256')
 args = parser.parse_args()
 if bool(args.variant) != bool(args.build_type):
     parser.error('--variant and --build-type are required together')
+if args.expected_signer and not args.variant:
+    parser.error('--expected-signer requires package verification with --variant and --build-type')
 apk = args.apk
 if args.variant:
     try:
-        verify_package(apk, Path(__file__).resolve().parents[1], args.variant, args.build_type)
+        verify_package(apk, Path(__file__).resolve().parents[1], args.variant, args.build_type, args.expected_signer)
     except (OSError, ValueError) as error:
         raise SystemExit(str(error)) from error
 

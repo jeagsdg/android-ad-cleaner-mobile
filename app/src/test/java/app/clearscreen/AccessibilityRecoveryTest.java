@@ -121,6 +121,76 @@ public class AccessibilityRecoveryTest {
         assertFalse(SkipKeepAliveService.recoveryRunning());
         assertEquals(RECOVERY_STOPPED, AccessibilityReliability.recentRecovery(app).kind);
         assertNull(selectionNotice());
+        assertNull(shadowOf(app).getNextStartedService());
+    }
+
+    @Test public void unboundStatusIsAccurateBeforeFirstCheckAndBriefGapsAreMeasured() throws Exception {
+        cleaner.onUnbind(new Intent());
+        startRecovery();
+        assertEquals("WAITING_FOR_SYSTEM", PermissionAccess.diagnostics(app).getString("accessibilityRecovery"));
+        assertEquals("无障碍已开启，等待系统连接", shadowOf(keepAlive).getLastForegroundNotification()
+                .extras.getCharSequence(Notification.EXTRA_TEXT));
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(450));
+        cleaner.onServiceConnected();
+        assertEquals(RECOVERED, AccessibilityReliability.recentRecovery(app).kind);
+        cleaner.onUnbind(new Intent());
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250));
+        cleaner.onServiceConnected();
+        JSONObject report = PermissionAccess.diagnostics(app);
+        assertEquals(2L, report.getLong("observedAccessibilityDisconnections"));
+        assertEquals(250L, report.getLong("lastObservedRecoveryWaitMillis"));
+        assertEquals("RESTORED", report.getString("accessibilityRecovery"));
+    }
+
+    @Test public void waitingChecksBackOffThenObserveAtMostOncePerQuarterHourUntilNewEvidence() {
+        startRecovery();
+        settle();
+        cleaner.onUnbind(new Intent());
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1500));
+        long[] delays = {5000, 10000, 20000, 40000, 80000, 160000};
+        for (int i = 0; i < delays.length; i++) {
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(delays[i] - 1));
+            assertEquals(i, SkipKeepAliveService.timedRecoveryChecks());
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(1));
+            assertEquals(i + 1, SkipKeepAliveService.timedRecoveryChecks());
+        }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMinutes(30));
+        assertEquals(8, SkipKeepAliveService.timedRecoveryChecks());
+        assertTrue(SkipKeepAliveService.recoveryRunning());
+        app.sendBroadcast(new Intent(Intent.ACTION_USER_PRESENT));
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(6500));
+        assertEquals(9, SkipKeepAliveService.timedRecoveryChecks());
+        cleaner.onServiceConnected();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMinutes(5));
+        assertEquals(9, SkipKeepAliveService.timedRecoveryChecks());
+        assertEquals(SkipKeepAliveService.RecoveryConnection.RESTORED, SkipKeepAliveService.recoveryConnection());
+    }
+
+    @Test public void anIdleOrInterruptedConnectedServiceDoesNotEnterRecovery() {
+        startRecovery();
+        cleaner.onInterrupt();
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMinutes(30));
+        assertEquals(PermissionAccess.State.READY, PermissionAccess.state(app));
+        assertEquals(0L, AccessibilityReliability.observedDisconnects(app));
+        assertEquals(0, SkipKeepAliveService.timedRecoveryChecks());
+        assertEquals(SkipKeepAliveService.RecoveryConnection.CONNECTED, SkipKeepAliveService.recoveryConnection());
+    }
+
+    @Test public void stoppingWatchEndsOrdinaryKeepAliveIfOnlyEnabledByWatch() {
+        startRecovery();
+        SkipKeepAliveService.stopRecovery(app);
+        assertFalse(new Store(app).skipKeepAliveEnabled());
+        assertFalse(SkipKeepAliveService.running());
+        assertEquals(SkipKeepAliveService.RecoveryConnection.INACTIVE, SkipKeepAliveService.recoveryConnection());
+    }
+
+    @Test public void stoppingWatchRestoresPriorOrdinaryKeepAlivePreference() {
+        new Store(app).setSkipKeepAliveEnabled(true);
+        startRecovery();
+        SkipKeepAliveService.stopRecovery(app);
+        assertTrue(new Store(app).skipKeepAliveEnabled());
+        assertTrue(SkipKeepAliveService.running());
+        assertFalse(SkipKeepAliveService.recoveryRunning());
     }
 
     @Test public void foregroundResumesPreviouslyEnabledWatchAfterSameProcessServiceLoss() {
@@ -133,6 +203,7 @@ public class AccessibilityRecoveryTest {
         SkipKeepAliveService.onForeground(app);
         assertEquals(Service.START_STICKY, acceptForegroundStart());
         assertEquals(RECOVERY_RESUMED, AccessibilityReliability.recentRecovery(app).kind);
+        assertEquals("FOREGROUND_SAME_PROCESS", AccessibilityReliability.lastWatchResumeTrigger(app));
         settle();
         assertEquals(SkipKeepAliveService.RecoveryConnection.WAITING_FOR_SYSTEM,
                 SkipKeepAliveService.recoveryConnection());
@@ -147,6 +218,7 @@ public class AccessibilityRecoveryTest {
         SkipKeepAliveService.onForeground(app);
         assertEquals(Service.START_STICKY, acceptForegroundStart());
         assertEquals(RECOVERY_RESUMED, AccessibilityReliability.recentRecovery(app).kind);
+        assertEquals("FOREGROUND_RESOURCE_EXIT", AccessibilityReliability.lastWatchResumeTrigger(app));
         assertEquals(selectedServices(), enabledServices());
     }
 
@@ -188,6 +260,7 @@ public class AccessibilityRecoveryTest {
         assertNoForegroundWatch();
         assertEquals(Service.START_STICKY, restartService());
         assertEquals(RECOVERY_RESUMED, AccessibilityReliability.recentRecovery(app).kind);
+        assertEquals("SYSTEM_RESTART", AccessibilityReliability.lastWatchResumeTrigger(app));
         assertEquals("WATCHING", recoveryPrefs().getString("state", ""));
         assertFalse(recoveryPrefs().contains("last-attempt"));
         assertEquals(selectedServices(), enabledServices());
@@ -201,6 +274,19 @@ public class AccessibilityRecoveryTest {
         assertFalse(AccessibilityRecovery.watching(app));
         assertEquals(OTHER_SERVICE, enabledServices());
         assertNull(selectionNotice());
+    }
+
+    @Test @Config(sdk = {24, 26}) public void olderSystemReportsUnavailableRestrictionAndLeavesUnknownExitAlone() throws Exception {
+        startRecovery();
+        simulateProcessLoss();
+        assertEquals(AccessibilityRecovery.Resume.UNVERIFIED, AccessibilityRecovery.resumeDisposition(app));
+        SkipKeepAliveService.onForeground(app);
+        assertNoForegroundWatch();
+        JSONObject report = PermissionAccess.diagnostics(app);
+        assertEquals("UNVERIFIED", report.getString("savedWatchResumeDisposition"));
+        assertTrue(report.isNull("backgroundRestricted"));
+        assertTrue(report.isNull("lastWatchResumeTrigger"));
+        assertTrue(report.isNull("lastObservedRecoveryWaitMillis"));
     }
 
     @Test public void stoppingWhileExplicitStartIsQueuedCancelsThatRequest() {

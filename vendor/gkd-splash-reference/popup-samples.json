@@ -1,5 +1,16 @@
 [
   {
+    "package": "com.chinamobile.mcloud",
+    "name": "中国移动云盘",
+    "activity": "com.chinamobile.mcloud.client.ui.MenuActivity",
+    "versionName": "mCloud10.3.2",
+    "snapshot": "https://i.gkd.li/i/13627826",
+    "sha256": "5007d8e88df3dc9e6c62da1502d438e30b1d4550ab65cfc54237c62d0f29a57a",
+    "selector": "[id=\"com.chinamobile.mcloud:id/activity_marketing_ad_indicator\"] <n RelativeLayout[id=\"com.chinamobile.mcloud:id/rl_container\"] + @ImageView[id=\"com.chinamobile.mcloud:id/iv_close\"][clickable=true][childCount=0]",
+    "group": "首页营销轮播弹窗",
+    "exactActivity": true
+  },
+  {
     "package": "com.taobao.idlefish",
     "name": "闲鱼",
     "group": "夜市推广弹窗",

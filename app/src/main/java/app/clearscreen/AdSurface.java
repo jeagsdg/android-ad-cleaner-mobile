@@ -27,8 +27,9 @@ final class AdSurface {
     }
     private static boolean adLayer(AccessibilityNodeInfo n,Rect screen){
         String id=id(n);
+        boolean xunleiLaunchLayer="com.xunlei.downloadprovider:id/hermes2_ad_container".equals(n.getViewIdResourceName());
         if(!(id.equals("ad_container")||id.equals("splash_ad_container")||id.equals("main_splash_ad")
-                ||id.equals("splash_ad_layout")||id.equals("splash_ad_root")))return false;
+                ||id.equals("splash_ad_layout")||id.equals("splash_ad_root")||xunleiLaunchLayer))return false;
         Rect b=new Rect();n.getBoundsInScreen(b);
         return b.intersect(screen)&&b.width()>=screen.width()*.70&&b.height()>=screen.height()*.55;
     }
@@ -60,6 +61,35 @@ final class AdSurface {
         if(!button.equals(label.getParent())||!sameSurface(button,label)||list(button))return false;
         Rect inner=new Rect(),outer=new Rect();label.getBoundsInScreen(inner);button.getBoundsInScreen(outer);
         return outer.contains(inner)&&inner.width()>=outer.width()*.32&&inner.height()>=outer.height()*.20;
+    }
+
+    /** A Kuaishou splash can draw its "跳过" caption on top of a separate native image button. */
+    static AccessibilityNodeInfo overlaidExit(AccessibilityNodeInfo root,AccessibilityNodeInfo caption,Rect screen){
+        if(caption.isClickable()||caption.getChildCount()!=0||!caption.isEnabled()
+                ||!sameSurface(root,caption)||!TextUtils.equals("android.widget.TextView",caption.getClassName())
+                ||!SplashSkipper.skipLabel(SplashSkipper.label(caption.getText())))return null;
+        AccessibilityNodeInfo overlay=caption.getParent();
+        if(!sameSurface(root,overlay)||overlay.isClickable()||overlay.getChildCount()!=1)return null;
+        AccessibilityNodeInfo group=overlay.getParent();
+        if(!sameSurface(root,group)||group.isClickable()||group.getChildCount()!=2)return null;
+        AccessibilityNodeInfo button=group.getChild(0);
+        if(!overlay.equals(group.getChild(1))||!sameSurface(root,button)||!button.isEnabled()
+                ||!button.isClickable()||button.isLongClickable()||button.getChildCount()!=0
+                ||!TextUtils.equals(button.getClassName(),"android.widget.ImageView")
+                ||!TextUtils.isEmpty(button.getText())||!TextUtils.isEmpty(button.getContentDescription())
+                ||!SplashSkipper.safeClickTarget(button))return null;
+        Rect box=new Rect(),cover=new Rect(),text=new Rect();
+        button.getBoundsInScreen(box);overlay.getBoundsInScreen(cover);caption.getBoundsInScreen(text);
+        if(!box.equals(cover)||text.isEmpty()||!box.contains(text)||!screen.contains(box)
+                ||box.left<screen.left+screen.width()*.55||box.bottom>screen.top+screen.height()*.26
+                ||box.width()>screen.width()*.30||box.height()>screen.height()*.13)return null;
+        for(int i=0;i<48&&sameSurface(root,group)&&!list(group);i++,group=group.getParent()){
+            if("ksad_splash_root_container".equals(id(group))){
+                Rect area=new Rect();group.getBoundsInScreen(area);
+                return area.contains(box)&&area.width()>=screen.width()*.70&&area.height()>=screen.height()*.55?button:null;
+            }
+        }
+        return null;
     }
 
     static final class Exit {

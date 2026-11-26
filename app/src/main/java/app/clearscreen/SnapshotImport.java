@@ -26,7 +26,7 @@ final class SnapshotImport {
         return out.toString("UTF-8");
     }
     static RuleSample json(String s)throws JSONException{
-        JSONObject j=new JSONObject(s);if(j.has("schema"))return RuleSample.read(s);
+        JSONObject j=SubscriptionJson.read(s);if(j.has("schema"))return RuleSample.read(j);
         String pkg=j.getString("appId");JSONArray nodes=j.getJSONArray("nodes");
         if(nodes.length()>4096)throw new JSONException("节点过多");
         Map<Integer,Integer> pos=new HashMap<>();JSONArray out=new JSONArray();boolean complete=true;
@@ -57,6 +57,6 @@ final class SnapshotImport {
             for(int k=0;k<children.length();k++)if(children.getInt(k)==-1)complete=false;
         }
         return RuleSample.read(new JSONObject().put("schema","clearscreen.sample.1").put("package",pkg)
-            .put("activity",j.isNull("activityId")?"":j.getString("activityId")).put("complete",complete).put("nodes",out).toString());
+            .put("activity",j.isNull("activityId")?"":j.getString("activityId")).put("complete",complete).put("nodes",out));
     }
 }

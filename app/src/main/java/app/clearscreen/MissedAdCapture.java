@@ -128,6 +128,7 @@ final class MissedAdCapture {
 
     synchronized void note(String pkg, Mode mode, SkipDiagnostics.Phase phase) {
         if (!observing(pkg, mode)) return;
+        active.recordPhase(phase, clock.getAsLong());
         if (phase == SkipDiagnostics.Phase.GUARDED) active.guarded = true;
         if (phase == SkipDiagnostics.Phase.SCAN_ENDED || phase == SkipDiagnostics.Phase.WAITING) return;
         if (active.phase == null || priority(phase) >= priority(active.phase)) active.phase = phase;
@@ -135,8 +136,8 @@ final class MissedAdCapture {
 
     private static int priority(SkipDiagnostics.Phase phase) {
         switch (phase) {
-            case WINDOW_UNAVAILABLE: case TREE_UNAVAILABLE: return 0;
-            case NO_READABLE_TARGET: case PAGE_MISMATCH: return 1;
+            case WINDOW_UNAVAILABLE: case TREE_UNAVAILABLE: case WINDOW_MISMATCH: return 0;
+            case COUNTDOWN_LOCKED: case NO_READABLE_TARGET: case PAGE_MISMATCH: return 1;
             case TARGET_FOUND: case NO_RULE_MATCH: case AD_EVIDENCE_MISSING: case TARGET_UNSAFE:
             case GUARDED: case AMBIGUOUS: return 2;
             case SENT: return 3;
@@ -252,9 +253,25 @@ final class MissedAdCapture {
         private long nextProbe = Long.MAX_VALUE, probeAllowedAt;
         private int fastRetries, probes;
         private SkipDiagnostics.Phase phase;
+        private final List<String> timeline = new ArrayList<>();
+        private SkipDiagnostics.Phase previous;
+        private void recordPhase(SkipDiagnostics.Phase value,long now) {
+            if(previous==value)return;
+            previous=value;
+            if(timeline.size()==16)timeline.remove(0);
+            timeline.add("+"+Math.max(0,now-started)+" ms  "+value.name());
+        }
         private Frame best;
         RuleSample sample;
         private String basicResult;
+        private String startSettings="";
+        void captureSettings(String value){startSettings=value;}
+        private AdSessions.Metric userOutcome;
+        boolean userOutcome(AdSessions.Metric value) {
+            if(userOutcome!=null||!complete||!(value==AdSessions.Metric.NATURAL_REPORTED
+                    ||value==AdSessions.Metric.MANUAL_REPORTED||value==AdSessions.Metric.MISCLICK_REPORTED))return false;
+            userOutcome=value;return true;
+        }
 
         Session(String pkg, long version, String versionName, Mode mode, boolean details, long started) {
             this.pkg = pkg; this.version = version; this.mode = mode; this.details = details; this.started = started;
@@ -280,12 +297,28 @@ final class MissedAdCapture {
                     .append("\n净屏版本：").append(cleanerVersion).append(" · Android API ").append(sdk)
                     .append("\n场景：").append(mode.label)
                     .append(basicResult == null ? "\n本轮结果：" : "\n本机记录或当前设置：").append(outcome());
+            if(!timeline.isEmpty()) {
+                output.append("\n最近阶段：");
+                for(String event:timeline)output.append('\n').append(event);
+            }
+            if(!startSettings.isEmpty())output.append("\n开始采集时：").append(startSettings);
+            output.append("\n诊断归类：").append(reason());
+            if(userOutcome!=null)output.append("\n用户观察：").append(userOutcome.name());
             if (!details) return output.append("\n未选择采集页面和控件技术信息。\n").toString();
             if (guarded) output.append("\n本轮遇到受保护的页面，已略过这些页面的技术信息。");
             if (best != null && !best.page.isEmpty()) output.append("\n页面：").append(best.page);
             if (best == null || best.candidates.isEmpty()) output.append("\n没有可列出的候选控件技术信息。");
             else for (Candidate item : best.candidates) output.append("\n• ").append(item.value);
             return output.append('\n').toString();
+        }
+
+        private String reason(){
+            if(phase!=null)return phase.name();
+            if(basicResult!=null)return "本机设置或既有记录，未重新采样";
+            if(!entered)return "UNKNOWN（没有确认目标应用进入前台）";
+            if(guarded)return "GUARDED";
+            if(!readable)return "ROOT_UNAVAILABLE";
+            return "UNKNOWN（本轮证据不足）";
         }
     }
 }

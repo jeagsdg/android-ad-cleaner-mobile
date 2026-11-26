@@ -26,6 +26,7 @@ import org.json.JSONObject;
 final class RulePack {
     static final int MAX_ENVELOPE_BYTES = 900 * 1024;
     static final int MAX_RULES = 1024;
+    static final String DELTA_PATH = "0-update/rules-delta-v2.json";
     static final String OFFICIAL_PATH = "0-update/rules-v22.json";
     static final String CERTIFICATE_SHA256 = "40d36629d9780396e88d286fa6f43771f8d663fbc0b9e9f951ad84c5153ddf4e";
     private static final String PACKAGE = "app.clearscreen";
@@ -61,22 +62,28 @@ final class RulePack {
     final List<Entry> entries;
     final JSONArray sdkRules;
     final byte[] envelope;
+    final String baseHash;
 
-    private RulePack(long version, List<Entry> entries, JSONArray sdkRules, byte[] envelope) {
+    private RulePack(long version, List<Entry> entries, JSONArray sdkRules, byte[] envelope, String baseHash) {
         this.version = version;
         this.entries = Collections.unmodifiableList(entries);
         this.sdkRules = sdkRules;
         this.envelope = envelope;
+        this.baseHash = baseHash;
     }
 
     static RulePack bundled(Store store) {
+        return bundled(store.asset("splash-rules.json"),store.asset("popup-ad-rules.json"));
+    }
+
+    static RulePack bundled(String splashText,String popupText) {
         try {
-            JSONObject splash = new JSONObject(store.asset("splash-rules.json"));
-            JSONObject popup = new JSONObject(store.asset("popup-ad-rules.json"));
+            JSONObject splash=new JSONObject(splashText), popup=new JSONObject(popupText);
             List<Entry> entries = new ArrayList<>();
             readBundled(splash, true, entries);
             readBundled(popup, false, entries);
-            return new RulePack(0, entries, splash.getJSONArray("sdkRules"), null);
+            return new RulePack(0, entries, splash.getJSONArray("sdkRules"), null,
+                    sha256(splashText.getBytes(StandardCharsets.UTF_8))+sha256(popupText.getBytes(StandardCharsets.UTF_8)));
         } catch (JSONException | GeneralSecurityException e) {
             throw new IllegalStateException("无法读取内置规则", e);
         }
@@ -133,37 +140,66 @@ final class RulePack {
         signature.update(payload);
         require(signature.verify(decode(wrapper, "signature", 1024)), "规则包签名无效");
 
-        JSONObject contents = parse(payload);
-        require(contents.length() == 7 && PACKAGE.equals(contents.opt("package")), "规则包不适用于净屏");
-        require(integer(contents.opt("schema"), 1, 1) == 1, "规则包格式不兼容");
+        return resolveVerified(parse(payload),bundled,clientVersion,envelope);
+    }
+
+    // The publishing preflight exercises the same validation with offline samples before signing.
+    static RulePack resolveVerified(JSONObject contents,RulePack bundled,int clientVersion,byte[] envelope)
+            throws IOException,JSONException,GeneralSecurityException {
+        int schema=(int)integer(contents.opt("schema"),1,2);
+        require(contents.length()==(schema==1?7:8) && PACKAGE.equals(contents.opt("package")),"规则包不适用于净屏");
+        if(schema==2)require(bundled.baseHash.equals(contents.opt("baseHash")),"增量所需的内置目录不同");
         long version = integer(contents.opt("version"), 1, Long.MAX_VALUE);
         long min = integer(contents.opt("minVersionCode"), 1, Integer.MAX_VALUE);
         long max = integer(contents.opt("maxVersionCode"), min, Integer.MAX_VALUE);
-        // Codes 23 through 26 share the audited rows and schema of the signed v5 feed for code 22.
-        boolean compatiblePreviousFeed = clientVersion >= 23 && clientVersion <= 26
-                && version == 5 && min == 22 && max == 22;
+        // Later clients can restore the v5 feed after an upgrade; code 27 retains its bundled additions.
+        boolean compatiblePreviousFeed = clientVersion >= 23 && clientVersion <= 27
+                && schema == 1 && version == 5 && min == 22 && max == 22;
         require((clientVersion >= min && clientVersion <= max) || compatiblePreviousFeed, "规则包不适用于当前净屏版本");
         Map<String, Entry> reviewed = new HashMap<>();
         for (Entry entry : bundled.entries) reviewed.put(entry.id, entry);
         List<Entry> entries = new ArrayList<>();
         Set<String> ids = new HashSet<>();
-        readSigned(contents.getJSONArray("splash"), true, reviewed, entries, ids);
-        readSigned(contents.getJSONArray("popup"), false, reviewed, entries, ids);
-        return new RulePack(version, entries, bundled.sdkRules, envelope);
+        readSigned(contents.getJSONArray("splash"),true,reviewed,entries,ids,schema==2?bundled:null);
+        readSigned(contents.getJSONArray("popup"),false,reviewed,entries,ids,schema==2?bundled:null);
+        Set<String> targetScopes=new HashSet<>();
+        for(Entry entry:entries){
+            if(!entry.rule.has("id"))continue;
+            String control=(String)exactNode(entry.rule.getJSONObject("targetSelector"),true,entry.rule.getString("package")).get("id");
+            JSONArray pages=entry.rule.getJSONArray("activityIds");
+            for(int i=0;i<pages.length();i++)
+                require(targetScopes.add(entry.splash+"|"+pages.getString(i)+"|"+control),"新增规则的目标控件与页面范围重复");
+        }
+        if(clientVersion==27 && compatiblePreviousFeed){
+            // The authenticated legacy version can restore switches. Never hide additions shipped with this APK.
+            for(Entry accepted:entries)require(accepted==reviewed.get(accepted.id),"旧版规则与本机目录不一致");
+            entries=new ArrayList<>(bundled.entries);
+        }
+        return new RulePack(version,entries,bundled.sdkRules,envelope,bundled.baseHash);
     }
 
     private static void readSigned(JSONArray rules, boolean splash, Map<String, Entry> reviewed,
-                                   List<Entry> entries, Set<String> ids)
+                                   List<Entry> entries, Set<String> ids, RulePack base)
             throws IOException, JSONException, GeneralSecurityException {
         require(rules.length() <= MAX_RULES - entries.size(), "专属规则太多");
         Map<String, Integer> packageCounts = new HashMap<>();
         for (int index = 0; index < rules.length(); index++) {
-            JSONObject row = rules.getJSONObject(index);
+            Object instruction=rules.get(index);
+            Entry reference=null;
+            if(base!=null && instruction instanceof Integer){
+                int slot=(Integer)instruction;
+                require(slot>=0 && slot<base.entries.size(),"目录引用无效");
+                reference=base.entries.get(slot);
+                require(reference.splash==splash,"目录引用场景不符");
+            }
+            JSONObject row=reference==null?rules.getJSONObject(index):reference.rule;
             String pkg = text(row.opt("package"), 120);
             require(APP.matcher(pkg).matches() && !CustomSkipRule.protectedPackage(pkg), "规则应用受保护");
             require(packageCounts.merge(pkg, 1, Integer::sum) <= 32, "单个应用的专属规则太多");
             Entry entry;
-            if (row.has("id")) {
+            if(reference!=null){
+                entry=reference;
+            }else if (row.has("id")) {
                 String id = text(row.opt("id"), 160);
                 Entry original = reviewed.get(id);
                 require(original == null ? PUBLISHED_ID.matcher(id).matches()
@@ -264,7 +300,7 @@ final class RulePack {
         return checks;
     }
 
-    private static boolean sameJson(Object left, Object right) throws JSONException {
+    static boolean sameJson(Object left, Object right) throws JSONException {
         if (left instanceof JSONObject && right instanceof JSONObject) {
             JSONObject a = (JSONObject) left;
             JSONObject b = (JSONObject) right;

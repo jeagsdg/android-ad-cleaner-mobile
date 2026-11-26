@@ -1,0 +1,4 @@
+<resources>
+    <item name="local_check_exit" type="id" />
+    <item name="feedback_report_text" type="id" />
+</resources>

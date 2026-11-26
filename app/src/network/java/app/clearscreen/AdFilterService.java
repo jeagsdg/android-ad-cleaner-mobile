@@ -31,7 +31,37 @@ public final class AdFilterService extends VpnService {
     private final Handler main=new Handler(Looper.getMainLooper());
     private volatile Network bestPhysicalNetwork;
     private ConnectivityManager connectivity;private FilterStore store;private Thread loop;private DomainRules rules;private DnsTcp tcp;
+    private final AtomicReference<BypassChange> pendingBypass=new AtomicReference<>();
     private long savedAt;
+
+    static final class BypassChange {
+        final Set<String> packages;
+        final Consumer<String> result;
+        BypassChange(Set<String> packages,Consumer<String> result){
+            this.packages=Collections.unmodifiableSet(new HashSet<>(packages));
+            this.result=result;
+        }
+    }
+    interface TunnelFactory { ParcelFileDescriptor open(Set<String> packages)throws Exception; }
+
+    static void saveBypassedApps(Context context,Set<String> packages,Consumer<String> result){
+        AdFilterService service=active;
+        BypassChange change=new BypassChange(packages,result);
+        if(service!=null){
+            synchronized(service.writeLock){
+                if(!service.stopping){
+                    BypassChange earlier=service.pendingBypass.getAndSet(change);
+                    if(earlier!=null)service.report(earlier,"已按最新选择重新应用");
+                    return;
+                }
+            }
+        }
+        new FilterStore(context).setBypassedApps(change.packages);
+        new Handler(Looper.getMainLooper()).post(()->result.accept("已保存，下次开启网络过滤时生效"));
+    }
+
+    private void report(BypassChange change,String message){main.post(()->change.result.accept(message));}
+
     private final ConnectivityManager.NetworkCallback networkCallback=new ConnectivityManager.NetworkCallback(){
         @Override public void onCapabilitiesChanged(Network n,NetworkCapabilities c){networks.put(n,c);selectNetwork();}
         @Override public void onLost(Network n){networks.remove(n);selectNetwork();}
@@ -100,31 +130,82 @@ public final class AdFilterService extends VpnService {
         networkState.update(selected);
         if(tunnel!=null)setUnderlyingNetworks(selected==null?null:new Network[]{selected});
     }
+    private ParcelFileDescriptor openTunnel(Set<String> bypassed)throws Exception{
+        Network network=networkState.network();
+        if(network==null)throw new IOException("当前没有可用网络");
+        checkLegacyPrivateDns(network);
+        Builder builder=new Builder().setSession("净屏 · DNS 广告过滤").setMtu(1500)
+                .addAddress("198.18.0.1",32).addRoute("198.18.0.2",32).addDnsServer("198.18.0.2")
+                .allowFamily(OsConstants.AF_INET6).setBlocking(false).setUnderlyingNetworks(new Network[]{network});
+        for(String pkg:bypassed){
+            try{builder.addDisallowedApplication(pkg);}
+            catch(android.content.pm.PackageManager.NameNotFoundException ignored){/* An uninstalled app has no traffic. */}
+        }
+        return builder.establish();
+    }
+
+    private boolean installTunnel(ParcelFileDescriptor created)throws IOException{
+        if(created==null)throw new IOException("系统未建立 VPN，请重新授权");
+        DnsTcp previous;
+        ParcelFileDescriptor old;
+        synchronized(writeLock){
+            if(stopping){created.close();return false;}
+            old=tunnel;
+            previous=tcp;
+            tunnel=created;
+            tcp=new DnsTcp(bytes->write(created,bytes),this::resolve,SystemClock::elapsedRealtime);
+        }
+        if(previous!=null)previous.close();
+        if(old!=null)try{old.close();}catch(IOException ignored){/* Android has switched routes. */}
+        return true;
+    }
+
+    // Called only on the serial DNS packet loop. Failed establish leaves the original interface active.
+    void applyPendingBypass(TunnelFactory factory){
+        BypassChange change=pendingBypass.getAndSet(null);
+        if(change==null)return;
+        try{
+            if(stopping){report(change,"过滤已停止，未应用这次变更");return;}
+            if(change.packages.equals(store.bypassedApps())){
+                if(store.message().startsWith("未能应用绕过名单"))store.message("正在过滤已知广告域名；应用绕过名单已生效");
+                report(change,"应用绕过名单已生效");
+                return;
+            }
+            ParcelFileDescriptor replacement=factory.open(change.packages);
+            if(replacement==null){
+                report(change,"VPN 授权已失效，未应用这次变更");
+                stop("VPN 授权已失效，网络过滤已停止");
+                return;
+            }
+            if(!installTunnel(replacement)){report(change,"过滤已停止，未应用这次变更");return;}
+            synchronized(writeLock){
+                if(stopping||tunnel!=replacement){report(change,"过滤已停止，未应用这次变更");return;}
+                store.setBypassedApps(change.packages);
+                store.message("正在过滤已知广告域名；应用绕过名单已生效");
+            }
+            report(change,"应用绕过名单已生效");
+        }catch(Exception failure){
+            String message="未能应用绕过名单，保留原名单："+readable(failure);
+            if(!stopping)store.message(message);
+            report(change,message);
+        }
+    }
+
     private void run(){
         try{
             rules=new DomainRules(this);if(stopping)return;
-            Network network=networkState.network();
-            if(network==null)throw new IOException("当前没有可用网络，请连接网络后再开启");
-            checkLegacyPrivateDns(network);
-            Builder builder=new Builder().setSession("净屏 · DNS 广告过滤").setMtu(1500).addAddress("198.18.0.1",32).addRoute("198.18.0.2",32).addDnsServer("198.18.0.2")
-                    .allowFamily(OsConstants.AF_INET6).setBlocking(false).setUnderlyingNetworks(new Network[]{network});
-            for(String pkg:store.bypassedApps()){
-                try{builder.addDisallowedApplication(pkg);}
-                catch(android.content.pm.PackageManager.NameNotFoundException ignored){/* The app may have been uninstalled. */}
-            }
-            DnsTcp endpoint=new DnsTcp(this::write,this::resolve,SystemClock::elapsedRealtime);
-            // Keep Android's conservative metered default; do not mask mobile-data accounting.
-            ParcelFileDescriptor created=builder.establish();if(created==null)throw new IOException("系统未建立 VPN，请重新授权");
-            synchronized(writeLock){
-                if(stopping){created.close();return;}
-                tunnel=created;
-                tcp=endpoint;
-                store.message("等待系统网络路由就绪…");
-            }
-            if(!network.equals(networkState.network()))selectNetwork();
+            if(!installTunnel(openTunnel(store.bypassedApps())))return;
+            store.message("等待系统网络路由就绪…");
+            selectNetwork();
             long establishedAt=SystemClock.elapsedRealtime();
-            byte[] buffer=new byte[32767];StructPollfd poll=new StructPollfd();poll.fd=created.getFileDescriptor();poll.events=(short)OsConstants.POLLIN;long noNetworkSince=0;
+            byte[] buffer=new byte[32767];
+            StructPollfd poll=new StructPollfd();poll.events=(short)OsConstants.POLLIN;long noNetworkSince=0;
             while(!stopping){
+                if(ready && pendingBypass.get()!=null)applyPendingBypass(this::openTunnel);
+                ParcelFileDescriptor created=tunnel;
+                DnsTcp endpoint=tcp;
+                if(stopping||created==null)return;
+                poll.fd=created.getFileDescriptor();
                 if(!ready){for(Network candidate:connectivity.getAllNetworks()){NetworkCapabilities caps=connectivity.getNetworkCapabilities(candidate);LinkProperties link=connectivity.getLinkProperties(candidate);if(caps!=null&&caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)&&link!=null&&link.getDnsServers().contains(InetAddress.getByName("198.18.0.2"))){
                     synchronized(writeLock){
                         if(stopping)return;
@@ -141,7 +222,7 @@ public final class AdFilterService extends VpnService {
                     int n;try{n=Os.read(created.getFileDescriptor(),buffer,0,buffer.length);}catch(ErrnoException e){if(e.errno==OsConstants.EAGAIN)continue;throw e;}
                     if(n==0)throw new IOException("VPN 网络接口已关闭");
                     packetsRead.incrementAndGet();lastPacket="bytes="+n;if(n>=28){int protocol=buffer[9]&255;lastPacket+=" versionHeader="+(buffer[0]&255)+" total="+DnsWire.u16(buffer,2)+" protocol="+protocol+" destinationMatch="+((int)DnsWire.u32(buffer,16)==DnsWire.SERVER)+" ipChecksum="+DnsWire.checksum(buffer,0,20,0)+" transportChecksum="+DnsWire.checksum(buffer,20,n-20,DnsWire.pseudo(buffer,protocol,n-20));}
-                    DnsWire.Packet packet=DnsWire.packet(buffer,n);if(packet!=null){packetsAccepted.incrementAndGet();if(packet.protocol==17)resolve(packet.data,answer->{DnsWire.Question question=DnsWire.question(packet.data);if(question!=null&&answer.length>question.udpSize)answer=DnsWire.error(packet.data,0,true);write(DnsWire.reply(packet,answer,0,0,0));});else endpoint.accept(packet);}
+                    DnsWire.Packet packet=DnsWire.packet(buffer,n);if(packet!=null){packetsAccepted.incrementAndGet();if(packet.protocol==17)resolve(packet.data,answer->{DnsWire.Question question=DnsWire.question(packet.data);if(question!=null&&answer.length>question.udpSize)answer=DnsWire.error(packet.data,0,true);write(created,DnsWire.reply(packet,answer,0,0,0));});else endpoint.accept(packet);}
                 }
                 endpoint.tick();if(now-savedAt>5000){persist();savedAt=now;}
             }
@@ -151,7 +232,7 @@ public final class AdFilterService extends VpnService {
         if(stopping)return;DnsWire.Question question=DnsWire.question(query);
         if(question==null){callback.accept(DnsWire.error(query,1,false));return;}
         boolean blocked=!store.allowsHost(question.name)
-                &&(rules.contains(question.name)||store.customHost(question.name));
+                &&(rules.contains(question.name)||(store.customHost(question.name)&&DomainRules.canBlockHost(question.name)));
         synchronized(historyLock){
             if(stopping)return;
             queries.incrementAndGet();
@@ -204,9 +285,9 @@ public final class AdFilterService extends VpnService {
         }
         throw last==null?new IOException("DNS 不可用"):last;
     }
-    private void write(byte[] bytes){
+    private void write(ParcelFileDescriptor owner,byte[] bytes){
         boolean failed=false;
-        synchronized(writeLock){ParcelFileDescriptor fd=tunnel;if(stopping||fd==null)return;
+        synchronized(writeLock){ParcelFileDescriptor fd=tunnel;if(stopping||fd==null||fd!=owner)return;
             try{
                 failed=Os.write(fd.getFileDescriptor(),bytes,0,bytes.length)!=bytes.length;
                 if(!failed)packetsWritten.incrementAndGet();
@@ -214,7 +295,7 @@ public final class AdFilterService extends VpnService {
                 // The TUN is non-blocking. A full queue can be retried by the DNS client or TCP endpoint.
                 failed=e.errno!=OsConstants.EAGAIN;
             }catch(IOException e){failed=true;}}
-        if(failed)stop("网络接口写入失败，已退出过滤");
+        if(failed)main.post(()->{if(tunnel==owner&&!stopping)stop("网络接口写入失败，已退出过滤");});
     }
     private void persist(){if(store==null)return;synchronized(historyLock){store.counters(queries.get(),blocks.get(),recent);}}
     private static String readable(Exception e){String message=e.getMessage();return message==null?e.getClass().getSimpleName():message;}
@@ -239,6 +320,8 @@ public final class AdFilterService extends VpnService {
             tunnel=null;
             if(fd!=null)try{fd.close();}catch(IOException ignored){}
         }
+        BypassChange pending=pendingBypass.getAndSet(null);
+        if(pending!=null)report(pending,"过滤已停止，未应用这次变更");
         if(tcp!=null)tcp.close();
         workers.shutdownNow();
         persist();

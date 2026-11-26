@@ -1,0 +1,46 @@
+{
+  "training": "16187624",
+  "backend": "OpenCV CPU, one thread, 360px wide",
+  "scores": [
+    {
+      "snapshot": "16484445",
+      "positive": true,
+      "score": 0.496,
+      "aligned": true
+    },
+    {
+      "snapshot": "18292929",
+      "positive": false,
+      "score": 0.241,
+      "aligned": false
+    },
+    {
+      "snapshot": "17848536",
+      "positive": false,
+      "score": 0.236,
+      "aligned": false
+    },
+    {
+      "snapshot": "15219142",
+      "positive": false,
+      "score": 0.294,
+      "aligned": false
+    },
+    {
+      "snapshot": "15220560",
+      "positive": false,
+      "score": 0.297,
+      "aligned": false
+    },
+    {
+      "snapshot": "22572375",
+      "positive": false,
+      "score": 0.163,
+      "aligned": false
+    }
+  ],
+  "trials": 144,
+  "medianMs": 0.79905,
+  "p95Ms": 1.9176249999999995,
+  "note": "Local ROI matching only; excludes Android capture and decoding. Zero clicks."
+}
