@@ -35,7 +35,9 @@ def android_tools(project):
     build_tools = Path(sdk) / 'build-tools'
     if not build_tools.is_absolute():
         build_tools = project / build_tools
-    versions = [path for path in build_tools.iterdir() if path.is_dir() and re.fullmatch(r'\d+(?:\.\d+)*', path.name)]
+    pinned = os.environ.get('CLEARSCREEN_BUILD_TOOLS')
+    versions = [path for path in build_tools.iterdir() if path.is_dir() and re.fullmatch(r'\d+(?:\.\d+)*', path.name)
+                and (not pinned or path.name == pinned)]
     for version in sorted(versions, key=lambda path: tuple(map(int, path.name.split('.'))), reverse=True):
         aapt = version / ('aapt.exe' if os.name == 'nt' else 'aapt')
         signer = version / 'lib/apksigner.jar'
